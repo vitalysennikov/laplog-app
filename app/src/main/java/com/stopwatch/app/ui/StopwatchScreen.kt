@@ -186,7 +186,7 @@ fun StopwatchScreen(
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
-            title = { Text("Stopwatch") },
+            title = { Text("LapLog Free") },
             text = {
                 Column {
                     Text("Version: ${BuildConfig.VERSION_NAME}")
