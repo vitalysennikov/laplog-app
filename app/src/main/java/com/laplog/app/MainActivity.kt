@@ -9,15 +9,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.ui.StopwatchScreen
 import com.laplog.app.ui.theme.StopwatchTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var preferencesManager: PreferencesManager
+    private lateinit var database: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         preferencesManager = PreferencesManager(applicationContext)
+        database = AppDatabase.getDatabase(applicationContext)
 
         setContent {
             StopwatchTheme {
@@ -27,6 +30,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     StopwatchScreen(
                         preferencesManager = preferencesManager,
+                        sessionDao = database.sessionDao(),
                         onKeepScreenOn = { keepOn ->
                             if (keepOn) {
                                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

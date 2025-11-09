@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.laplog.app.BuildConfig
 import com.laplog.app.R
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
 
@@ -28,10 +29,11 @@ import com.laplog.app.viewmodel.StopwatchViewModelFactory
 @Composable
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
+    sessionDao: SessionDao,
     onKeepScreenOn: (Boolean) -> Unit
 ) {
     val viewModel: StopwatchViewModel = viewModel(
-        factory = StopwatchViewModelFactory(preferencesManager)
+        factory = StopwatchViewModelFactory(preferencesManager, sessionDao)
     )
 
     val elapsedTime by viewModel.elapsedTime.collectAsState()

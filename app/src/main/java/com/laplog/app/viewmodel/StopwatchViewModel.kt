@@ -3,6 +3,9 @@ package com.laplog.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.entity.LapEntity
+import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.LapTime
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -12,7 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class StopwatchViewModel(
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val sessionDao: SessionDao
 ) : ViewModel() {
     private val _elapsedTime = MutableStateFlow(0L)
     val elapsedTime: StateFlow<Long> = _elapsedTime.asStateFlow()
@@ -32,6 +36,7 @@ class StopwatchViewModel(
     private var timerJob: Job? = null
     private var startTime = 0L
     private var accumulatedTime = 0L
+    private var sessionStartTime = 0L
 
     fun startOrPause() {
         if (_isRunning.value) {
@@ -43,6 +48,9 @@ class StopwatchViewModel(
 
     private fun start() {
         startTime = System.currentTimeMillis()
+        if (sessionStartTime == 0L) {
+            sessionStartTime = startTime
+        }
         _isRunning.value = true
 
         timerJob = viewModelScope.launch {
@@ -61,11 +69,43 @@ class StopwatchViewModel(
     }
 
     fun reset() {
+        // Save session to database if there was any activity
+        if (_elapsedTime.value > 0L || _laps.value.isNotEmpty()) {
+            saveSession()
+        }
+
         _isRunning.value = false
         _elapsedTime.value = 0L
         accumulatedTime = 0L
         _laps.value = emptyList()
+        sessionStartTime = 0L
         timerJob?.cancel()
+    }
+
+    private fun saveSession() {
+        viewModelScope.launch {
+            val endTime = System.currentTimeMillis()
+            val session = SessionEntity(
+                startTime = sessionStartTime,
+                endTime = endTime,
+                totalDuration = _elapsedTime.value,
+                comment = null
+            )
+
+            val sessionId = sessionDao.insertSession(session)
+
+            if (_laps.value.isNotEmpty()) {
+                val lapEntities = _laps.value.map { lap ->
+                    LapEntity(
+                        sessionId = sessionId,
+                        lapNumber = lap.lapNumber,
+                        totalTime = lap.totalTime,
+                        lapDuration = lap.lapDuration
+                    )
+                }
+                sessionDao.insertLaps(lapEntities)
+            }
+        }
     }
 
     fun addLap() {
