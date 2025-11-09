@@ -11,4 +11,40 @@
     <string name="lap_number">Lap %1$d</string>
     <string name="lap_time">Time</string>
     <string name="lap_duration">Duration</string>
+
+    <!-- Navigation -->
+    <string name="stopwatch">Stopwatch</string>
+    <string name="history">History</string>
+
+    <!-- History screen -->
+    <string name="no_sessions">No sessions yet</string>
+    <string name="session_duration">Duration: %1$s</string>
+    <string name="session_laps">%1$d laps</string>
+    <string name="no_laps">No laps</string>
+    <string name="add_comment">Add comment</string>
+    <string name="edit_comment">Edit comment</string>
+    <string name="comment_hint">Comment (optional)</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Delete options -->
+    <string name="delete_session">Delete session</string>
+    <string name="delete_sessions_before">Delete sessions before</string>
+    <string name="delete_all_sessions">Delete all sessions</string>
+    <string name="delete_confirm_title">Confirm deletion</string>
+    <string name="delete_session_message">Delete this session?</string>
+    <string name="delete_sessions_before_message">Delete this session and all sessions before it? (%1$d sessions total)</string>
+    <string name="delete_all_sessions_message">Delete all %1$d sessions? This cannot be undone.</string>
+    <string name="delete">Delete</string>
+
+    <!-- Export -->
+    <string name="export_history">Export history</string>
+    <string name="export_csv">Export as CSV</string>
+    <string name="export_json">Export as JSON</string>
+    <string name="export_success">History exported successfully</string>
+    <string name="export_error">Error exporting history</string>
+
+    <!-- About dialog -->
+    <string name="about">About</string>
+    <string name="version">Version %1$s</string>
 </resources>
