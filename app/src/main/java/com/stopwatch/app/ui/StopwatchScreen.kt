@@ -108,7 +108,7 @@ fun StopwatchScreen(
                 }
 
                 // Start/Pause button
-                FilledButton(
+                Button(
                     onClick = { viewModel.startOrPause() },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -164,7 +164,7 @@ fun StopwatchScreen(
                                 }
                             )
                             if (lap != laps.first()) {
-                                HorizontalDivider()
+                                Divider()
                             }
                         }
                     }
