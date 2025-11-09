@@ -6,8 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -145,7 +144,7 @@ fun StopwatchScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = if (showMilliseconds) Icons.Default.Timer else Icons.Outlined.Timer,
+                        imageVector = if (showMilliseconds) Icons.Filled.AccessTime else Icons.Outlined.AccessTime,
                         contentDescription = stringResource(R.string.show_milliseconds),
                         tint = if (showMilliseconds) MaterialTheme.colorScheme.primary
                               else MaterialTheme.colorScheme.onSurfaceVariant
@@ -166,7 +165,7 @@ fun StopwatchScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = if (keepScreenOn) Icons.Default.PhoneAndroid else Icons.Outlined.PhoneAndroid,
+                        imageVector = if (keepScreenOn) Icons.Filled.Smartphone else Icons.Outlined.Smartphone,
                         contentDescription = stringResource(R.string.keep_screen_on),
                         tint = if (keepScreenOn) MaterialTheme.colorScheme.primary
                               else MaterialTheme.colorScheme.onSurfaceVariant
@@ -187,7 +186,7 @@ fun StopwatchScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = if (lockOrientation) Icons.Default.ScreenLockPortrait else Icons.Outlined.LockOpen,
+                        imageVector = if (lockOrientation) Icons.Filled.Lock else Icons.Outlined.LockOpen,
                         contentDescription = stringResource(R.string.lock_orientation),
                         tint = if (lockOrientation) MaterialTheme.colorScheme.primary
                               else MaterialTheme.colorScheme.onSurfaceVariant
