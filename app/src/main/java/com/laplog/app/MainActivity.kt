@@ -1,13 +1,16 @@
 package com.laplog.app
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -15,6 +18,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.model.SessionWithLaps
@@ -62,19 +66,30 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        NavigationBar {
-                            NavigationBarItem(
-                                icon = { Icon(Icons.Default.Timer, contentDescription = null) },
-                                label = { Text(getString(R.string.stopwatch)) },
-                                selected = selectedTab == 0,
-                                onClick = { selectedTab = 0 }
+                        Column {
+                            Text(
+                                text = getString(R.string.app_name),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp, bottom = 2.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
-                            NavigationBarItem(
-                                icon = { Icon(Icons.Default.History, contentDescription = null) },
-                                label = { Text(getString(R.string.history)) },
-                                selected = selectedTab == 1,
-                                onClick = { selectedTab = 1 }
-                            )
+                            NavigationBar {
+                                NavigationBarItem(
+                                    icon = { Icon(Icons.Default.Timer, contentDescription = null) },
+                                    label = { Text(getString(R.string.stopwatch)) },
+                                    selected = selectedTab == 0,
+                                    onClick = { selectedTab = 0 }
+                                )
+                                NavigationBarItem(
+                                    icon = { Icon(Icons.Default.History, contentDescription = null) },
+                                    label = { Text(getString(R.string.history)) },
+                                    selected = selectedTab == 1,
+                                    onClick = { selectedTab = 1 }
+                                )
+                            }
                         }
                     }
                 ) { paddingValues ->
@@ -93,6 +108,13 @@ class MainActivity : ComponentActivity() {
                                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                                     } else {
                                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                    }
+                                },
+                                onLockOrientation = { lock ->
+                                    requestedOrientation = if (lock) {
+                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                    } else {
+                                        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                     }
                                 }
                             )

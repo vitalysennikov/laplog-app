@@ -33,6 +33,9 @@ class StopwatchViewModel(
     private val _keepScreenOn = MutableStateFlow(preferencesManager.keepScreenOn)
     val keepScreenOn: StateFlow<Boolean> = _keepScreenOn.asStateFlow()
 
+    private val _lockOrientation = MutableStateFlow(preferencesManager.lockOrientation)
+    val lockOrientation: StateFlow<Boolean> = _lockOrientation.asStateFlow()
+
     private var timerJob: Job? = null
     private var startTime = 0L
     private var accumulatedTime = 0L
@@ -69,42 +72,48 @@ class StopwatchViewModel(
     }
 
     fun reset() {
+        _isRunning.value = false
+        timerJob?.cancel()
+
         // Save session to database if there was any activity
         if (_elapsedTime.value > 0L || _laps.value.isNotEmpty()) {
-            saveSession()
+            viewModelScope.launch {
+                saveSession()
+                // Reset values after saving
+                _elapsedTime.value = 0L
+                accumulatedTime = 0L
+                _laps.value = emptyList()
+                sessionStartTime = 0L
+            }
+        } else {
+            _elapsedTime.value = 0L
+            accumulatedTime = 0L
+            _laps.value = emptyList()
+            sessionStartTime = 0L
         }
-
-        _isRunning.value = false
-        _elapsedTime.value = 0L
-        accumulatedTime = 0L
-        _laps.value = emptyList()
-        sessionStartTime = 0L
-        timerJob?.cancel()
     }
 
-    private fun saveSession() {
-        viewModelScope.launch {
-            val endTime = System.currentTimeMillis()
-            val session = SessionEntity(
-                startTime = sessionStartTime,
-                endTime = endTime,
-                totalDuration = _elapsedTime.value,
-                comment = null
-            )
+    private suspend fun saveSession() {
+        val endTime = System.currentTimeMillis()
+        val session = SessionEntity(
+            startTime = sessionStartTime,
+            endTime = endTime,
+            totalDuration = _elapsedTime.value,
+            comment = null
+        )
 
-            val sessionId = sessionDao.insertSession(session)
+        val sessionId = sessionDao.insertSession(session)
 
-            if (_laps.value.isNotEmpty()) {
-                val lapEntities = _laps.value.map { lap ->
-                    LapEntity(
-                        sessionId = sessionId,
-                        lapNumber = lap.lapNumber,
-                        totalTime = lap.totalTime,
-                        lapDuration = lap.lapDuration
-                    )
-                }
-                sessionDao.insertLaps(lapEntities)
+        if (_laps.value.isNotEmpty()) {
+            val lapEntities = _laps.value.map { lap ->
+                LapEntity(
+                    sessionId = sessionId,
+                    lapNumber = lap.lapNumber,
+                    totalTime = lap.totalTime,
+                    lapDuration = lap.lapDuration
+                )
             }
+            sessionDao.insertLaps(lapEntities)
         }
     }
 
@@ -132,6 +141,11 @@ class StopwatchViewModel(
     fun toggleKeepScreenOn() {
         _keepScreenOn.value = !_keepScreenOn.value
         preferencesManager.keepScreenOn = _keepScreenOn.value
+    }
+
+    fun toggleLockOrientation() {
+        _lockOrientation.value = !_lockOrientation.value
+        preferencesManager.lockOrientation = _lockOrientation.value
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = _showMilliseconds.value): String {

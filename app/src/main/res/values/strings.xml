@@ -8,6 +8,7 @@
     <string name="lap">Lap</string>
     <string name="show_milliseconds">Show milliseconds</string>
     <string name="keep_screen_on">Keep screen on</string>
+    <string name="lock_orientation">Lock orientation</string>
     <string name="lap_number">Lap %1$d</string>
     <string name="lap_time">Time</string>
     <string name="lap_duration">Duration</string>

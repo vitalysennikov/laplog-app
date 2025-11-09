@@ -30,16 +30,19 @@ class HistoryViewModel(
     private fun loadSessions() {
         viewModelScope.launch {
             sessionDao.getAllSessions().collect { sessionEntities ->
-                val sessionsWithLaps = sessionEntities.map { session ->
+                val sessionsWithLaps = mutableListOf<SessionWithLaps>()
+
+                for (session in sessionEntities) {
+                    // Get first emission from laps flow
                     var laps = emptyList<com.laplog.app.data.database.entity.LapEntity>()
-                    // Get laps synchronously for each session
-                    launch {
-                        sessionDao.getLapsForSession(session.id).collect { lapList ->
-                            laps = lapList
-                        }
-                    }.join()
-                    SessionWithLaps(session, laps)
+                    sessionDao.getLapsForSession(session.id).collect { lapList ->
+                        laps = lapList
+                        // Take only first emission and break
+                        return@collect
+                    }
+                    sessionsWithLaps.add(SessionWithLaps(session, laps))
                 }
+
                 _sessions.value = sessionsWithLaps
             }
         }
