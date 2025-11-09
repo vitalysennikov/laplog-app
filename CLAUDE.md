@@ -41,14 +41,18 @@ com.laplog.app/
 │           ├── SessionEntity.kt       # Database table for stopwatch sessions
 │           └── LapEntity.kt           # Database table for lap marks (FK to sessions)
 ├── model/
-│   └── LapTime.kt                     # UI model for lap display
+│   ├── LapTime.kt                     # UI model for lap display
+│   └── SessionWithLaps.kt             # Model combining session with laps
 ├── ui/
 │   ├── StopwatchScreen.kt             # Main stopwatch UI screen
+│   ├── HistoryScreen.kt               # History view with session list
 │   └── theme/                         # Material 3 theme configuration
 ├── viewmodel/
 │   ├── StopwatchViewModel.kt          # Business logic and state management
-│   └── StopwatchViewModelFactory.kt   # Factory for ViewModel dependency injection
-└── MainActivity.kt                     # Application entry point
+│   ├── StopwatchViewModelFactory.kt   # Factory for ViewModel dependency injection
+│   ├── HistoryViewModel.kt            # History screen business logic
+│   └── HistoryViewModelFactory.kt     # Factory for HistoryViewModel
+└── MainActivity.kt                     # Application entry point with navigation
 ```
 
 ## Key Features (Implemented)
@@ -71,6 +75,30 @@ com.laplog.app/
 - **LapEntity**: Stores individual lap marks with foreign key to SessionEntity
 - **Auto-save**: Sessions saved to database when Reset button is pressed
 - **Cascade Delete**: Deleting a session automatically deletes associated laps
+
+### Stage 4: Comments with Autocomplete ✅
+- **Add/Edit Comments**: Attach text comments to saved sessions
+- **Autocomplete**: Suggests previously used comments while typing
+- **Persistent Storage**: Used comments saved in SharedPreferences
+- **Comment Dialog**: Clean UI for entering and editing comments
+
+### Stage 5: Delete Functions ✅
+- **Delete Session**: Remove individual session with confirmation
+- **Delete Before**: Remove all sessions before (and including) selected session
+- **Delete All**: Clear entire history with warning dialog
+- **Confirmation Dialogs**: All delete operations require user confirmation
+
+### Stage 6: Export History ✅
+- **CSV Export**: Export sessions and laps to CSV format
+- **JSON Export**: Export sessions and laps to JSON format
+- **Storage Access Framework**: User chooses save location
+- **Auto-naming**: Files named with timestamp (e.g., `laplog_history_2025-11-09_143022.csv`)
+
+### Stage 7: UI & Navigation ✅
+- **Bottom Navigation**: Tab navigation between Stopwatch and History
+- **Session Cards**: Expandable cards showing session details and laps
+- **Date Formatting**: Human-readable dates and times
+- **Material Design 3**: Consistent theming across all screens
 
 ## Database Schema
 
@@ -106,10 +134,10 @@ See `task_2.md` for detailed requirements.
 - ✅ Stage 1: Settings persistence with SharedPreferences
 - ✅ Stage 2: UI improvements (icon buttons, compact laps)
 - ✅ Stage 3: Room Database for session history
-- ⏳ Stage 4: Add comments to sessions with autocomplete
-- ⏳ Stage 5: Delete functions (selected session, sessions before date, all sessions)
-- ⏳ Stage 6: Export history to file (CSV or JSON format)
-- ⏳ Stage 7: UI polish and comprehensive testing
+- ✅ Stage 4: Add comments to sessions with autocomplete
+- ✅ Stage 5: Delete functions (selected session, sessions before date, all sessions)
+- ✅ Stage 6: Export history to file (CSV or JSON format)
+- ✅ Stage 7: UI polish and navigation
 - ⏳ Stage 8: Prepare for Google Play publication
 
 ## Code Conventions
