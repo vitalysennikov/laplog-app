@@ -27,8 +27,8 @@
 
 1. Клонируйте репозиторий:
 ```bash
-git clone <repository-url>
-cd stopwatch-app
+git clone https://github.com/vitalysennikov/laplog-app.git
+cd laplog-app
 ```
 
 2. Соберите APK:
