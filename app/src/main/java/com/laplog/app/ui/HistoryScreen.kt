@@ -238,7 +238,7 @@ fun SessionItem(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                </Column>
+                }
 
                 IconButton(onClick = { showMenu = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Options")
