@@ -192,7 +192,10 @@ See `task_2.md` for detailed requirements.
 ### Commit Messages
 - Use descriptive commit messages
 - Multi-line format: summary + blank line + detailed description
-- No automated signatures (e.g., "Generated with Claude Code")
+- **IMPORTANT**: NO automated signatures or co-authorship lines
+  - ❌ Do NOT add: "Generated with Claude Code"
+  - ❌ Do NOT add: "Co-Authored-By: Claude"
+  - ✅ Keep commits clean and professional
 
 ### Tags
 - Git tags for version releases: `v0.1.0`, `v0.1.1`, etc.

@@ -3,7 +3,6 @@ package com.laplog.app.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -50,8 +49,6 @@ fun StopwatchScreen(
     val keepScreenOn by viewModel.keepScreenOn.collectAsState()
     val lockOrientation by viewModel.lockOrientation.collectAsState()
 
-    val listState = rememberLazyListState()
-
     // Update keep screen on state
     LaunchedEffect(isRunning, keepScreenOn) {
         onKeepScreenOn(isRunning && keepScreenOn)
@@ -60,13 +57,6 @@ fun StopwatchScreen(
     // Update orientation lock
     LaunchedEffect(lockOrientation) {
         onLockOrientation(lockOrientation)
-    }
-
-    // Auto-scroll to latest lap
-    LaunchedEffect(laps.size) {
-        if (laps.isNotEmpty()) {
-            listState.animateScrollToItem(0)
-        }
     }
 
     Column(
@@ -191,14 +181,67 @@ fun StopwatchScreen(
 
         // Laps list
         if (laps.isNotEmpty()) {
+            // Calculate statistics
+            val lapDurations = laps.map { it.lapDuration }
+            val avgDuration = lapDurations.average().toLong()
+            val minDuration = lapDurations.minOrNull() ?: 0L
+            val maxDuration = lapDurations.maxOrNull() ?: 0L
+            val medianDuration = (minDuration + maxDuration) / 2
+
+            // Show statistics if there are at least 2 laps
+            if (laps.size >= 2) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "AVG",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                text = viewModel.formatTime(avgDuration, showMilliseconds),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontFamily = dseg7Font,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "MEDIAN",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                text = viewModel.formatTime(medianDuration, showMilliseconds),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontFamily = dseg7Font,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxWidth(),
-                    reverseLayout = true
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     items(laps.reversed()) { lap ->
                         LapItem(
@@ -206,9 +249,10 @@ fun StopwatchScreen(
                             formatTime = { time ->
                                 viewModel.formatTime(time, showMilliseconds)
                             },
-                            fontFamily = dseg7Font
+                            fontFamily = dseg7Font,
+                            allLaps = laps
                         )
-                        if (lap != laps.first()) {
+                        if (lap != laps.last()) {
                             Divider()
                         }
                     }
@@ -222,8 +266,15 @@ fun StopwatchScreen(
 fun LapItem(
     lap: com.laplog.app.model.LapTime,
     formatTime: (Long) -> String,
-    fontFamily: FontFamily
+    fontFamily: FontFamily,
+    allLaps: List<com.laplog.app.model.LapTime>
 ) {
+    // Calculate difference from previous lap
+    val previousLap = allLaps.getOrNull(lap.lapNumber - 2)
+    val difference = if (previousLap != null) {
+        lap.lapDuration - previousLap.lapDuration
+    } else null
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -231,29 +282,47 @@ fun LapItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Lap number (left)
         Text(
             text = stringResource(R.string.lap_number, lap.lapNumber),
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.width(60.dp)
         )
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Lap duration (center, larger)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = formatTime(lap.totalTime),
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = fontFamily,
-                fontWeight = FontWeight.Medium
-            )
-
-            Text(
                 text = formatTime(lap.lapDuration),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleMedium,
                 fontFamily = fontFamily,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+            // Difference from previous lap
+            if (difference != null) {
+                val diffSeconds = difference / 1000.0
+                val sign = if (diffSeconds > 0) "+" else ""
+                Text(
+                    text = "$sign%.1f s".format(diffSeconds),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (diffSeconds < 0) MaterialTheme.colorScheme.tertiary
+                           else MaterialTheme.colorScheme.error
+                )
+            }
         }
+
+        // Total time (right)
+        Text(
+            text = formatTime(lap.totalTime),
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.width(80.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
     }
 }
