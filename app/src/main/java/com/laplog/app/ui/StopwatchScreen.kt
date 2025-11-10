@@ -50,6 +50,10 @@ fun StopwatchScreen(
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val keepScreenOn by viewModel.keepScreenOn.collectAsState()
     val lockOrientation by viewModel.lockOrientation.collectAsState()
+    val currentComment by viewModel.currentComment.collectAsState()
+    val usedComments by viewModel.usedComments.collectAsState()
+
+    var showCommentSuggestions by remember { mutableStateOf(false) }
 
     // Update keep screen on state
     LaunchedEffect(isRunning, keepScreenOn) {
@@ -67,7 +71,51 @@ fun StopwatchScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Comment input with autocomplete
+        Column {
+            OutlinedTextField(
+                value = currentComment,
+                onValueChange = {
+                    viewModel.updateCurrentComment(it)
+                    showCommentSuggestions = it.isNotBlank()
+                },
+                label = { Text(stringResource(R.string.comment_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                enabled = !isRunning  // Disable during running
+            )
+
+            // Autocomplete suggestions
+            if (showCommentSuggestions) {
+                val filteredSuggestions = usedComments.filter {
+                    it.contains(currentComment, ignoreCase = true) && it != currentComment
+                }
+                if (filteredSuggestions.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column {
+                            filteredSuggestions.take(3).forEach { suggestion ->
+                                TextButton(
+                                    onClick = {
+                                        viewModel.updateCurrentComment(suggestion)
+                                        showCommentSuggestions = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(suggestion)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Settings toggles in horizontal row
         Row(

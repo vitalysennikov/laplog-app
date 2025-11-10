@@ -319,31 +319,90 @@ fun SessionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = dateStr,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (!session.comment.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = session.comment,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            text = dateStr,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
+                        if (!session.comment.isNullOrBlank()) {
+                            Text(
+                                text = "\u2014", // Em dash
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = session.comment,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.session_duration, formatTime(session.totalDuration)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = fontFamily
-                    )
-                    if (laps.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = stringResource(R.string.session_laps, laps.size),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Duration:",
+                            style = MaterialTheme.typography.bodyMedium
                         )
+                        Text(
+                            text = formatTime(session.totalDuration),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = fontFamily
+                        )
+                    }
+                    if (laps.isNotEmpty()) {
+                        // Calculate statistics for collapsed view
+                        val lapDurations = laps.map { it.lapDuration }
+                        val avgDuration = if (lapDurations.size >= 2) lapDurations.average().toLong() else null
+                        val minDuration = lapDurations.minOrNull()
+                        val maxDuration = lapDurations.maxOrNull()
+                        val medianDuration = if (minDuration != null && maxDuration != null && lapDurations.size >= 2) {
+                            (minDuration + maxDuration) / 2
+                        } else null
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.session_laps, laps.size),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (avgDuration != null && medianDuration != null) {
+                                Text(
+                                    text = "\u2014",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "AVG:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formatTime(avgDuration),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = fontFamily,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "MEDIAN:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formatTime(medianDuration),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = fontFamily,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -448,9 +507,9 @@ fun SessionItem(
                     }
                 }
 
-                laps.forEachIndexed { index, lap ->
-                    // Calculate difference from previous lap
-                    val previousLap = if (index > 0) laps[index - 1] else null
+                laps.reversed().forEachIndexed { index, lap ->
+                    // Calculate difference from previous lap (lap with number lapNumber-1)
+                    val previousLap = laps.find { it.lapNumber == lap.lapNumber - 1 }
                     val difference = if (previousLap != null) {
                         lap.lapDuration - previousLap.lapDuration
                     } else null
@@ -478,7 +537,7 @@ fun SessionItem(
                         ) {
                             Text(
                                 text = formatTime(lap.lapDuration),
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontFamily = fontFamily,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -492,7 +551,7 @@ fun SessionItem(
                                 if (difference != null) {
                                     Text(
                                         text = formatDifference(difference),
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontFamily = fontFamily,
                                         fontWeight = FontWeight.Medium,
                                         color = if (difference < 0) Color(0xFF4CAF50) // Green for faster laps
@@ -506,7 +565,7 @@ fun SessionItem(
                         // Total time (right)
                         Text(
                             text = formatTime(lap.totalTime),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             fontFamily = fontFamily,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.width(80.dp),

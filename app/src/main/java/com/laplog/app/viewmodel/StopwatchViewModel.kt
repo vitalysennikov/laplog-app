@@ -37,6 +37,12 @@ class StopwatchViewModel(
     private val _lockOrientation = MutableStateFlow(preferencesManager.lockOrientation)
     val lockOrientation: StateFlow<Boolean> = _lockOrientation.asStateFlow()
 
+    private val _currentComment = MutableStateFlow(preferencesManager.currentComment)
+    val currentComment: StateFlow<String> = _currentComment.asStateFlow()
+
+    private val _usedComments = MutableStateFlow<Set<String>>(preferencesManager.usedComments)
+    val usedComments: StateFlow<Set<String>> = _usedComments.asStateFlow()
+
     private var timerJob: Job? = null
     private var startTime = 0L
     private var accumulatedTime = 0L
@@ -111,7 +117,7 @@ class StopwatchViewModel(
             startTime = sessionStartTime,
             endTime = endTime,
             totalDuration = _elapsedTime.value,
-            comment = null
+            comment = _currentComment.value.takeIf { it.isNotBlank() }
         )
 
         val sessionId = sessionDao.insertSession(session)
@@ -169,6 +175,19 @@ class StopwatchViewModel(
         preferencesManager.lockOrientation = _lockOrientation.value
     }
 
+    fun updateCurrentComment(comment: String) {
+        _currentComment.value = comment
+        preferencesManager.currentComment = comment
+
+        // Add to used comments if not empty
+        if (comment.isNotBlank() && !_usedComments.value.contains(comment)) {
+            val updated = _usedComments.value.toMutableSet()
+            updated.add(comment)
+            _usedComments.value = updated
+            preferencesManager.usedComments = updated
+        }
+    }
+
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = _showMilliseconds.value): String {
         val hours = (timeInMillis / 3600000).toInt()
         val minutes = ((timeInMillis % 3600000) / 60000).toInt()
@@ -191,7 +210,8 @@ class StopwatchViewModel(
     }
 
     fun formatDifference(diffMillis: Long, includeMillis: Boolean = _showMilliseconds.value): String {
-        val sign = if (diffMillis >= 0) "+" else "-"
+        // Use unicode minus (U+2212) for consistent width with plus sign
+        val sign = if (diffMillis >= 0) "+" else "\u2212"
         val absDiff = kotlin.math.abs(diffMillis)
         val seconds = (absDiff / 1000).toInt()
         val millis = ((absDiff % 1000) / 10).toInt()

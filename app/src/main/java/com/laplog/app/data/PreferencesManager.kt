@@ -25,11 +25,16 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_LOCK_ORIENTATION, false)
         set(value) = prefs.edit().putBoolean(KEY_LOCK_ORIENTATION, value).apply()
 
+    var currentComment: String
+        get() = prefs.getString(KEY_CURRENT_COMMENT, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_CURRENT_COMMENT, value).apply()
+
     companion object {
         private const val PREFS_NAME = "laplog_preferences"
         private const val KEY_SHOW_MILLISECONDS = "show_milliseconds"
         private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
         private const val KEY_USED_COMMENTS = "used_comments"
         private const val KEY_LOCK_ORIENTATION = "lock_orientation"
+        private const val KEY_CURRENT_COMMENT = "current_comment"
     }
 }
