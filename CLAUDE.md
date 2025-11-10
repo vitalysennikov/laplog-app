@@ -219,10 +219,19 @@ See `task_2.md` for detailed requirements.
 
 ### CI/CD Pipeline
 - GitHub Actions workflow: `.github/workflows/android.yml`
-- Triggers on push to `main` branch only
-- Builds debug APK and uploads as artifact
-- APK download available in Actions tab
+- ⚠️ **Triggers on `main` branch ONLY** - no builds on dev or other branches
+- Workflow: Automatic build on every push to main
+- Output: Debug APK uploaded as artifact
+- Download: GitHub Actions tab → latest workflow run → Artifacts
 - Testing: Install APK on device via `adb install app-debug.apk`
+
+### Development Workflow
+1. Develop on `dev` branch
+2. Commit and push changes to `dev`
+3. Switch to `main` branch
+4. Merge `dev` into `main`
+5. Push `main` to trigger GitHub Actions build
+6. Download APK from Actions artifacts
 
 ## Important Implementation Details
 
