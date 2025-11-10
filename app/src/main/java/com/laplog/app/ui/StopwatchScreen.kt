@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.ScreenRotation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -104,7 +105,7 @@ fun StopwatchScreen(
                 onCheckedChange = { viewModel.toggleLockOrientation() }
             ) {
                 Icon(
-                    imageVector = if (lockOrientation) Icons.Filled.Lock else Icons.Outlined.LockOpen,
+                    imageVector = if (lockOrientation) Icons.Filled.ScreenLockRotation else Icons.Outlined.ScreenRotation,
                     contentDescription = stringResource(R.string.lock_orientation),
                     tint = if (lockOrientation) MaterialTheme.colorScheme.primary
                           else MaterialTheme.colorScheme.onSurfaceVariant
