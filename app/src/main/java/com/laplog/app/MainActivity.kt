@@ -44,15 +44,17 @@ class MainActivity : ComponentActivity() {
     private lateinit var backupViewModel: BackupViewModel
 
     private val selectBackupFolderLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let {
-            // Take persistable URI permission
-            contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            backupViewModel.setBackupFolder(it)
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.data?.let { uri ->
+                // Take persistable URI permission
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                backupViewModel.setBackupFolder(uri)
+            }
         }
     }
 
@@ -188,7 +190,7 @@ class MainActivity : ComponentActivity() {
                             2 -> BackupScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
-                                onSelectFolder = { selectBackupFolderLauncher.launch(null) }
+                                onSelectFolder = { launchFolderPicker() }
                             )
                         }
                     }
@@ -282,6 +284,28 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun launchFolderPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            // Add flags to show cloud storage providers
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+
+            // Add category to ensure all document providers are shown
+            addCategory(Intent.CATEGORY_DEFAULT)
+
+            // Try to start with external storage by default
+            // This makes cloud providers more visible
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                // EXTRA_INITIAL_URI helps show cloud services
+                putExtra("android.provider.extra.INITIAL_URI",
+                    android.provider.MediaStore.Files.getContentUri("external"))
+            }
+        }
+        selectBackupFolderLauncher.launch(intent)
     }
 
     private fun exportToCsv(sessions: List<SessionWithLaps>) {

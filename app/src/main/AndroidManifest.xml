@@ -4,6 +4,16 @@
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Required for discovering cloud storage providers on Android 11+ -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+        </intent>
+        <intent>
+            <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
