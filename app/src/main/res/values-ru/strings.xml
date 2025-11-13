@@ -112,7 +112,6 @@
     <string name="permission_battery_message">Для точного отсчёта времени в фоне, пожалуйста, отключите оптимизацию батареи для LapLog.</string>
     <string name="settings">Настройки</string>
     <string name="skip">Пропустить</string>
-</resources>
 
     <!-- Welcome dialog -->
     <string name="welcome_title">Добро пожаловать в LapLog Free!</string>

@@ -112,7 +112,6 @@
     <string name="permission_battery_message">为确保后台计时准确，请禁用LapLog的电池优化。</string>
     <string name="settings">设置</string>
     <string name="skip">跳过</string>
-</resources>
 
     <!-- Welcome dialog -->
     <string name="welcome_title">欢迎使用LapLog Free!</string>
