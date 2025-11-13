@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.laplog.app.R
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
@@ -30,7 +31,7 @@ import com.laplog.app.viewmodel.StopwatchViewModelFactory
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
-    onKeepScreenOn: (Boolean) -> Unit,
+    onScreenOnModeChanged: (ScreenOnMode, Boolean) -> Unit, // (mode, isRunning)
     onLockOrientation: (Boolean) -> Unit,
     onShowAbout: () -> Unit
 ) {
@@ -48,7 +49,7 @@ fun StopwatchScreen(
     val isRunning by viewModel.isRunning.collectAsState()
     val laps by viewModel.laps.collectAsState()
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
-    val keepScreenOn by viewModel.keepScreenOn.collectAsState()
+    val screenOnMode by viewModel.screenOnMode.collectAsState()
     val lockOrientation by viewModel.lockOrientation.collectAsState()
     val currentComment by viewModel.currentComment.collectAsState()
     val usedComments by viewModel.usedComments.collectAsState()
@@ -57,9 +58,9 @@ fun StopwatchScreen(
 
     var expandedCommentDropdown by remember { mutableStateOf(false) }
 
-    // Update keep screen on state
-    LaunchedEffect(isRunning, keepScreenOn) {
-        onKeepScreenOn(isRunning && keepScreenOn)
+    // Update screen on state based on mode and running state
+    LaunchedEffect(isRunning, screenOnMode) {
+        onScreenOnModeChanged(screenOnMode, isRunning)
     }
 
     // Update orientation lock
@@ -137,16 +138,19 @@ fun StopwatchScreen(
                 )
             }
 
-            // Keep screen on toggle
-            IconToggleButton(
-                checked = keepScreenOn,
-                onCheckedChange = { viewModel.toggleKeepScreenOn() }
+            // Keep screen on toggle (3 states)
+            IconButton(
+                onClick = { viewModel.cycleScreenOnMode() }
             ) {
                 Icon(
-                    imageVector = if (keepScreenOn) Icons.Filled.Smartphone else Icons.Outlined.Smartphone,
+                    imageVector = when (screenOnMode) {
+                        ScreenOnMode.OFF -> Icons.Outlined.Smartphone
+                        ScreenOnMode.WHILE_RUNNING -> Icons.Default.Smartphone
+                        ScreenOnMode.ALWAYS -> Icons.Default.PhonelinkLock
+                    },
                     contentDescription = stringResource(R.string.keep_screen_on),
-                    tint = if (keepScreenOn) MaterialTheme.colorScheme.primary
-                          else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (screenOnMode == ScreenOnMode.OFF) MaterialTheme.colorScheme.onSurfaceVariant
+                          else MaterialTheme.colorScheme.primary
                 )
             }
 

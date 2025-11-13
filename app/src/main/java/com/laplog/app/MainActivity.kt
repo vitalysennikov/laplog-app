@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.model.SessionWithLaps
 import com.laplog.app.ui.HistoryScreen
@@ -120,8 +121,13 @@ class MainActivity : ComponentActivity() {
                             0 -> StopwatchScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
-                                onKeepScreenOn = { keepOn ->
-                                    if (keepOn) {
+                                onScreenOnModeChanged = { mode, isRunning ->
+                                    val shouldKeepOn = when (mode) {
+                                        ScreenOnMode.OFF -> false
+                                        ScreenOnMode.WHILE_RUNNING -> isRunning
+                                        ScreenOnMode.ALWAYS -> true
+                                    }
+                                    if (shouldKeepOn) {
                                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                                     } else {
                                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
@@ -31,8 +32,8 @@ class StopwatchViewModel(
     private val _showMilliseconds = MutableStateFlow(preferencesManager.showMilliseconds)
     val showMilliseconds: StateFlow<Boolean> = _showMilliseconds.asStateFlow()
 
-    private val _keepScreenOn = MutableStateFlow(preferencesManager.keepScreenOn)
-    val keepScreenOn: StateFlow<Boolean> = _keepScreenOn.asStateFlow()
+    private val _screenOnMode = MutableStateFlow(preferencesManager.screenOnMode)
+    val screenOnMode: StateFlow<ScreenOnMode> = _screenOnMode.asStateFlow()
 
     private val _lockOrientation = MutableStateFlow(preferencesManager.lockOrientation)
     val lockOrientation: StateFlow<Boolean> = _lockOrientation.asStateFlow()
@@ -183,9 +184,13 @@ class StopwatchViewModel(
         preferencesManager.showMilliseconds = _showMilliseconds.value
     }
 
-    fun toggleKeepScreenOn() {
-        _keepScreenOn.value = !_keepScreenOn.value
-        preferencesManager.keepScreenOn = _keepScreenOn.value
+    fun cycleScreenOnMode() {
+        _screenOnMode.value = when (_screenOnMode.value) {
+            ScreenOnMode.OFF -> ScreenOnMode.WHILE_RUNNING
+            ScreenOnMode.WHILE_RUNNING -> ScreenOnMode.ALWAYS
+            ScreenOnMode.ALWAYS -> ScreenOnMode.OFF
+        }
+        preferencesManager.screenOnMode = _screenOnMode.value
     }
 
     fun toggleLockOrientation() {
