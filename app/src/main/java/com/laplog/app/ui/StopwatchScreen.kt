@@ -27,6 +27,7 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
@@ -355,7 +356,8 @@ fun StopwatchScreen(
                                 viewModel.formatDifference(diff, showMilliseconds)
                             },
                             fontFamily = dseg7Font,
-                            allLaps = laps
+                            allLaps = laps,
+                            invertLapColors = invertLapColors
                         )
                         if (lap != laps.last()) {
                             Divider()
@@ -373,7 +375,8 @@ fun LapItem(
     formatTime: (Long) -> String,
     formatDifference: (Long) -> String,
     fontFamily: FontFamily,
-    allLaps: List<com.laplog.app.model.LapTime>
+    allLaps: List<com.laplog.app.model.LapTime>,
+    invertLapColors: Boolean
 ) {
     // Calculate difference from previous lap
     val previousLap = allLaps.getOrNull(lap.lapNumber - 2)
