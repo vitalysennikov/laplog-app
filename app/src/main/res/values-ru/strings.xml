@@ -84,6 +84,7 @@
     <string name="no_folder_selected">Папка не выбрана</string>
     <string name="auto_backup">Автоматическое резервирование (ежедневно)</string>
     <string name="retention_days">Срок хранения (дней)</string>
+    <string name="days">дней</string>
     <string name="last_backup">Последняя резервная копия</string>
     <string name="never">Никогда</string>
     <string name="backup_now">Создать резервную копию</string>

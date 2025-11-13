@@ -262,12 +262,5 @@ fun AboutDialog(
                 }
             }
         )
-
-        // Show restart message if language was changed
-        LaunchedEffect(currentLanguage) {
-            if (showLanguageDialog) {
-                showLanguageDialog = false
-            }
-        }
     }
 }
