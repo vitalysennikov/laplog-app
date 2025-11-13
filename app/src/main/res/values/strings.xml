@@ -48,8 +48,16 @@
     <!-- About dialog -->
     <string name="about">About</string>
     <string name="version">Version %1$s</string>
-    <string name="version_name">0.6.0</string>
+    <string name="version_name">0.7.0</string>
     <string name="about_description">LapLog Free is a stopwatch app with lap tracking and session history. Track your time with precision and save your sessions for later review.</string>
+    <string name="language">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_chinese">中文</string>
+    <string name="restart_required">Restart required</string>
+    <string name="restart_app_message">Please restart the app to apply the new language.</string>
+    <string name="ok">OK</string>
 
     <!-- Backup screen -->
     <string name="backup">Backup</string>

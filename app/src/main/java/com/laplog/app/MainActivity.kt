@@ -1,10 +1,13 @@
 package com.laplog.app
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -78,6 +81,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         preferencesManager = PreferencesManager(applicationContext)
         database = AppDatabase.getDatabase(applicationContext)
+
+        // Apply language setting
+        applyLanguage(preferencesManager.appLanguage)
 
         // Initialize BackupViewModel
         backupViewModel = ViewModelProvider(
@@ -356,5 +362,20 @@ class MainActivity : ComponentActivity() {
         } else {
             String.format("%02d:%02d", minutes, seconds)
         }
+    }
+
+    private fun applyLanguage(languageCode: String?) {
+        val locale = when (languageCode) {
+            "en" -> Locale.ENGLISH
+            "ru" -> Locale("ru")
+            "zh" -> Locale.SIMPLIFIED_CHINESE
+            else -> Locale.getDefault() // System default
+        }
+
+        Locale.setDefault(locale)
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        createConfigurationContext(config)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 }

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LapLog Free</string>
+    <string name="start">Старт</string>
+    <string name="pause">Пауза</string>
+    <string name="resume">Продолжить</string>
+    <string name="reset">Сброс</string>
+    <string name="lap">Круг</string>
+    <string name="show_milliseconds">Показывать миллисекунды</string>
+    <string name="keep_screen_on">Держать экран включённым</string>
+    <string name="lock_orientation">Блокировать ориентацию</string>
+    <string name="lap_number">Круг %1$d</string>
+    <string name="lap_time">Время</string>
+    <string name="lap_duration">Длительность</string>
+
+    <!-- Navigation -->
+    <string name="stopwatch">Секундомер</string>
+    <string name="history">История</string>
+
+    <!-- History screen -->
+    <string name="no_sessions">Нет сохранённых сессий</string>
+    <string name="session_duration">Длительность: %1$s</string>
+    <string name="session_laps">%1$d кругов</string>
+    <string name="no_laps">Нет кругов</string>
+    <string name="add_comment">Добавить комментарий</string>
+    <string name="edit_comment">Изменить комментарий</string>
+    <string name="comment_hint">Комментарий (необязательно)</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+
+    <!-- Delete options -->
+    <string name="delete_session">Удалить сессию</string>
+    <string name="delete_sessions_before">Удалить сессии до этой</string>
+    <string name="delete_all_sessions">Удалить все сессии</string>
+    <string name="delete_confirm_title">Подтверждение удаления</string>
+    <string name="delete_session_message">Удалить эту сессию?</string>
+    <string name="delete_sessions_before_message">Удалить эту сессию и все сессии до неё? (всего %1$d сессий)</string>
+    <string name="delete_all_sessions_message">Удалить все %1$d сессий? Это действие нельзя отменить.</string>
+    <string name="delete">Удалить</string>
+
+    <!-- Export -->
+    <string name="export_history">Экспорт истории</string>
+    <string name="export_csv">Экспорт в CSV</string>
+    <string name="export_json">Экспорт в JSON</string>
+    <string name="export_success">История успешно экспортирована</string>
+    <string name="export_error">Ошибка экспорта истории</string>
+
+    <!-- About dialog -->
+    <string name="about">О программе</string>
+    <string name="version">Версия %1$s</string>
+    <string name="version_name">0.7.0</string>
+    <string name="about_description">LapLog Free — это секундомер с отметками кругов и историей сессий. Отслеживайте время с точностью и сохраняйте сессии для последующего просмотра.</string>
+    <string name="language">Язык</string>
+    <string name="language_system">Системный</string>
+    <string name="language_english">English</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_chinese">中文</string>
+    <string name="restart_required">Требуется перезапуск</string>
+    <string name="restart_app_message">Пожалуйста, перезапустите приложение для применения нового языка.</string>
+    <string name="ok">ОК</string>
+
+    <!-- Backup screen -->
+    <string name="backup">Резервные копии</string>
+    <string name="backup_settings">Настройки резервных копий</string>
+    <string name="backup_folder">Папка для резервных копий</string>
+    <string name="select_folder">Выбрать папку</string>
+    <string name="folder_selected">Папка выбрана</string>
+    <string name="no_folder_selected">Папка не выбрана</string>
+    <string name="auto_backup">Автоматическое резервирование (ежедневно)</string>
+    <string name="retention_days">Срок хранения (дней)</string>
+    <string name="last_backup">Последняя резервная копия</string>
+    <string name="never">Никогда</string>
+    <string name="backup_now">Создать резервную копию</string>
+    <string name="available_backups">Доступные резервные копии</string>
+    <string name="restore">Восстановить</string>
+    <string name="restore_mode_title">Режим восстановления</string>
+    <string name="restore_mode_message">Выберите способ восстановления из резервной копии:</string>
+    <string name="replace_all">Заменить всё</string>
+    <string name="replace_all_desc">Удалить существующие данные и восстановить из резервной копии</string>
+    <string name="merge">Объединить</string>
+    <string name="merge_desc">Добавить данные из резервной копии к существующим</string>
+    <string name="delete_backup_title">Удаление резервной копии</string>
+    <string name="delete_backup_message">Удалить этот файл резервной копии?</string>
+</resources>
