@@ -49,7 +49,7 @@
     <string name="about">О программе</string>
     <string name="version_label">Версия</string>
     <string name="version">Версия %1$s</string>
-    <string name="version_name">0.7.0</string>
+    <string name="version_name">0.7.1</string>
     <string name="about_description">LapLog Free — это секундомер с отметками кругов и историей сессий. Отслеживайте время с точностью и сохраняйте сессии для последующего просмотра.</string>
     <string name="language">Язык</string>
     <string name="language_system">Системный</string>
