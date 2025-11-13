@@ -47,6 +47,7 @@ fun HistoryScreen(
 
     val sessions by viewModel.sessions.collectAsState()
     val usedComments by viewModel.usedComments.collectAsState()
+    val commentsFromHistory by viewModel.commentsFromHistory.collectAsState()
     val expandAll by viewModel.expandAll.collectAsState()
     val showMillisecondsInHistory by viewModel.showMillisecondsInHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
@@ -74,7 +75,7 @@ fun HistoryScreen(
                         onCheckedChange = { viewModel.toggleMillisecondsInHistory() }
                     ) {
                         Icon(
-                            imageVector = if (showMillisecondsInHistory) Icons.Default.Timer else Icons.Outlined.Timer,
+                            imageVector = if (showMillisecondsInHistory) Icons.Filled.AccessTime else Icons.Outlined.AccessTime,
                             contentDescription = "Show milliseconds in history"
                         )
                     }
@@ -130,7 +131,7 @@ fun HistoryScreen(
                 items(sessions) { sessionWithLaps ->
                     SessionItem(
                         sessionWithLaps = sessionWithLaps,
-                        usedComments = usedComments.toList(),
+                        commentsFromHistory = commentsFromHistory,
                         onUpdateComment = { comment ->
                             viewModel.updateSessionComment(sessionWithLaps.session.id, comment)
                         },
@@ -287,7 +288,7 @@ fun HistoryScreen(
 @Composable
 fun SessionItem(
     sessionWithLaps: SessionWithLaps,
-    usedComments: List<String>,
+    commentsFromHistory: List<String>,
     onUpdateComment: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteBefore: () -> Unit,
@@ -607,7 +608,7 @@ fun SessionItem(
     if (showCommentDialog) {
         CommentDialog(
             currentComment = session.comment ?: "",
-            usedComments = usedComments,
+            commentsFromHistory = commentsFromHistory,
             onDismiss = { showCommentDialog = false },
             onSave = { comment ->
                 onUpdateComment(comment)
@@ -669,20 +670,12 @@ fun SessionItem(
 @Composable
 fun CommentDialog(
     currentComment: String,
-    usedComments: List<String>,
+    commentsFromHistory: List<String>,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
     var comment by remember { mutableStateOf(currentComment) }
-    var showSuggestions by remember { mutableStateOf(false) }
-
-    val filteredSuggestions = remember(comment, usedComments) {
-        if (comment.isBlank()) {
-            usedComments
-        } else {
-            usedComments.filter { it.contains(comment, ignoreCase = true) }
-        }
-    }
+    var expandedCommentDropdown by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -695,34 +688,39 @@ fun CommentDialog(
             )
         },
         text = {
-            Column {
+            ExposedDropdownMenuBox(
+                expanded = expandedCommentDropdown,
+                onExpandedChange = { expandedCommentDropdown = it }
+            ) {
                 OutlinedTextField(
                     value = comment,
-                    onValueChange = {
-                        comment = it
-                        showSuggestions = it.isNotBlank() && filteredSuggestions.isNotEmpty()
-                    },
+                    onValueChange = { comment = it },
                     label = { Text(stringResource(R.string.comment_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    singleLine = true,
+                    trailingIcon = {
+                        if (commentsFromHistory.isNotEmpty()) {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCommentDropdown)
+                        }
+                    },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )
 
-                if (showSuggestions && filteredSuggestions.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Suggestions:",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    filteredSuggestions.take(3).forEach { suggestion ->
-                        TextButton(
-                            onClick = {
-                                comment = suggestion
-                                showSuggestions = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(suggestion, style = MaterialTheme.typography.bodyMedium)
+                if (commentsFromHistory.isNotEmpty()) {
+                    ExposedDropdownMenu(
+                        expanded = expandedCommentDropdown,
+                        onDismissRequest = { expandedCommentDropdown = false }
+                    ) {
+                        commentsFromHistory.forEach { historyComment ->
+                            DropdownMenuItem(
+                                text = { Text(historyComment) },
+                                onClick = {
+                                    comment = historyComment
+                                    expandedCommentDropdown = false
+                                }
+                            )
                         }
                     }
                 }

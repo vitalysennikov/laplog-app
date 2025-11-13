@@ -33,9 +33,19 @@ class HistoryViewModel(
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
 
+    private val _commentsFromHistory = MutableStateFlow<List<String>>(emptyList())
+    val commentsFromHistory: StateFlow<List<String>> = _commentsFromHistory.asStateFlow()
+
     init {
         loadSessions()
         loadUsedComments()
+        loadCommentsFromHistory()
+    }
+
+    private fun loadCommentsFromHistory() {
+        viewModelScope.launch {
+            _commentsFromHistory.value = sessionDao.getDistinctComments()
+        }
     }
 
     fun toggleMillisecondsInHistory() {
@@ -85,6 +95,7 @@ class HistoryViewModel(
             }
 
             loadSessions()
+            loadCommentsFromHistory() // Reload comments from database
         }
     }
 

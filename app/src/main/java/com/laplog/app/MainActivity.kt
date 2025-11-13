@@ -140,7 +140,8 @@ class MainActivity : ComponentActivity() {
                                         ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                     }
                                 },
-                                onShowAbout = { showAboutDialog = true }
+                                onShowAbout = { showAboutDialog = true },
+                                isVisible = selectedTab == 0
                             )
                             1 -> HistoryScreen(
                                 preferencesManager = preferencesManager,
@@ -197,7 +198,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Keep screen on while running",
+                                        text = "Keep screen on: OFF / While Running / Always",
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
@@ -212,6 +213,20 @@ class MainActivity : ComponentActivity() {
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "Lock screen orientation",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Filled.SwapVert,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Invert lap colors (faster/slower)",
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }

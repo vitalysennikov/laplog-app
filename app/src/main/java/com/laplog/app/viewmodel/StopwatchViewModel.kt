@@ -65,6 +65,10 @@ class StopwatchViewModel(
         }
     }
 
+    fun refreshCommentsFromHistory() {
+        loadCommentsFromHistory()
+    }
+
     fun startOrPause() {
         if (_isRunning.value) {
             pause()

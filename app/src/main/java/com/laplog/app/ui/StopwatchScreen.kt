@@ -34,11 +34,19 @@ fun StopwatchScreen(
     sessionDao: SessionDao,
     onScreenOnModeChanged: (ScreenOnMode, Boolean) -> Unit, // (mode, isRunning)
     onLockOrientation: (Boolean) -> Unit,
-    onShowAbout: () -> Unit
+    onShowAbout: () -> Unit,
+    isVisible: Boolean = true
 ) {
     val viewModel: StopwatchViewModel = viewModel(
         factory = StopwatchViewModelFactory(preferencesManager, sessionDao)
     )
+
+    // Refresh comments from history when screen becomes visible
+    LaunchedEffect(isVisible) {
+        if (isVisible) {
+            viewModel.refreshCommentsFromHistory()
+        }
+    }
 
     // Digital clock style font
     val dseg7Font = FontFamily(
