@@ -26,6 +26,7 @@ import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.model.SessionWithLaps
+import com.laplog.app.ui.AboutDialog
 import com.laplog.app.ui.BackupScreen
 import com.laplog.app.ui.HistoryScreen
 import com.laplog.app.ui.StopwatchScreen
@@ -97,6 +98,7 @@ class MainActivity : ComponentActivity() {
             StopwatchTheme {
                 var selectedTab by remember { mutableStateOf(0) }
                 var showAboutDialog by remember { mutableStateOf(false) }
+                var showRestartDialog by remember { mutableStateOf(false) }
 
                 Scaffold(
                     bottomBar = {
@@ -178,14 +180,17 @@ class MainActivity : ComponentActivity() {
                                         ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                     }
                                 },
-                                onShowAbout = { showAboutDialog = true },
                                 isVisible = selectedTab == 0
                             )
                             1 -> HistoryScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
                                 onExportCsv = { sessions -> exportToCsv(sessions) },
-                                onExportJson = { sessions -> exportToJson(sessions) }
+                                onExportJson = { sessions -> exportToJson(sessions) },
+                                onLanguageChange = { languageCode ->
+                                    preferencesManager.appLanguage = languageCode
+                                    showRestartDialog = true
+                                }
                             )
                             2 -> BackupScreen(
                                 preferencesManager = preferencesManager,
@@ -198,86 +203,39 @@ class MainActivity : ComponentActivity() {
 
                 // About dialog
                 if (showAboutDialog) {
+                    AboutDialog(
+                        currentLanguage = preferencesManager.appLanguage,
+                        onDismiss = { showAboutDialog = false },
+                        onLanguageChange = { languageCode ->
+                            preferencesManager.appLanguage = languageCode
+                            showRestartDialog = true
+                        }
+                    )
+                }
+
+                // Restart dialog
+                if (showRestartDialog) {
                     AlertDialog(
-                        onDismissRequest = { showAboutDialog = false },
-                        title = { Text(getString(R.string.app_name)) },
-                        text = {
-                            Column {
-                                Text("Version: ${getString(R.string.version_name)}")
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("© 2025 Vitaly Sennikov")
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = getString(R.string.about_description),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = "Toggle buttons:",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Filled.AccessTime,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Show/hide milliseconds",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                        onDismissRequest = { showRestartDialog = false },
+                        title = { Text(getString(R.string.restart_required)) },
+                        text = { Text(getString(R.string.restart_app_message)) },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    // Restart the app
+                                    val intent = packageManager.getLaunchIntentForPackage(packageName)
+                                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                    intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    startActivity(intent)
+                                    finish()
                                 }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Smartphone,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Keep screen on: OFF / While Running / Always",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Filled.ScreenLockRotation,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Lock screen orientation",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Filled.SwapVert,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Invert lap colors (faster/slower)",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
+                            ) {
+                                Text(getString(R.string.ok))
                             }
                         },
-                        confirmButton = {
-                            TextButton(onClick = { showAboutDialog = false }) {
-                                Text("OK")
+                        dismissButton = {
+                            TextButton(onClick = { showRestartDialog = false }) {
+                                Text(getString(R.string.cancel))
                             }
                         }
                     )

@@ -47,8 +47,9 @@
 
     <!-- About dialog -->
     <string name="about">关于</string>
+    <string name="version_label">版本</string>
     <string name="version">版本 %1$s</string>
-    <string name="version_name">0.7.0</string>
+    <string name="version_name">0.7.1</string>
     <string name="about_description">LapLog Free 是一款具有计次和历史记录功能的秒表应用。精确记录时间并保存您的记录以供日后查看。</string>
     <string name="language">语言</string>
     <string name="language_system">跟随系统</string>
@@ -58,6 +59,21 @@
     <string name="restart_required">需要重启</string>
     <string name="restart_app_message">请重启应用以应用新语言。</string>
     <string name="ok">确定</string>
+
+    <!-- Statistics -->
+    <string name="avg">平均</string>
+    <string name="median">中位数</string>
+    <string name="duration">时长</string>
+
+    <!-- Toggle buttons descriptions -->
+    <string name="toggle_buttons">切换按钮</string>
+    <string name="toggle_milliseconds_desc">显示/隐藏毫秒</string>
+    <string name="toggle_screen_on_desc">保持屏幕常亮（点击切换模式）</string>
+    <string name="toggle_screen_on_off">屏幕关闭：屏幕正常变暗</string>
+    <string name="toggle_screen_on_running">运行时屏幕常亮：仅在秒表运行时保持屏幕常亮</string>
+    <string name="toggle_screen_on_always">屏幕始终常亮：屏幕永不变暗</string>
+    <string name="toggle_orientation_desc">锁定屏幕方向</string>
+    <string name="toggle_invert_colors_desc">反转计次颜色（快/慢）</string>
 
     <!-- Backup screen -->
     <string name="backup">备份</string>
@@ -72,6 +88,7 @@
     <string name="never">从未</string>
     <string name="backup_now">立即备份</string>
     <string name="available_backups">可用备份</string>
+    <string name="no_backups_found">未找到备份</string>
     <string name="restore">恢复</string>
     <string name="restore_mode_title">恢复模式</string>
     <string name="restore_mode_message">选择如何恢复备份：</string>

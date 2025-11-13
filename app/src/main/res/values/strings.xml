@@ -47,8 +47,9 @@
 
     <!-- About dialog -->
     <string name="about">About</string>
+    <string name="version_label">Version</string>
     <string name="version">Version %1$s</string>
-    <string name="version_name">0.7.0</string>
+    <string name="version_name">0.7.1</string>
     <string name="about_description">LapLog Free is a stopwatch app with lap tracking and session history. Track your time with precision and save your sessions for later review.</string>
     <string name="language">Language</string>
     <string name="language_system">System default</string>
@@ -58,6 +59,21 @@
     <string name="restart_required">Restart required</string>
     <string name="restart_app_message">Please restart the app to apply the new language.</string>
     <string name="ok">OK</string>
+
+    <!-- Statistics -->
+    <string name="avg">AVG</string>
+    <string name="median">MEDIAN</string>
+    <string name="duration">Duration</string>
+
+    <!-- Toggle buttons descriptions -->
+    <string name="toggle_buttons">Toggle buttons</string>
+    <string name="toggle_milliseconds_desc">Show/hide milliseconds</string>
+    <string name="toggle_screen_on_desc">Keep screen on (tap to cycle modes)</string>
+    <string name="toggle_screen_on_off">Screen OFF: Screen dims normally</string>
+    <string name="toggle_screen_on_running">Screen ON while running: Screen stays on only when stopwatch is running</string>
+    <string name="toggle_screen_on_always">Screen ALWAYS ON: Screen never dims</string>
+    <string name="toggle_orientation_desc">Lock screen orientation</string>
+    <string name="toggle_invert_colors_desc">Invert lap colors (faster/slower)</string>
 
     <!-- Backup screen -->
     <string name="backup">Backup</string>
@@ -72,6 +88,7 @@
     <string name="never">Never</string>
     <string name="backup_now">Backup Now</string>
     <string name="available_backups">Available Backups</string>
+    <string name="no_backups_found">No backups found</string>
     <string name="restore">Restore</string>
     <string name="restore_mode_title">Restore Mode</string>
     <string name="restore_mode_message">Choose how to restore the backup:</string>

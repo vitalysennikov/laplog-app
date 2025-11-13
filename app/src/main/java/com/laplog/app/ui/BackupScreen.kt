@@ -189,7 +189,7 @@ fun BackupScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No backups found",
+                            text = stringResource(R.string.no_backups_found),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

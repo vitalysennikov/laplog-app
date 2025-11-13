@@ -47,8 +47,9 @@
 
     <!-- About dialog -->
     <string name="about">О программе</string>
+    <string name="version_label">Версия</string>
     <string name="version">Версия %1$s</string>
-    <string name="version_name">0.7.0</string>
+    <string name="version_name">0.7.1</string>
     <string name="about_description">LapLog Free — это секундомер с отметками кругов и историей сессий. Отслеживайте время с точностью и сохраняйте сессии для последующего просмотра.</string>
     <string name="language">Язык</string>
     <string name="language_system">Системный</string>
@@ -58,6 +59,21 @@
     <string name="restart_required">Требуется перезапуск</string>
     <string name="restart_app_message">Пожалуйста, перезапустите приложение для применения нового языка.</string>
     <string name="ok">ОК</string>
+
+    <!-- Statistics -->
+    <string name="avg">СРЕДН</string>
+    <string name="median">МЕДИАНА</string>
+    <string name="duration">Длительность</string>
+
+    <!-- Toggle buttons descriptions -->
+    <string name="toggle_buttons">Кнопки переключения</string>
+    <string name="toggle_milliseconds_desc">Показать/скрыть миллисекунды</string>
+    <string name="toggle_screen_on_desc">Держать экран включённым (нажмите для смены режима)</string>
+    <string name="toggle_screen_on_off">Экран ВЫКЛ: Экран гаснет как обычно</string>
+    <string name="toggle_screen_on_running">Экран ВКЛ при работе: Экран не гаснет только когда секундомер работает</string>
+    <string name="toggle_screen_on_always">Экран ВСЕГДА ВКЛ: Экран никогда не гаснет</string>
+    <string name="toggle_orientation_desc">Блокировать ориентацию экрана</string>
+    <string name="toggle_invert_colors_desc">Инвертировать цвета кругов (быстрее/медленнее)</string>
 
     <!-- Backup screen -->
     <string name="backup">Резервные копии</string>
@@ -72,6 +88,7 @@
     <string name="never">Никогда</string>
     <string name="backup_now">Создать резервную копию</string>
     <string name="available_backups">Доступные резервные копии</string>
+    <string name="no_backups_found">Резервные копии не найдены</string>
     <string name="restore">Восстановить</string>
     <string name="restore_mode_title">Режим восстановления</string>
     <string name="restore_mode_message">Выберите способ восстановления из резервной копии:</string>

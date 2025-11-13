@@ -34,7 +34,6 @@ fun StopwatchScreen(
     sessionDao: SessionDao,
     onScreenOnModeChanged: (ScreenOnMode, Boolean) -> Unit, // (mode, isRunning)
     onLockOrientation: (Boolean) -> Unit,
-    onShowAbout: () -> Unit,
     isVisible: Boolean = true
 ) {
     val viewModel: StopwatchViewModel = viewModel(
@@ -317,7 +316,7 @@ fun StopwatchScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "AVG",
+                                text = stringResource(R.string.avg),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
@@ -331,7 +330,7 @@ fun StopwatchScreen(
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "MEDIAN",
+                                text = stringResource(R.string.median),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
