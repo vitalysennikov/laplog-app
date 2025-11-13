@@ -84,6 +84,7 @@
     <string name="no_folder_selected">No folder selected</string>
     <string name="auto_backup">Auto Backup (Daily)</string>
     <string name="retention_days">Retention (days)</string>
+    <string name="days">days</string>
     <string name="last_backup">Last backup</string>
     <string name="never">Never</string>
     <string name="backup_now">Backup Now</string>

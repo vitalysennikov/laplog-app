@@ -84,6 +84,7 @@
     <string name="no_folder_selected">未选择文件夹</string>
     <string name="auto_backup">自动备份（每日）</string>
     <string name="retention_days">保留天数</string>
+    <string name="days">天</string>
     <string name="last_backup">上次备份</string>
     <string name="never">从未</string>
     <string name="backup_now">立即备份</string>

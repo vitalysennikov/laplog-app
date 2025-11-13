@@ -120,7 +120,7 @@ fun BackupScreen(
                     ) {
                         Text(stringResource(R.string.retention_days))
                         TextButton(onClick = { showRetentionDialog = true }) {
-                            Text("$backupRetentionDays days")
+                            Text("$backupRetentionDays ${stringResource(R.string.days)}")
                         }
                     }
 
@@ -239,7 +239,7 @@ fun BackupScreen(
                 OutlinedTextField(
                     value = tempDays,
                     onValueChange = { tempDays = it },
-                    label = { Text("Days") },
+                    label = { Text(stringResource(R.string.days)) },
                     singleLine = true
                 )
             },
