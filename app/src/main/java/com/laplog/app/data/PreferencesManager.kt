@@ -75,6 +75,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_PERMISSIONS_REQUESTED, false)
         set(value) = prefs.edit().putBoolean(KEY_PERMISSIONS_REQUESTED, value).apply()
 
+    var isFirstLaunch: Boolean
+        get() = prefs.getBoolean(KEY_IS_FIRST_LAUNCH, true)
+        set(value) = prefs.edit().putBoolean(KEY_IS_FIRST_LAUNCH, value).apply()
+
     companion object {
         private const val PREFS_NAME = "laplog_preferences"
         private const val KEY_SHOW_MILLISECONDS = "show_milliseconds"
@@ -91,5 +95,6 @@ class PreferencesManager(context: Context) {
         private const val KEY_LAST_BACKUP_TIME = "last_backup_time"
         private const val KEY_APP_LANGUAGE = "app_language"
         private const val KEY_PERMISSIONS_REQUESTED = "permissions_requested"
+        private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
     }
 }
