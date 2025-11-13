@@ -113,3 +113,14 @@
     <string name="settings">设置</string>
     <string name="skip">跳过</string>
 </resources>
+
+    <!-- Welcome dialog -->
+    <string name="welcome_title">欢迎使用LapLog Free!</string>
+    <string name="welcome_message">是否要从先前的备份中恢复数据？</string>
+    <string name="restore_from_backup">从备份恢复</string>
+    <string name="start_fresh">全新开始</string>
+    <string name="backup_found_title">找到备份</string>
+    <string name="backup_found_message">找到备份：%1$s\n\n是否恢复？</string>
+    <string name="no_backup_found_title">未找到备份</string>
+    <string name="no_backup_found_message">在所选文件夹中未找到备份文件。您可以从头开始使用应用程序，或在"备份"部分创建备份文件夹。</string>
+</resources>

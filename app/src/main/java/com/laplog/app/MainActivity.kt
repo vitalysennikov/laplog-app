@@ -33,7 +33,10 @@ import com.laplog.app.ui.AboutDialog
 import com.laplog.app.ui.BackupScreen
 import com.laplog.app.ui.HistoryScreen
 import com.laplog.app.ui.StopwatchScreen
+import com.laplog.app.ui.WelcomeDialog
+import com.laplog.app.ui.RestoreBackupDialog
 import com.laplog.app.ui.theme.StopwatchTheme
+import com.laplog.app.data.BackupManager
 import com.laplog.app.viewmodel.BackupViewModel
 import com.laplog.app.viewmodel.BackupViewModelFactory
 import androidx.lifecycle.ViewModelProvider
@@ -58,8 +61,17 @@ class MainActivity : ComponentActivity() {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
                 backupViewModel.setBackupFolder(uri)
+
+                // If this is first launch, check for backups
+                if (preferencesManager.isFirstLaunch) {
+                    checkForBackupsAndRestore(uri)
+                }
             }
         }
+    }
+
+    private fun checkForBackupsAndRestore(uri: android.net.Uri) {
+        // This will be called after folder selection, and dialogs will be shown in Compose
     }
 
     private val createDocumentLauncher = registerForActivityResult(
@@ -103,6 +115,26 @@ class MainActivity : ComponentActivity() {
                 val coroutineScope = rememberCoroutineScope()
                 var showAboutDialog by remember { mutableStateOf(false) }
                 var showRestartDialog by remember { mutableStateOf(false) }
+                var showWelcomeDialog by remember { mutableStateOf(preferencesManager.isFirstLaunch) }
+                var showRestoreBackupDialog by remember { mutableStateOf(false) }
+                var showNoBackupDialog by remember { mutableStateOf(false) }
+                var latestBackup by remember { mutableStateOf<com.laplog.app.model.BackupFileInfo?>(null) }
+
+                // Check for backups when folder is selected during first launch
+                LaunchedEffect(backupViewModel.backupFolderUri.collectAsState().value) {
+                    val folderUri = backupViewModel.backupFolderUri.value
+                    if (preferencesManager.isFirstLaunch && folderUri != null && !showWelcomeDialog) {
+                        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao())
+                        val backups = backupManager.listBackups(android.net.Uri.parse(folderUri))
+
+                        if (backups.isNotEmpty()) {
+                            latestBackup = backups.first()
+                            showRestoreBackupDialog = true
+                        } else {
+                            showNoBackupDialog = true
+                        }
+                    }
+                }
 
                 Scaffold(
                     bottomBar = {
@@ -178,6 +210,8 @@ class MainActivity : ComponentActivity() {
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
                                 onScreenOnModeChanged = { mode, isRunning ->
+                                    // FLAG_KEEP_SCREEN_ON keeps screen on but allows system to dim it
+                                    // This is exactly what we want for ALWAYS mode when not running
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
                                         ScreenOnMode.WHILE_RUNNING -> isRunning
@@ -253,6 +287,71 @@ class MainActivity : ComponentActivity() {
                             TextButton(onClick = { showRestartDialog = false }) {
                                 Text(getString(R.string.cancel))
                             }
+                        }
+                    )
+                }
+
+                // Welcome dialog (first launch)
+                if (showWelcomeDialog) {
+                    WelcomeDialog(
+                        onDismiss = {
+                            showWelcomeDialog = false
+                            preferencesManager.isFirstLaunch = false
+                        },
+                        onRestoreFromBackup = {
+                            showWelcomeDialog = false
+                            launchFolderPicker()
+                        }
+                    )
+                }
+
+                // Restore backup dialog
+                if (showRestoreBackupDialog && latestBackup != null) {
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    val backupDate = dateFormat.format(Date(latestBackup!!.timestamp))
+
+                    RestoreBackupDialog(
+                        backupFound = true,
+                        backupName = backupDate,
+                        onConfirm = {
+                            showRestoreBackupDialog = false
+                            coroutineScope.launch {
+                                val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao())
+                                val result = backupManager.restoreBackup(latestBackup!!.uri, BackupManager.RestoreMode.REPLACE)
+                                if (result.isSuccess) {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        getString(R.string.export_success),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    // Restart app to apply restored settings
+                                    showRestartDialog = true
+                                } else {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        getString(R.string.export_error),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                preferencesManager.isFirstLaunch = false
+                            }
+                        },
+                        onDismiss = {
+                            showRestoreBackupDialog = false
+                            preferencesManager.isFirstLaunch = false
+                        }
+                    )
+                }
+
+                // No backup found dialog
+                if (showNoBackupDialog) {
+                    RestoreBackupDialog(
+                        backupFound = false,
+                        backupName = "",
+                        onConfirm = {},
+                        onDismiss = {
+                            showNoBackupDialog = false
+                            preferencesManager.isFirstLaunch = false
                         }
                     )
                 }
