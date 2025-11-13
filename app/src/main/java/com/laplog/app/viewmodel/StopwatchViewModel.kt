@@ -1,5 +1,7 @@
 package com.laplog.app.viewmodel
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +11,7 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.LapTime
+import com.laplog.app.service.StopwatchService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class StopwatchViewModel(
+    private val context: Context,
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao
 ) : ViewModel() {
@@ -50,6 +54,12 @@ class StopwatchViewModel(
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
 
+    private val _showPermissionDialog = MutableStateFlow(false)
+    val showPermissionDialog: StateFlow<Boolean> = _showPermissionDialog.asStateFlow()
+
+    private val _showBatteryDialog = MutableStateFlow(false)
+    val showBatteryDialog: StateFlow<Boolean> = _showBatteryDialog.asStateFlow()
+
     private var timerJob: Job? = null
     private var startTime = 0L
     private var accumulatedTime = 0L
@@ -73,8 +83,27 @@ class StopwatchViewModel(
         if (_isRunning.value) {
             pause()
         } else {
-            start()
+            // Check permissions before starting
+            if (!preferencesManager.permissionsRequested && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                _showPermissionDialog.value = true
+            } else {
+                start()
+            }
         }
+    }
+
+    fun dismissPermissionDialog() {
+        _showPermissionDialog.value = false
+        preferencesManager.permissionsRequested = true
+        start()
+    }
+
+    fun dismissBatteryDialog() {
+        _showBatteryDialog.value = false
+    }
+
+    fun showBatteryOptimizationDialog() {
+        _showBatteryDialog.value = true
     }
 
     private fun start() {
@@ -83,6 +112,9 @@ class StopwatchViewModel(
             sessionStartTime = startTime
         }
         _isRunning.value = true
+
+        // Start foreground service
+        startService()
 
         timerJob = viewModelScope.launch {
             while (_isRunning.value) {
@@ -97,11 +129,17 @@ class StopwatchViewModel(
         _isRunning.value = false
         accumulatedTime = _elapsedTime.value
         timerJob?.cancel()
+
+        // Pause service
+        pauseService()
     }
 
     fun reset() {
         _isRunning.value = false
         timerJob?.cancel()
+
+        // Stop service
+        stopService()
 
         Log.d("StopwatchViewModel", "Reset called. ElapsedTime: ${_elapsedTime.value}, Laps: ${_laps.value.size}, SessionStartTime: $sessionStartTime")
 
@@ -174,6 +212,9 @@ class StopwatchViewModel(
         )
 
         _laps.value = _laps.value + newLap
+
+        // Update service with new lap info
+        updateServiceState()
     }
 
     fun addLapAndPause() {
@@ -260,5 +301,37 @@ class StopwatchViewModel(
         } else {
             String.format("%s%d", sign, seconds)
         }
+    }
+
+    private fun startService() {
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_START
+        }
+        context.startForegroundService(intent)
+    }
+
+    private fun pauseService() {
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_PAUSE
+        }
+        context.startService(intent)
+    }
+
+    private fun stopService() {
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_STOP
+        }
+        context.startService(intent)
+    }
+
+    private fun updateServiceState() {
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_UPDATE_STATE
+            putExtra(StopwatchService.EXTRA_ELAPSED_TIME, _elapsedTime.value)
+            putExtra(StopwatchService.EXTRA_IS_RUNNING, _isRunning.value)
+            putExtra(StopwatchService.EXTRA_LAP_COUNT, _laps.value.size)
+            putExtra(StopwatchService.EXTRA_LAST_LAP_TIME, _laps.value.lastOrNull()?.totalTime ?: 0L)
+        }
+        context.startService(intent)
     }
 }

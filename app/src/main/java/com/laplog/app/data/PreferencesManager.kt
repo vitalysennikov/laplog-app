@@ -71,6 +71,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString(KEY_APP_LANGUAGE, null)
         set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
 
+    var permissionsRequested: Boolean
+        get() = prefs.getBoolean(KEY_PERMISSIONS_REQUESTED, false)
+        set(value) = prefs.edit().putBoolean(KEY_PERMISSIONS_REQUESTED, value).apply()
+
     companion object {
         private const val PREFS_NAME = "laplog_preferences"
         private const val KEY_SHOW_MILLISECONDS = "show_milliseconds"
@@ -86,5 +90,6 @@ class PreferencesManager(context: Context) {
         private const val KEY_BACKUP_RETENTION_DAYS = "backup_retention_days"
         private const val KEY_LAST_BACKUP_TIME = "last_backup_time"
         private const val KEY_APP_LANGUAGE = "app_language"
+        private const val KEY_PERMISSIONS_REQUESTED = "permissions_requested"
     }
 }

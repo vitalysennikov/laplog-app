@@ -1,9 +1,21 @@
 package com.laplog.app.model
 
+import com.laplog.app.data.ScreenOnMode
+
 data class BackupData(
     val version: String,
     val timestamp: Long,
-    val sessions: List<BackupSession>
+    val sessions: List<BackupSession>,
+    val settings: BackupSettings? = null
+)
+
+data class BackupSettings(
+    val showMilliseconds: Boolean,
+    val screenOnMode: String,
+    val lockOrientation: Boolean,
+    val showMillisecondsInHistory: Boolean,
+    val invertLapColors: Boolean,
+    val appLanguage: String?
 )
 
 data class BackupSession(

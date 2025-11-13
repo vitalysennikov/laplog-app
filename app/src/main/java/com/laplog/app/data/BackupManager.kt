@@ -10,6 +10,7 @@ import com.laplog.app.model.BackupData
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.model.BackupLap
 import com.laplog.app.model.BackupSession
+import com.laplog.app.model.BackupSettings
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -18,6 +19,7 @@ import java.util.*
 
 class BackupManager(
     private val context: Context,
+    private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao
 ) {
     companion object {
@@ -55,10 +57,21 @@ class BackupManager(
                 )
             }
 
+            // Get current settings
+            val backupSettings = BackupSettings(
+                showMilliseconds = preferencesManager.showMilliseconds,
+                screenOnMode = preferencesManager.screenOnMode.name,
+                lockOrientation = preferencesManager.lockOrientation,
+                showMillisecondsInHistory = preferencesManager.showMillisecondsInHistory,
+                invertLapColors = preferencesManager.invertLapColors,
+                appLanguage = preferencesManager.appLanguage
+            )
+
             val backupData = BackupData(
-                version = "0.6.0",
+                version = "0.8.0",
                 timestamp = System.currentTimeMillis(),
-                sessions = backupSessions
+                sessions = backupSessions,
+                settings = backupSettings
             )
 
             // Convert to JSON
@@ -191,6 +204,11 @@ class BackupManager(
                 sessionDao.insertLaps(laps)
             }
         }
+
+        // Restore settings if available
+        backupData.settings?.let { settings ->
+            restoreSettings(settings)
+        }
     }
 
     private suspend fun restoreMerge(backupData: BackupData) {
@@ -217,12 +235,42 @@ class BackupManager(
                 sessionDao.insertLaps(laps)
             }
         }
+
+        // Restore settings if available
+        backupData.settings?.let { settings ->
+            restoreSettings(settings)
+        }
+    }
+
+    private fun restoreSettings(settings: BackupSettings) {
+        preferencesManager.showMilliseconds = settings.showMilliseconds
+        preferencesManager.screenOnMode = try {
+            ScreenOnMode.valueOf(settings.screenOnMode)
+        } catch (e: IllegalArgumentException) {
+            ScreenOnMode.WHILE_RUNNING
+        }
+        preferencesManager.lockOrientation = settings.lockOrientation
+        preferencesManager.showMillisecondsInHistory = settings.showMillisecondsInHistory
+        preferencesManager.invertLapColors = settings.invertLapColors
+        settings.appLanguage?.let { preferencesManager.appLanguage = it }
     }
 
     private fun backupDataToJson(data: BackupData): String {
         val json = JSONObject()
         json.put("version", data.version)
         json.put("timestamp", data.timestamp)
+
+        // Add settings if available
+        data.settings?.let { settings ->
+            val settingsObj = JSONObject()
+            settingsObj.put("showMilliseconds", settings.showMilliseconds)
+            settingsObj.put("screenOnMode", settings.screenOnMode)
+            settingsObj.put("lockOrientation", settings.lockOrientation)
+            settingsObj.put("showMillisecondsInHistory", settings.showMillisecondsInHistory)
+            settingsObj.put("invertLapColors", settings.invertLapColors)
+            settingsObj.put("appLanguage", settings.appLanguage ?: JSONObject.NULL)
+            json.put("settings", settingsObj)
+        }
 
         val sessionsArray = JSONArray()
         data.sessions.forEach { session ->
@@ -254,6 +302,21 @@ class BackupManager(
         val version = json.getString("version")
         val timestamp = json.getLong("timestamp")
 
+        // Parse settings if available
+        val settings = if (json.has("settings")) {
+            val settingsObj = json.getJSONObject("settings")
+            BackupSettings(
+                showMilliseconds = settingsObj.getBoolean("showMilliseconds"),
+                screenOnMode = settingsObj.getString("screenOnMode"),
+                lockOrientation = settingsObj.getBoolean("lockOrientation"),
+                showMillisecondsInHistory = settingsObj.getBoolean("showMillisecondsInHistory"),
+                invertLapColors = settingsObj.getBoolean("invertLapColors"),
+                appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage")
+            )
+        } else {
+            null
+        }
+
         val sessions = mutableListOf<BackupSession>()
         val sessionsArray = json.getJSONArray("sessions")
         for (i in 0 until sessionsArray.length()) {
@@ -282,7 +345,7 @@ class BackupManager(
             )
         }
 
-        return BackupData(version, timestamp, sessions)
+        return BackupData(version, timestamp, sessions, settings)
     }
 
     private fun generateBackupFileName(): String {

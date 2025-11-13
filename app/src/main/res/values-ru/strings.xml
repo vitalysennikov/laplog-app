@@ -49,7 +49,7 @@
     <string name="about">О программе</string>
     <string name="version_label">Версия</string>
     <string name="version">Версия %1$s</string>
-    <string name="version_name">0.7.2</string>
+    <string name="version_name">0.8.0</string>
     <string name="about_description">LapLog Free — это секундомер с отметками кругов и историей сессий. Отслеживайте время с точностью и сохраняйте сессии для последующего просмотра.</string>
     <string name="language">Язык</string>
     <string name="language_system">Системный</string>
@@ -99,4 +99,17 @@
     <string name="merge_desc">Добавить данные из резервной копии к существующим</string>
     <string name="delete_backup_title">Удаление резервной копии</string>
     <string name="delete_backup_message">Удалить этот файл резервной копии?</string>
+
+    <!-- Notification -->
+    <string name="stopwatch_notification_channel">Секундомер</string>
+    <string name="stopwatch_notification_channel_description">Показывает время секундомера при работе в фоне</string>
+    <string name="notification_lap_info">Круг %1$d: %2$s</string>
+
+    <!-- Permissions -->
+    <string name="permission_notification_title">Включить уведомления</string>
+    <string name="permission_notification_message">LapLog требуется разрешение на уведомления, чтобы показывать время секундомера при работе в фоне.</string>
+    <string name="permission_battery_title">Оптимизация батареи</string>
+    <string name="permission_battery_message">Для точного отсчёта времени в фоне, пожалуйста, отключите оптимизацию батареи для LapLog.</string>
+    <string name="settings">Настройки</string>
+    <string name="skip">Пропустить</string>
 </resources>

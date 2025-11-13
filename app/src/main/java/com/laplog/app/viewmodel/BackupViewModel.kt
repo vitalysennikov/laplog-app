@@ -24,7 +24,7 @@ class BackupViewModel(
     sessionDao: SessionDao
 ) : ViewModel() {
 
-    private val backupManager = BackupManager(context, sessionDao)
+    private val backupManager = BackupManager(context, preferencesManager, sessionDao)
 
     private val _backupFolderUri = MutableStateFlow(preferencesManager.backupFolderUri)
     val backupFolderUri: StateFlow<String?> = _backupFolderUri.asStateFlow()

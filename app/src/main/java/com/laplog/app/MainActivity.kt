@@ -12,6 +12,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.database.AppDatabase
@@ -96,7 +99,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             StopwatchTheme {
-                var selectedTab by remember { mutableStateOf(0) }
+                val pagerState = rememberPagerState(pageCount = { 3 })
+                val coroutineScope = rememberCoroutineScope()
                 var showAboutDialog by remember { mutableStateOf(false) }
                 var showRestartDialog by remember { mutableStateOf(false) }
 
@@ -132,32 +136,44 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Timer, contentDescription = null) },
                                     label = { Text(getString(R.string.stopwatch)) },
-                                    selected = selectedTab == 0,
-                                    onClick = { selectedTab = 0 }
+                                    selected = pagerState.currentPage == 0,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(0)
+                                        }
+                                    }
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.History, contentDescription = null) },
                                     label = { Text(getString(R.string.history)) },
-                                    selected = selectedTab == 1,
-                                    onClick = { selectedTab = 1 }
+                                    selected = pagerState.currentPage == 1,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(1)
+                                        }
+                                    }
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Backup, contentDescription = null) },
                                     label = { Text(getString(R.string.backup)) },
-                                    selected = selectedTab == 2,
-                                    onClick = { selectedTab = 2 }
+                                    selected = pagerState.currentPage == 2,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(2)
+                                        }
+                                    }
                                 )
                             }
                         }
                     }
                 ) { paddingValues ->
-                    Surface(
+                    HorizontalPager(
+                        state = pagerState,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        when (selectedTab) {
+                            .padding(paddingValues)
+                    ) { page ->
+                        when (page) {
                             0 -> StopwatchScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
@@ -180,7 +196,7 @@ class MainActivity : ComponentActivity() {
                                         ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                     }
                                 },
-                                isVisible = selectedTab == 0
+                                isVisible = pagerState.currentPage == 0
                             )
                             1 -> HistoryScreen(
                                 preferencesManager = preferencesManager,

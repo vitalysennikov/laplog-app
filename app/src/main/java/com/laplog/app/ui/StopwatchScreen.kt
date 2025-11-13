@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -36,8 +37,9 @@ fun StopwatchScreen(
     onLockOrientation: (Boolean) -> Unit,
     isVisible: Boolean = true
 ) {
+    val context = LocalContext.current
     val viewModel: StopwatchViewModel = viewModel(
-        factory = StopwatchViewModelFactory(preferencesManager, sessionDao)
+        factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao)
     )
 
     // Refresh comments from history when screen becomes visible
@@ -373,6 +375,27 @@ fun StopwatchScreen(
                 }
             }
         }
+    }
+
+    // Permission dialogs
+    val showPermissionDialog by viewModel.showPermissionDialog.collectAsState()
+    val showBatteryDialog by viewModel.showBatteryDialog.collectAsState()
+
+    if (showPermissionDialog) {
+        NotificationPermissionDialog(
+            onDismiss = { viewModel.dismissPermissionDialog() },
+            onPermissionResult = { granted ->
+                if (granted) {
+                    viewModel.showBatteryOptimizationDialog()
+                }
+            }
+        )
+    }
+
+    if (showBatteryDialog) {
+        BatteryOptimizationDialog(
+            onDismiss = { viewModel.dismissBatteryDialog() }
+        )
     }
 }
 

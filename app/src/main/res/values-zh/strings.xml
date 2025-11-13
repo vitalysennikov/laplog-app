@@ -49,7 +49,7 @@
     <string name="about">关于</string>
     <string name="version_label">版本</string>
     <string name="version">版本 %1$s</string>
-    <string name="version_name">0.7.2</string>
+    <string name="version_name">0.8.0</string>
     <string name="about_description">LapLog Free 是一款具有计次和历史记录功能的秒表应用。精确记录时间并保存您的记录以供日后查看。</string>
     <string name="language">语言</string>
     <string name="language_system">跟随系统</string>
@@ -99,4 +99,17 @@
     <string name="merge_desc">将备份数据添加到现有数据</string>
     <string name="delete_backup_title">删除备份</string>
     <string name="delete_backup_message">删除此备份文件？</string>
+
+    <!-- Notification -->
+    <string name="stopwatch_notification_channel">秒表</string>
+    <string name="stopwatch_notification_channel_description">在后台运行时显示秒表时间</string>
+    <string name="notification_lap_info">圈数 %1$d: %2$s</string>
+
+    <!-- Permissions -->
+    <string name="permission_notification_title">启用通知</string>
+    <string name="permission_notification_message">LapLog需要通知权限以在后台运行时显示秒表时间。</string>
+    <string name="permission_battery_title">电池优化</string>
+    <string name="permission_battery_message">为确保后台计时准确，请禁用LapLog的电池优化。</string>
+    <string name="settings">设置</string>
+    <string name="skip">跳过</string>
 </resources>
