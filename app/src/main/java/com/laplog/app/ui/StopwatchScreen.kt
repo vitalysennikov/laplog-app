@@ -39,7 +39,7 @@ import com.laplog.app.viewmodel.StopwatchViewModelFactory
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
-    onScreenOnModeChanged: (ScreenOnMode, Boolean) -> Unit, // (mode, isRunning)
+    onScreenOnModeChanged: (ScreenOnMode, Boolean, Long) -> Unit, // (mode, isRunning, elapsedTime)
     onLockOrientation: (Boolean) -> Unit,
     isVisible: Boolean = true
 ) {
@@ -57,6 +57,11 @@ fun StopwatchScreen(
                     StopwatchService.BROADCAST_RESUME -> viewModel.startOrResumeFromNotification()
                     StopwatchService.BROADCAST_LAP -> viewModel.lapFromNotification()
                     StopwatchService.BROADCAST_STOP -> viewModel.resetFromNotification()
+                    StopwatchService.BROADCAST_STATE_UPDATE -> {
+                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
+                        val isRunning = intent.getBooleanExtra(StopwatchService.EXTRA_IS_RUNNING, false)
+                        viewModel.updateStateFromService(elapsedTime, isRunning)
+                    }
                 }
             }
         }
@@ -66,6 +71,7 @@ fun StopwatchScreen(
             addAction(StopwatchService.BROADCAST_RESUME)
             addAction(StopwatchService.BROADCAST_LAP)
             addAction(StopwatchService.BROADCAST_STOP)
+            addAction(StopwatchService.BROADCAST_STATE_UPDATE)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -79,10 +85,11 @@ fun StopwatchScreen(
         }
     }
 
-    // Refresh comments from history when screen becomes visible
+    // Refresh comments from history and sync state with service when screen becomes visible
     LaunchedEffect(isVisible) {
         if (isVisible) {
             viewModel.refreshCommentsFromHistory()
+            viewModel.requestStateFromService()
         }
     }
 
@@ -105,9 +112,9 @@ fun StopwatchScreen(
 
     var expandedCommentDropdown by remember { mutableStateOf(false) }
 
-    // Update screen on state based on mode and running state
-    LaunchedEffect(isRunning, screenOnMode) {
-        onScreenOnModeChanged(screenOnMode, isRunning)
+    // Update screen on state based on mode, running state, and elapsed time
+    LaunchedEffect(isRunning, screenOnMode, elapsedTime) {
+        onScreenOnModeChanged(screenOnMode, isRunning, elapsedTime)
     }
 
     // Update orientation lock

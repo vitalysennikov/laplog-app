@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.laplog.app.MainActivity
 import com.laplog.app.R
@@ -17,6 +18,7 @@ import kotlinx.coroutines.*
 class StopwatchService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     private var notificationJob: Job? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private var startTime = 0L
     private var accumulatedTime = 0L
@@ -33,12 +35,14 @@ class StopwatchService : Service() {
         const val ACTION_UPDATE_STATE = "com.laplog.app.UPDATE_STATE"
         const val ACTION_LAP = "com.laplog.app.LAP"
         const val ACTION_RESUME = "com.laplog.app.RESUME"
+        const val ACTION_REQUEST_STATE = "com.laplog.app.REQUEST_STATE"
 
         // Broadcast actions for MainActivity
         const val BROADCAST_PAUSE = "com.laplog.app.BROADCAST_PAUSE"
         const val BROADCAST_RESUME = "com.laplog.app.BROADCAST_RESUME"
         const val BROADCAST_LAP = "com.laplog.app.BROADCAST_LAP"
         const val BROADCAST_STOP = "com.laplog.app.BROADCAST_STOP"
+        const val BROADCAST_STATE_UPDATE = "com.laplog.app.BROADCAST_STATE_UPDATE"
 
         const val EXTRA_ELAPSED_TIME = "elapsed_time"
         const val EXTRA_IS_RUNNING = "is_running"
@@ -54,6 +58,15 @@ class StopwatchService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+
+        // Acquire wake lock to keep CPU running while service is active
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "LapLog::StopwatchWakeLock"
+        ).apply {
+            setReferenceCounted(false)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -63,6 +76,9 @@ class StopwatchService : Service() {
                 isRunning = true
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
+
+                // Acquire wake lock to prevent CPU from sleeping
+                wakeLock?.acquire()
 
                 // Send broadcast to MainActivity
                 if (intent.action == ACTION_RESUME) {
@@ -75,10 +91,24 @@ class StopwatchService : Service() {
                 stopNotificationUpdates()
                 updateNotification()
 
+                // Release wake lock when paused
+                wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+
                 // Send broadcast to MainActivity
                 sendBroadcast(Intent(BROADCAST_PAUSE))
             }
             ACTION_STOP -> {
+                // Release wake lock when stopped
+                wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+
                 // Send broadcast to MainActivity
                 sendBroadcast(Intent(BROADCAST_STOP))
 
@@ -105,9 +135,29 @@ class StopwatchService : Service() {
 
                 updateNotification()
             }
+            ACTION_REQUEST_STATE -> {
+                // Broadcast current state to ViewModel
+                broadcastCurrentState()
+            }
         }
 
         return START_STICKY
+    }
+
+    private fun broadcastCurrentState() {
+        val currentTime = if (isRunning) {
+            accumulatedTime + (System.currentTimeMillis() - startTime)
+        } else {
+            accumulatedTime
+        }
+
+        val intent = Intent(BROADCAST_STATE_UPDATE).apply {
+            putExtra(EXTRA_ELAPSED_TIME, currentTime)
+            putExtra(EXTRA_IS_RUNNING, isRunning)
+            putExtra(EXTRA_LAP_COUNT, lapCount)
+            putExtra(EXTRA_LAST_LAP_TIME, lastLapTime)
+        }
+        sendBroadcast(intent)
     }
 
     private fun startNotificationUpdates() {
@@ -185,6 +235,12 @@ class StopwatchService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        val pauseResumeIcon = if (isRunning) {
+            R.drawable.ic_notification_pause
+        } else {
+            R.drawable.ic_notification_play
+        }
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(timeString)
@@ -193,22 +249,24 @@ class StopwatchService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setSilent(true)
+            .setOnlyAlertOnce(true)  // Prevent notification from jumping position
             .addAction(
-                android.R.drawable.ic_media_pause,
-                null, // No text, icon only
+                pauseResumeIcon,
+                if (isRunning) "Pause" else "Resume",
                 pauseResumePendingIntent
             )
             .addAction(
-                android.R.drawable.ic_input_add,
-                null, // No text, icon only
+                R.drawable.ic_notification_lap,
+                "Lap",
                 lapPendingIntent
             )
             .addAction(
-                android.R.drawable.ic_delete,
-                null, // No text, icon only
+                R.drawable.ic_notification_stop,
+                "Stop",
                 stopPendingIntent
             )
             .build()
@@ -231,10 +289,12 @@ class StopwatchService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 getString(R.string.stopwatch_notification_channel),
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = getString(R.string.stopwatch_notification_channel_description)
                 setShowBadge(false)
+                setSound(null, null)  // Silent notification
+                enableVibration(false)
             }
 
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -245,6 +305,13 @@ class StopwatchService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
+
+        // Make sure to release wake lock on service destruction
+        wakeLock?.let {
+            if (it.isHeld) {
+                it.release()
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

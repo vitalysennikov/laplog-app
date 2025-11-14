@@ -211,13 +211,14 @@ class MainActivity : ComponentActivity() {
                             0 -> StopwatchScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
-                                onScreenOnModeChanged = { mode, isRunning ->
-                                    // ALWAYS mode: keep screen on only while stopwatch is running
-                                    // The difference from WHILE_RUNNING: foreground service keeps app active in background
-                                    // When stopwatch is stopped, screen can dim in both modes
+                                onScreenOnModeChanged = { mode, isRunning, elapsedTime ->
+                                    // OFF: never keep screen on
+                                    // WHILE_RUNNING: keep screen on only while running
+                                    // ALWAYS: keep screen on while running OR when paused with elapsed time > 0
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
-                                        ScreenOnMode.WHILE_RUNNING, ScreenOnMode.ALWAYS -> isRunning
+                                        ScreenOnMode.WHILE_RUNNING -> isRunning
+                                        ScreenOnMode.ALWAYS -> isRunning || elapsedTime > 0
                                     }
                                     if (shouldKeepOn) {
                                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

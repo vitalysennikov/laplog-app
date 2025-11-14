@@ -357,4 +357,46 @@ class StopwatchViewModel(
         }
         context.startService(intent)
     }
+
+    fun requestStateFromService() {
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_REQUEST_STATE
+        }
+        try {
+            context.startService(intent)
+        } catch (e: Exception) {
+            // Service not running, ignore
+            Log.d("StopwatchViewModel", "Service not running, cannot request state")
+        }
+    }
+
+    fun updateStateFromService(elapsedTime: Long, isRunning: Boolean) {
+        Log.d("StopwatchViewModel", "Updating state from service: elapsedTime=$elapsedTime, isRunning=$isRunning")
+
+        // Only update if there's a significant difference (avoid minor drift)
+        val timeDiff = kotlin.math.abs(_elapsedTime.value - elapsedTime)
+        if (timeDiff > 100) {  // More than 100ms difference
+            accumulatedTime = elapsedTime
+            _elapsedTime.value = elapsedTime
+
+            if (isRunning && !_isRunning.value) {
+                // Service is running but ViewModel thinks it's not - restart timer
+                startTime = System.currentTimeMillis()
+                _isRunning.value = true
+
+                timerJob?.cancel()
+                timerJob = viewModelScope.launch {
+                    while (_isRunning.value) {
+                        val currentTime = System.currentTimeMillis()
+                        _elapsedTime.value = accumulatedTime + (currentTime - startTime)
+                        delay(if (_showMilliseconds.value) 10L else 1000L)
+                    }
+                }
+            } else if (!isRunning && _isRunning.value) {
+                // Service is paused but ViewModel thinks it's running - stop timer
+                _isRunning.value = false
+                timerJob?.cancel()
+            }
+        }
+    }
 }
