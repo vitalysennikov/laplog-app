@@ -28,6 +28,9 @@ class StopwatchService : Service() {
     private var lastLapTime = 0L
     private var useScreenDimWakeLock = false
 
+    // Fixed timestamp for stable notification sorting
+    private val notificationCreationTime = System.currentTimeMillis()
+
     companion object {
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "stopwatch_channel"
@@ -279,25 +282,28 @@ class StopwatchService : Service() {
                 .bigText("$timeString\n$lapInfo".trim()))
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setPriority(NotificationCompat.PRIORITY_LOW)  // Lower priority to prevent jumping
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setSilent(true)
-            .setOnlyAlertOnce(true)  // Prevent notification from jumping position
+            .setOnlyAlertOnce(true)
+            .setWhen(notificationCreationTime)  // Fixed time for stable sorting
+            .setShowWhen(false)  // Don't show timestamp
+            .setSortKey("laplog_stopwatch")  // Stable sort key
             .addAction(
                 pauseResumeIcon,
-                null,
+                "",  // Empty string instead of null for icon visibility
                 pauseResumePendingIntent
             )
             .addAction(
                 R.drawable.ic_notification_lap,
-                null,
+                "",  // Empty string instead of null for icon visibility
                 lapPendingIntent
             )
             .addAction(
                 R.drawable.ic_notification_stop,
-                null,
+                "",  // Empty string instead of null for icon visibility
                 stopPendingIntent
             )
             .build()
