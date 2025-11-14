@@ -108,13 +108,18 @@ class StopwatchViewModel(
 
     private fun start() {
         startTime = System.currentTimeMillis()
+        val isResume = sessionStartTime != 0L  // True if resuming from pause
         if (sessionStartTime == 0L) {
             sessionStartTime = startTime
         }
         _isRunning.value = true
 
-        // Start foreground service
-        startService()
+        // Start or resume foreground service
+        if (isResume) {
+            resumeService()
+        } else {
+            startService()
+        }
 
         timerJob = viewModelScope.launch {
             while (_isRunning.value) {
@@ -329,6 +334,8 @@ class StopwatchViewModel(
     private fun startService() {
         val intent = Intent(context, StopwatchService::class.java).apply {
             action = StopwatchService.ACTION_START
+            // Pass screen mode to service: ALWAYS mode uses screen dim wake lock
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, _screenOnMode.value == ScreenOnMode.ALWAYS)
         }
         context.startForegroundService(intent)
     }
@@ -336,6 +343,15 @@ class StopwatchViewModel(
     private fun pauseService() {
         val intent = Intent(context, StopwatchService::class.java).apply {
             action = StopwatchService.ACTION_PAUSE
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, _screenOnMode.value == ScreenOnMode.ALWAYS)
+        }
+        context.startService(intent)
+    }
+
+    private fun resumeService() {
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_RESUME
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, _screenOnMode.value == ScreenOnMode.ALWAYS)
         }
         context.startService(intent)
     }

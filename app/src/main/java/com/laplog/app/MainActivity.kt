@@ -213,12 +213,12 @@ class MainActivity : ComponentActivity() {
                                 sessionDao = database.sessionDao(),
                                 onScreenOnModeChanged = { mode, isRunning, elapsedTime ->
                                     // OFF: never keep screen on
-                                    // WHILE_RUNNING: keep screen on only while running
-                                    // ALWAYS: keep screen on while running OR when paused with elapsed time > 0
+                                    // WHILE_RUNNING: keep screen on at full brightness while running
+                                    // ALWAYS: service manages screen with SCREEN_DIM_WAKE_LOCK (allows dimming)
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
                                         ScreenOnMode.WHILE_RUNNING -> isRunning
-                                        ScreenOnMode.ALWAYS -> isRunning || elapsedTime > 0
+                                        ScreenOnMode.ALWAYS -> false  // Service handles with dim wake lock
                                     }
                                     if (shouldKeepOn) {
                                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

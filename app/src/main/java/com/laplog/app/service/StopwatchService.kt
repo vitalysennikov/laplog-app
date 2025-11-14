@@ -19,12 +19,14 @@ class StopwatchService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     private var notificationJob: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var screenDimWakeLock: PowerManager.WakeLock? = null
 
     private var startTime = 0L
     private var accumulatedTime = 0L
     private var isRunning = false
     private var lapCount = 0
     private var lastLapTime = 0L
+    private var useScreenDimWakeLock = false
 
     companion object {
         private const val NOTIFICATION_ID = 1
@@ -48,6 +50,7 @@ class StopwatchService : Service() {
         const val EXTRA_IS_RUNNING = "is_running"
         const val EXTRA_LAP_COUNT = "lap_count"
         const val EXTRA_LAST_LAP_TIME = "last_lap_time"
+        const val EXTRA_USE_SCREEN_DIM = "use_screen_dim"
 
         private const val REQUEST_CODE_PAUSE = 100
         private const val REQUEST_CODE_LAP = 101
@@ -59,11 +62,22 @@ class StopwatchService : Service() {
         super.onCreate()
         createNotificationChannel()
 
-        // Acquire wake lock to keep CPU running while service is active
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+
+        // PARTIAL_WAKE_LOCK: keeps CPU running, allows screen to dim/turn off
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "LapLog::StopwatchWakeLock"
+        ).apply {
+            setReferenceCounted(false)
+        }
+
+        // SCREEN_DIM_WAKE_LOCK: keeps screen on but allows it to dim (for ALWAYS mode)
+        // Deprecated but still works and is the correct solution for this use case
+        @Suppress("DEPRECATION")
+        screenDimWakeLock = powerManager.newWakeLock(
+            PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "LapLog::ScreenDimWakeLock"
         ).apply {
             setReferenceCounted(false)
         }
@@ -74,11 +88,18 @@ class StopwatchService : Service() {
             ACTION_START, ACTION_RESUME -> {
                 startTime = System.currentTimeMillis()
                 isRunning = true
+                useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
 
-                // Acquire wake lock to prevent CPU from sleeping
-                wakeLock?.acquire()
+                // Acquire appropriate wake lock based on screen mode
+                if (useScreenDimWakeLock) {
+                    // ALWAYS mode: allow screen to dim but keep it on
+                    screenDimWakeLock?.acquire()
+                } else {
+                    // WHILE_RUNNING mode: just keep CPU active
+                    wakeLock?.acquire()
+                }
 
                 // Send broadcast to MainActivity
                 if (intent.action == ACTION_RESUME) {
@@ -91,8 +112,13 @@ class StopwatchService : Service() {
                 stopNotificationUpdates()
                 updateNotification()
 
-                // Release wake lock when paused
+                // Release all wake locks when paused
                 wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+                screenDimWakeLock?.let {
                     if (it.isHeld) {
                         it.release()
                     }
@@ -102,8 +128,13 @@ class StopwatchService : Service() {
                 sendBroadcast(Intent(BROADCAST_PAUSE))
             }
             ACTION_STOP -> {
-                // Release wake lock when stopped
+                // Release all wake locks when stopped
                 wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+                screenDimWakeLock?.let {
                     if (it.isHeld) {
                         it.release()
                     }
@@ -306,8 +337,13 @@ class StopwatchService : Service() {
         super.onDestroy()
         serviceScope.cancel()
 
-        // Make sure to release wake lock on service destruction
+        // Make sure to release all wake locks on service destruction
         wakeLock?.let {
+            if (it.isHeld) {
+                it.release()
+            }
+        }
+        screenDimWakeLock?.let {
             if (it.isHeld) {
                 it.release()
             }
