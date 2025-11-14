@@ -79,6 +79,43 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_IS_FIRST_LAUNCH, true)
         set(value) = prefs.edit().putBoolean(KEY_IS_FIRST_LAUNCH, value).apply()
 
+    // Stopwatch state persistence
+    var stopwatchElapsedTime: Long
+        get() = prefs.getLong(KEY_STOPWATCH_ELAPSED_TIME, 0L)
+        set(value) = prefs.edit().putLong(KEY_STOPWATCH_ELAPSED_TIME, value).apply()
+
+    var stopwatchIsRunning: Boolean
+        get() = prefs.getBoolean(KEY_STOPWATCH_IS_RUNNING, false)
+        set(value) = prefs.edit().putBoolean(KEY_STOPWATCH_IS_RUNNING, value).apply()
+
+    var stopwatchSessionStartTime: Long
+        get() = prefs.getLong(KEY_STOPWATCH_SESSION_START_TIME, 0L)
+        set(value) = prefs.edit().putLong(KEY_STOPWATCH_SESSION_START_TIME, value).apply()
+
+    var stopwatchAccumulatedTime: Long
+        get() = prefs.getLong(KEY_STOPWATCH_ACCUMULATED_TIME, 0L)
+        set(value) = prefs.edit().putLong(KEY_STOPWATCH_ACCUMULATED_TIME, value).apply()
+
+    var stopwatchLastUpdateTime: Long
+        get() = prefs.getLong(KEY_STOPWATCH_LAST_UPDATE_TIME, 0L)
+        set(value) = prefs.edit().putLong(KEY_STOPWATCH_LAST_UPDATE_TIME, value).apply()
+
+    // Laps are stored as JSON string: "[{lapNumber:1,totalTime:1000,lapDuration:1000},...]"
+    var stopwatchLapsJson: String?
+        get() = prefs.getString(KEY_STOPWATCH_LAPS_JSON, null)
+        set(value) = prefs.edit().putString(KEY_STOPWATCH_LAPS_JSON, value).apply()
+
+    fun clearStopwatchState() {
+        prefs.edit()
+            .remove(KEY_STOPWATCH_ELAPSED_TIME)
+            .remove(KEY_STOPWATCH_IS_RUNNING)
+            .remove(KEY_STOPWATCH_SESSION_START_TIME)
+            .remove(KEY_STOPWATCH_ACCUMULATED_TIME)
+            .remove(KEY_STOPWATCH_LAST_UPDATE_TIME)
+            .remove(KEY_STOPWATCH_LAPS_JSON)
+            .apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "laplog_preferences"
         private const val KEY_SHOW_MILLISECONDS = "show_milliseconds"
@@ -96,5 +133,11 @@ class PreferencesManager(context: Context) {
         private const val KEY_APP_LANGUAGE = "app_language"
         private const val KEY_PERMISSIONS_REQUESTED = "permissions_requested"
         private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
+        private const val KEY_STOPWATCH_ELAPSED_TIME = "stopwatch_elapsed_time"
+        private const val KEY_STOPWATCH_IS_RUNNING = "stopwatch_is_running"
+        private const val KEY_STOPWATCH_SESSION_START_TIME = "stopwatch_session_start_time"
+        private const val KEY_STOPWATCH_ACCUMULATED_TIME = "stopwatch_accumulated_time"
+        private const val KEY_STOPWATCH_LAST_UPDATE_TIME = "stopwatch_last_update_time"
+        private const val KEY_STOPWATCH_LAPS_JSON = "stopwatch_laps_json"
     }
 }

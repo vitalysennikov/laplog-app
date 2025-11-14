@@ -67,6 +67,7 @@ class StopwatchViewModel(
 
     init {
         loadCommentsFromHistory()
+        restoreStopwatchState()
     }
 
     private fun loadCommentsFromHistory() {
@@ -77,6 +78,121 @@ class StopwatchViewModel(
 
     fun refreshCommentsFromHistory() {
         loadCommentsFromHistory()
+    }
+
+    private fun restoreStopwatchState() {
+        try {
+            val savedElapsedTime = preferencesManager.stopwatchElapsedTime
+            val savedIsRunning = preferencesManager.stopwatchIsRunning
+            val savedSessionStartTime = preferencesManager.stopwatchSessionStartTime
+            val savedAccumulatedTime = preferencesManager.stopwatchAccumulatedTime
+            val savedLastUpdateTime = preferencesManager.stopwatchLastUpdateTime
+            val savedLapsJson = preferencesManager.stopwatchLapsJson
+
+            // Only restore if there's actual state to restore
+            if (savedElapsedTime > 0 || savedLapsJson != null) {
+                Log.d("StopwatchViewModel", "Restoring state: elapsed=$savedElapsedTime, running=$savedIsRunning")
+
+                // Restore session start time
+                sessionStartTime = savedSessionStartTime
+
+                // Restore laps from JSON
+                if (savedLapsJson != null) {
+                    _laps.value = parseLapsFromJson(savedLapsJson)
+                }
+
+                // If stopwatch was running, calculate elapsed time from last update
+                if (savedIsRunning) {
+                    val timeSinceLastUpdate = System.currentTimeMillis() - savedLastUpdateTime
+                    accumulatedTime = savedAccumulatedTime + timeSinceLastUpdate
+                    _elapsedTime.value = accumulatedTime
+
+                    // Restart the timer
+                    startTime = System.currentTimeMillis()
+                    _isRunning.value = true
+
+                    timerJob = viewModelScope.launch {
+                        while (_isRunning.value) {
+                            val currentTime = System.currentTimeMillis()
+                            _elapsedTime.value = accumulatedTime + (currentTime - startTime)
+                            delay(if (_showMilliseconds.value) 10L else 1000L)
+                        }
+                    }
+
+                    // Restart the service
+                    resumeService()
+                } else {
+                    // Stopwatch was paused
+                    accumulatedTime = savedAccumulatedTime
+                    _elapsedTime.value = savedElapsedTime
+                    _isRunning.value = false
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("StopwatchViewModel", "Error restoring stopwatch state", e)
+        }
+    }
+
+    private fun saveStopwatchState() {
+        try {
+            preferencesManager.stopwatchElapsedTime = _elapsedTime.value
+            preferencesManager.stopwatchIsRunning = _isRunning.value
+            preferencesManager.stopwatchSessionStartTime = sessionStartTime
+            preferencesManager.stopwatchAccumulatedTime = accumulatedTime
+            preferencesManager.stopwatchLastUpdateTime = System.currentTimeMillis()
+            preferencesManager.stopwatchLapsJson = serializeLapsToJson(_laps.value)
+        } catch (e: Exception) {
+            Log.e("StopwatchViewModel", "Error saving stopwatch state", e)
+        }
+    }
+
+    private fun serializeLapsToJson(laps: List<LapTime>): String? {
+        if (laps.isEmpty()) return null
+
+        val jsonArray = laps.joinToString(",", "[", "]") { lap ->
+            "{\"lapNumber\":${lap.lapNumber},\"totalTime\":${lap.totalTime},\"lapDuration\":${lap.lapDuration}}"
+        }
+        return jsonArray
+    }
+
+    private fun parseLapsFromJson(json: String): List<LapTime> {
+        try {
+            // Simple JSON parsing without external library
+            val laps = mutableListOf<LapTime>()
+            val items = json.trim().removeSurrounding("[", "]").split("},")
+
+            for (item in items) {
+                val cleanItem = item.trim().removeSurrounding("{", "}")
+                val parts = cleanItem.split(",")
+
+                var lapNumber = 0
+                var totalTime = 0L
+                var lapDuration = 0L
+
+                for (part in parts) {
+                    val keyValue = part.split(":")
+                    if (keyValue.size == 2) {
+                        val key = keyValue[0].trim().removeSurrounding("\"")
+                        val value = keyValue[1].trim()
+
+                        when (key) {
+                            "lapNumber" -> lapNumber = value.toInt()
+                            "totalTime" -> totalTime = value.toLong()
+                            "lapDuration" -> lapDuration = value.toLong()
+                        }
+                    }
+                }
+
+                if (lapNumber > 0) {
+                    laps.add(LapTime(lapNumber, totalTime, lapDuration))
+                }
+            }
+
+            return laps
+        } catch (e: Exception) {
+            Log.e("StopwatchViewModel", "Error parsing laps JSON", e)
+            return emptyList()
+        }
     }
 
     fun startOrPause() {
@@ -114,6 +230,9 @@ class StopwatchViewModel(
         }
         _isRunning.value = true
 
+        // Save state
+        saveStopwatchState()
+
         // Start or resume foreground service
         if (isResume) {
             resumeService()
@@ -122,9 +241,17 @@ class StopwatchViewModel(
         }
 
         timerJob = viewModelScope.launch {
+            var lastSaveTime = System.currentTimeMillis()
             while (_isRunning.value) {
                 val currentTime = System.currentTimeMillis()
                 _elapsedTime.value = accumulatedTime + (currentTime - startTime)
+
+                // Save state every 5 seconds while running
+                if (currentTime - lastSaveTime >= 5000) {
+                    saveStopwatchState()
+                    lastSaveTime = currentTime
+                }
+
                 delay(if (_showMilliseconds.value) 10L else 1000L)
             }
         }
@@ -134,6 +261,9 @@ class StopwatchViewModel(
         _isRunning.value = false
         accumulatedTime = _elapsedTime.value
         timerJob?.cancel()
+
+        // Save state
+        saveStopwatchState()
 
         // Pause service
         pauseService()
@@ -165,6 +295,9 @@ class StopwatchViewModel(
                 accumulatedTime = 0L
                 _laps.value = emptyList()
                 sessionStartTime = 0L
+
+                // Clear saved state
+                preferencesManager.clearStopwatchState()
             }
         } else {
             Log.d("StopwatchViewModel", "No activity to save")
@@ -172,6 +305,9 @@ class StopwatchViewModel(
             accumulatedTime = 0L
             _laps.value = emptyList()
             sessionStartTime = 0L
+
+            // Clear saved state
+            preferencesManager.clearStopwatchState()
         }
     }
 
@@ -217,6 +353,9 @@ class StopwatchViewModel(
         )
 
         _laps.value = _laps.value + newLap
+
+        // Save state
+        saveStopwatchState()
 
         // Update service with new lap info
         updateServiceState()
