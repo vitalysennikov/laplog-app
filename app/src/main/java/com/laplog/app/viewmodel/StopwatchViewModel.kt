@@ -369,32 +369,144 @@ class StopwatchViewModel(
     }
 
     // Methods for notification actions
-    fun pauseFromNotification() {
+    // These are called when user presses buttons in notification
+    // They should NOT call service methods back to avoid circular calls
+    fun pauseFromNotification(elapsedTimeFromService: Long) {
         if (_isRunning.value) {
-            pause()
+            _isRunning.value = false
+            // Sync with service time
+            _elapsedTime.value = elapsedTimeFromService
+            accumulatedTime = elapsedTimeFromService
+            timerJob?.cancel()
+            saveStopwatchState()
+            // Don't call pauseService() - service already paused itself
         }
     }
 
-    fun startOrResumeFromNotification() {
+    fun startOrResumeFromNotification(elapsedTimeFromService: Long) {
         if (!_isRunning.value) {
-            startOrPause()
+            // Sync with service time
+            _elapsedTime.value = elapsedTimeFromService
+            accumulatedTime = elapsedTimeFromService
+            startTime = System.currentTimeMillis()
+            if (sessionStartTime == 0L) {
+                sessionStartTime = startTime
+            }
+            _isRunning.value = true
+            saveStopwatchState()
+            // Don't call startService() or resumeService() - service already started itself
+
+            timerJob = viewModelScope.launch {
+                var lastSaveTime = System.currentTimeMillis()
+                while (_isRunning.value) {
+                    val currentTime = System.currentTimeMillis()
+                    _elapsedTime.value = accumulatedTime + (currentTime - startTime)
+
+                    // Save state every 5 seconds while running
+                    if (currentTime - lastSaveTime >= 5000) {
+                        saveStopwatchState()
+                        lastSaveTime = currentTime
+                    }
+
+                    delay(if (_showMilliseconds.value) 10L else 1000L)
+                }
+            }
         }
     }
 
-    fun lapFromNotification() {
-        if (_isRunning.value && _elapsedTime.value > 0) {
-            addLap()
+    fun lapFromNotification(currentTimeFromService: Long) {
+        if (currentTimeFromService > 0) {
+            // Sync our elapsed time with service
+            _elapsedTime.value = currentTimeFromService
+            if (_isRunning.value) {
+                accumulatedTime = currentTimeFromService
+                startTime = System.currentTimeMillis()
+            } else {
+                accumulatedTime = currentTimeFromService
+            }
+
+            val previousLapTime = _laps.value.lastOrNull()?.totalTime ?: 0L
+            val lapDuration = currentTimeFromService - previousLapTime
+
+            val newLap = LapTime(
+                lapNumber = _laps.value.size + 1,
+                totalTime = currentTimeFromService,
+                lapDuration = lapDuration
+            )
+
+            _laps.value = _laps.value + newLap
+            saveStopwatchState()
+            // Don't call updateServiceState() - service already knows about the lap
         }
     }
 
-    fun lapAndPauseFromNotification() {
-        if (_isRunning.value && _elapsedTime.value > 0) {
-            addLapAndPause()
+    fun lapAndPauseFromNotification(currentTimeFromService: Long) {
+        // Add lap first
+        if (currentTimeFromService > 0) {
+            // Sync our elapsed time with service
+            _elapsedTime.value = currentTimeFromService
+            accumulatedTime = currentTimeFromService
+
+            val previousLapTime = _laps.value.lastOrNull()?.totalTime ?: 0L
+            val lapDuration = currentTimeFromService - previousLapTime
+
+            val newLap = LapTime(
+                lapNumber = _laps.value.size + 1,
+                totalTime = currentTimeFromService,
+                lapDuration = lapDuration
+            )
+
+            _laps.value = _laps.value + newLap
         }
+
+        // Then pause
+        if (_isRunning.value) {
+            _isRunning.value = false
+            timerJob?.cancel()
+        }
+
+        saveStopwatchState()
+        // Don't call service methods - service already handled everything
     }
 
-    fun resetFromNotification() {
-        reset()
+    fun resetFromNotification(elapsedTimeFromService: Long) {
+        _isRunning.value = false
+        timerJob?.cancel()
+
+        // Sync with service time
+        _elapsedTime.value = elapsedTimeFromService
+
+        Log.d("StopwatchViewModel", "Reset from notification. ElapsedTime: $elapsedTimeFromService, Laps: ${_laps.value.size}, SessionStartTime: $sessionStartTime")
+
+        // Save session to database if there was any activity
+        if (elapsedTimeFromService > 0L || _laps.value.isNotEmpty()) {
+            Log.d("StopwatchViewModel", "Saving session from notification reset...")
+            viewModelScope.launch {
+                try {
+                    saveSession()
+                    Log.d("StopwatchViewModel", "Session saved successfully")
+                    loadCommentsFromHistory()
+                } catch (e: Exception) {
+                    Log.e("StopwatchViewModel", "Error saving session", e)
+                }
+                // Reset values after saving
+                _elapsedTime.value = 0L
+                accumulatedTime = 0L
+                _laps.value = emptyList()
+                sessionStartTime = 0L
+
+                preferencesManager.clearStopwatchState()
+            }
+        } else {
+            Log.d("StopwatchViewModel", "No activity to save from notification reset")
+            _elapsedTime.value = 0L
+            accumulatedTime = 0L
+            _laps.value = emptyList()
+            sessionStartTime = 0L
+
+            preferencesManager.clearStopwatchState()
+        }
+        // Don't call stopService() - service already stopped itself
     }
 
     fun toggleMillisecondsDisplay() {
