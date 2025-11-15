@@ -14,12 +14,19 @@ object AppState {
     private val _isScreenOn = MutableStateFlow(true)
     val isScreenOn: StateFlow<Boolean> = _isScreenOn.asStateFlow()
 
+    private val _isScreenLocked = MutableStateFlow(false)
+    val isScreenLocked: StateFlow<Boolean> = _isScreenLocked.asStateFlow()
+
     fun setAppInForeground(inForeground: Boolean) {
         _isAppInForeground.value = inForeground
     }
 
     fun setScreenOn(screenOn: Boolean) {
         _isScreenOn.value = screenOn
+    }
+
+    fun setScreenLocked(locked: Boolean) {
+        _isScreenLocked.value = locked
     }
 
     /**
@@ -32,9 +39,9 @@ object AppState {
 
     /**
      * Returns true if notification updates should be active
-     * Notification updates only when app is in background AND screen is on
+     * Notification updates only when screen is locked
      */
     fun shouldUpdateNotification(): Boolean {
-        return !_isAppInForeground.value && _isScreenOn.value
+        return _isScreenLocked.value && _isScreenOn.value
     }
 }

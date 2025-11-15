@@ -35,21 +35,31 @@ class StopwatchService : Service() {
     // Fixed timestamp for stable notification sorting
     private val notificationCreationTime = System.currentTimeMillis()
 
-    // BroadcastReceiver for screen on/off events
+    // BroadcastReceiver for screen on/off and lock/unlock events
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_ON -> {
                     AppState.setScreenOn(true)
-                    // Restart notification updates if needed
+                    // Check if screen is locked
+                    checkScreenLockState()
+                    // Restart notification updates if needed (screen locked)
                     if (StopwatchState.isRunning.value && AppState.shouldUpdateNotification()) {
                         startNotificationUpdates()
                     }
                 }
                 Intent.ACTION_SCREEN_OFF -> {
                     AppState.setScreenOn(false)
-                    // Stop notification updates to save battery
+                    AppState.setScreenLocked(true)
+                    // Stop notification updates when screen is off
                     stopNotificationUpdates()
+                }
+                Intent.ACTION_USER_PRESENT -> {
+                    // Screen unlocked
+                    AppState.setScreenLocked(false)
+                    // Stop notification updates when unlocked
+                    stopNotificationUpdates()
+                    updateNotification()
                 }
             }
         }
@@ -115,15 +125,25 @@ class StopwatchService : Service() {
             setReferenceCounted(false)
         }
 
-        // Register screen on/off broadcast receiver
+        // Register screen on/off and lock/unlock broadcast receiver
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(screenReceiver, filter)
 
+        // Check initial screen lock state
+        checkScreenLockState()
+
         // Start listening to state changes for notification updates
         startStateListener()
+    }
+
+    private fun checkScreenLockState() {
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+        val isLocked = keyguardManager.isKeyguardLocked
+        AppState.setScreenLocked(isLocked)
     }
 
     private fun startStateListener() {
@@ -358,19 +378,19 @@ class StopwatchService : Service() {
         val currentTime = StopwatchState.getCurrentElapsedTime()
         val timeString = formatTime(currentTime)
         val isRunning = StopwatchState.isRunning.value
-        val isAppInForeground = AppState.isAppInForeground.value
+        val isScreenLocked = AppState.isScreenLocked.value
 
-        // Build notification text based on app state
-        val notificationText = if (isAppInForeground) {
-            // App is open - show static text with Unicode symbol
+        // Build notification text based on screen lock state
+        val notificationText = if (isScreenLocked) {
+            // Screen is locked - show current time
+            timeString
+        } else {
+            // Screen is unlocked - show static text with Unicode symbol
             if (isRunning) {
                 "⏱ Stopwatch running"
             } else {
                 "⏸ Stopwatch paused"
             }
-        } else {
-            // App in background - show current time
-            timeString
         }
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -399,15 +419,15 @@ class StopwatchService : Service() {
             .setShowWhen(false)  // Don't show timestamp
             .setSortKey("laplog_stopwatch")  // Stable sort key
 
-        // Add laps in expanded view if there are any
+        // Add laps in expanded view if there are any and screen is locked
         val laps = StopwatchState.laps.value
-        if (laps.isNotEmpty() && !isAppInForeground) {
+        if (laps.isNotEmpty() && isScreenLocked) {
             val inboxStyle = NotificationCompat.InboxStyle()
-                .setBigContentTitle("$timeString")
+                .setBigContentTitle(timeString)
                 .setSummaryText("${laps.size} laps")
 
             // Show up to 7 most recent laps in reverse order
-            laps.reversed().take(7).forEach { lap ->
+            laps.take(7).reversed().forEach { lap ->
                 val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
                 inboxStyle.addLine(lapText)
             }
