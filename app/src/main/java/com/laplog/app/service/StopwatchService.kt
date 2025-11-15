@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import androidx.media.app.NotificationCompat.MediaStyle
 import com.laplog.app.MainActivity
 import com.laplog.app.R
 import kotlinx.coroutines.*
@@ -275,11 +276,19 @@ class StopwatchService : Service() {
             R.drawable.ic_notification_play
         }
 
+        // Combine time and lap info for notification text
+        val notificationText = if (lapInfo.isNotEmpty()) {
+            "$timeString\n$lapInfo"
+        } else {
+            timeString
+        }
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText(timeString)
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("$timeString\n$lapInfo".trim()))
+            .setContentText(notificationText)
+            .setStyle(MediaStyle()
+                .setShowActionsInCompactView()  // Empty - no actions in compact view
+            )
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFF1976D2.toInt())  // Material Blue 700 - for action icon tinting
             .setOngoing(true)

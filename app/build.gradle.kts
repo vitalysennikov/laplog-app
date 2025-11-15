@@ -87,6 +87,9 @@ dependencies {
     // DocumentFile for Storage Access Framework
     implementation("androidx.documentfile:documentfile:1.0.1")
 
+    // Media for notification MediaStyle
+    implementation("androidx.media:media:1.7.0")
+
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
