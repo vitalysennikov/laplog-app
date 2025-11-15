@@ -165,6 +165,19 @@ fun StopwatchScreen(
                 )
             }
 
+            // Show milliseconds toggle
+            IconToggleButton(
+                checked = showMilliseconds,
+                onCheckedChange = { viewModel.toggleMillisecondsDisplay() }
+            ) {
+                Icon(
+                    imageVector = if (showMilliseconds) Icons.Filled.Timer else Icons.Outlined.Timer,
+                    contentDescription = "Show milliseconds",
+                    tint = if (showMilliseconds) MaterialTheme.colorScheme.primary
+                          else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             // Invert lap colors toggle
             IconToggleButton(
                 checked = invertLapColors,
