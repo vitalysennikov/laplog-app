@@ -11,6 +11,7 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.LapTime
+import com.laplog.app.model.StopwatchState
 import com.laplog.app.service.StopwatchService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,14 +25,10 @@ class StopwatchViewModel(
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao
 ) : ViewModel() {
-    private val _elapsedTime = MutableStateFlow(0L)
-    val elapsedTime: StateFlow<Long> = _elapsedTime.asStateFlow()
-
-    private val _isRunning = MutableStateFlow(false)
-    val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
-
-    private val _laps = MutableStateFlow<List<LapTime>>(emptyList())
-    val laps: StateFlow<List<LapTime>> = _laps.asStateFlow()
+    // Use shared StopwatchState instead of local state
+    val elapsedTime: StateFlow<Long> = StopwatchState.elapsedTime
+    val isRunning: StateFlow<Boolean> = StopwatchState.isRunning
+    val laps: StateFlow<List<LapTime>> = StopwatchState.laps
 
     private val _showMilliseconds = MutableStateFlow(preferencesManager.showMilliseconds)
     val showMilliseconds: StateFlow<Boolean> = _showMilliseconds.asStateFlow()
@@ -61,9 +58,6 @@ class StopwatchViewModel(
     val showBatteryDialog: StateFlow<Boolean> = _showBatteryDialog.asStateFlow()
 
     private var timerJob: Job? = null
-    private var startTime = 0L
-    private var accumulatedTime = 0L
-    private var sessionStartTime = 0L
 
     init {
         loadCommentsFromHistory()
@@ -93,39 +87,41 @@ class StopwatchViewModel(
             if (savedElapsedTime > 0 || savedLapsJson != null) {
                 Log.d("StopwatchViewModel", "Restoring state: elapsed=$savedElapsedTime, running=$savedIsRunning")
 
-                // Restore session start time
-                sessionStartTime = savedSessionStartTime
-
                 // Restore laps from JSON
-                if (savedLapsJson != null) {
-                    _laps.value = parseLapsFromJson(savedLapsJson)
+                val restoredLaps = if (savedLapsJson != null) {
+                    parseLapsFromJson(savedLapsJson)
+                } else {
+                    emptyList()
                 }
 
                 // If stopwatch was running, calculate elapsed time from last update
                 if (savedIsRunning) {
                     val timeSinceLastUpdate = System.currentTimeMillis() - savedLastUpdateTime
-                    accumulatedTime = savedAccumulatedTime + timeSinceLastUpdate
-                    _elapsedTime.value = accumulatedTime
+                    val adjustedAccumulatedTime = savedAccumulatedTime + timeSinceLastUpdate
 
-                    // Restart the timer
-                    startTime = System.currentTimeMillis()
-                    _isRunning.value = true
+                    // Restore to shared state
+                    StopwatchState.restore(
+                        elapsedTime = adjustedAccumulatedTime,
+                        isRunning = true,
+                        laps = restoredLaps,
+                        sessionStartTime = savedSessionStartTime,
+                        accumulatedTime = adjustedAccumulatedTime
+                    )
 
-                    timerJob = viewModelScope.launch {
-                        while (_isRunning.value) {
-                            val currentTime = System.currentTimeMillis()
-                            _elapsedTime.value = accumulatedTime + (currentTime - startTime)
-                            delay(if (_showMilliseconds.value) 10L else 1000L)
-                        }
-                    }
+                    // Start UI update timer
+                    startTimerJob()
 
                     // Restart the service
                     resumeService()
                 } else {
                     // Stopwatch was paused
-                    accumulatedTime = savedAccumulatedTime
-                    _elapsedTime.value = savedElapsedTime
-                    _isRunning.value = false
+                    StopwatchState.restore(
+                        elapsedTime = savedElapsedTime,
+                        isRunning = false,
+                        laps = restoredLaps,
+                        sessionStartTime = savedSessionStartTime,
+                        accumulatedTime = savedAccumulatedTime
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -135,14 +131,33 @@ class StopwatchViewModel(
 
     private fun saveStopwatchState() {
         try {
-            preferencesManager.stopwatchElapsedTime = _elapsedTime.value
-            preferencesManager.stopwatchIsRunning = _isRunning.value
-            preferencesManager.stopwatchSessionStartTime = sessionStartTime
-            preferencesManager.stopwatchAccumulatedTime = accumulatedTime
+            preferencesManager.stopwatchElapsedTime = StopwatchState.elapsedTime.value
+            preferencesManager.stopwatchIsRunning = StopwatchState.isRunning.value
+            preferencesManager.stopwatchSessionStartTime = StopwatchState.sessionStartTime
+            preferencesManager.stopwatchAccumulatedTime = StopwatchState.accumulatedTime
             preferencesManager.stopwatchLastUpdateTime = System.currentTimeMillis()
-            preferencesManager.stopwatchLapsJson = serializeLapsToJson(_laps.value)
+            preferencesManager.stopwatchLapsJson = serializeLapsToJson(StopwatchState.laps.value)
         } catch (e: Exception) {
             Log.e("StopwatchViewModel", "Error saving stopwatch state", e)
+        }
+    }
+
+    private fun startTimerJob() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            var lastSaveTime = System.currentTimeMillis()
+            while (StopwatchState.isRunning.value) {
+                val currentTime = System.currentTimeMillis()
+                StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
+
+                // Save state every 5 seconds while running
+                if (currentTime - lastSaveTime >= 5000) {
+                    saveStopwatchState()
+                    lastSaveTime = currentTime
+                }
+
+                delay(if (_showMilliseconds.value) 10L else 1000L)
+            }
         }
     }
 
@@ -196,7 +211,7 @@ class StopwatchViewModel(
     }
 
     fun startOrPause() {
-        if (_isRunning.value) {
+        if (StopwatchState.isRunning.value) {
             pause()
         } else {
             // Check permissions before starting
@@ -223,43 +238,25 @@ class StopwatchViewModel(
     }
 
     private fun start() {
-        startTime = System.currentTimeMillis()
-        val isResume = sessionStartTime != 0L  // True if resuming from pause
-        if (sessionStartTime == 0L) {
-            sessionStartTime = startTime
+        val isResume = StopwatchState.sessionStartTime != 0L  // True if resuming from pause
+
+        if (isResume) {
+            StopwatchState.resume()
+            resumeService()
+        } else {
+            StopwatchState.start()
+            startService()
         }
-        _isRunning.value = true
 
         // Save state
         saveStopwatchState()
 
-        // Start or resume foreground service
-        if (isResume) {
-            resumeService()
-        } else {
-            startService()
-        }
-
-        timerJob = viewModelScope.launch {
-            var lastSaveTime = System.currentTimeMillis()
-            while (_isRunning.value) {
-                val currentTime = System.currentTimeMillis()
-                _elapsedTime.value = accumulatedTime + (currentTime - startTime)
-
-                // Save state every 5 seconds while running
-                if (currentTime - lastSaveTime >= 5000) {
-                    saveStopwatchState()
-                    lastSaveTime = currentTime
-                }
-
-                delay(if (_showMilliseconds.value) 10L else 1000L)
-            }
-        }
+        // Start UI update timer
+        startTimerJob()
     }
 
     private fun pause() {
-        _isRunning.value = false
-        accumulatedTime = _elapsedTime.value
+        StopwatchState.pause()
         timerJob?.cancel()
 
         // Save state
@@ -270,16 +267,19 @@ class StopwatchViewModel(
     }
 
     fun reset() {
-        _isRunning.value = false
         timerJob?.cancel()
 
         // Stop service
         stopService()
 
-        Log.d("StopwatchViewModel", "Reset called. ElapsedTime: ${_elapsedTime.value}, Laps: ${_laps.value.size}, SessionStartTime: $sessionStartTime")
+        val elapsedTime = StopwatchState.elapsedTime.value
+        val laps = StopwatchState.laps.value
+        val sessionStartTime = StopwatchState.sessionStartTime
+
+        Log.d("StopwatchViewModel", "Reset called. ElapsedTime: $elapsedTime, Laps: ${laps.size}, SessionStartTime: $sessionStartTime")
 
         // Save session to database if there was any activity
-        if (_elapsedTime.value > 0L || _laps.value.isNotEmpty()) {
+        if (elapsedTime > 0L || laps.isNotEmpty()) {
             Log.d("StopwatchViewModel", "Saving session...")
             viewModelScope.launch {
                 try {
@@ -290,21 +290,16 @@ class StopwatchViewModel(
                 } catch (e: Exception) {
                     Log.e("StopwatchViewModel", "Error saving session", e)
                 }
-                // Reset values after saving
-                _elapsedTime.value = 0L
-                accumulatedTime = 0L
-                _laps.value = emptyList()
-                sessionStartTime = 0L
+                // Reset shared state
+                StopwatchState.reset()
 
                 // Clear saved state
                 preferencesManager.clearStopwatchState()
             }
         } else {
             Log.d("StopwatchViewModel", "No activity to save")
-            _elapsedTime.value = 0L
-            accumulatedTime = 0L
-            _laps.value = emptyList()
-            sessionStartTime = 0L
+            // Reset shared state
+            StopwatchState.reset()
 
             // Clear saved state
             preferencesManager.clearStopwatchState()
@@ -313,20 +308,24 @@ class StopwatchViewModel(
 
     private suspend fun saveSession() {
         val endTime = System.currentTimeMillis()
-        Log.d("StopwatchViewModel", "Creating session: startTime=$sessionStartTime, endTime=$endTime, duration=${_elapsedTime.value}")
+        val sessionStartTime = StopwatchState.sessionStartTime
+        val elapsedTime = StopwatchState.elapsedTime.value
+        val laps = StopwatchState.laps.value
+
+        Log.d("StopwatchViewModel", "Creating session: startTime=$sessionStartTime, endTime=$endTime, duration=$elapsedTime")
 
         val session = SessionEntity(
             startTime = sessionStartTime,
             endTime = endTime,
-            totalDuration = _elapsedTime.value,
+            totalDuration = elapsedTime,
             comment = _currentComment.value.takeIf { it.isNotBlank() }
         )
 
         val sessionId = sessionDao.insertSession(session)
         Log.d("StopwatchViewModel", "Session inserted with ID: $sessionId")
 
-        if (_laps.value.isNotEmpty()) {
-            val lapEntities = _laps.value.map { lap ->
+        if (laps.isNotEmpty()) {
+            val lapEntities = laps.map { lap ->
                 LapEntity(
                     sessionId = sessionId,
                     lapNumber = lap.lapNumber,
@@ -340,174 +339,19 @@ class StopwatchViewModel(
     }
 
     fun addLap() {
-        if (_elapsedTime.value == 0L) return
-
-        val currentTime = _elapsedTime.value
-        val previousLapTime = _laps.value.lastOrNull()?.totalTime ?: 0L
-        val lapDuration = currentTime - previousLapTime
-
-        val newLap = LapTime(
-            lapNumber = _laps.value.size + 1,
-            totalTime = currentTime,
-            lapDuration = lapDuration
-        )
-
-        _laps.value = _laps.value + newLap
+        StopwatchState.addLap()
 
         // Save state
         saveStopwatchState()
-
-        // Update service with new lap info
-        updateServiceState()
     }
 
     fun addLapAndPause() {
-        addLap()
-        if (_isRunning.value) {
+        StopwatchState.addLap()
+        if (StopwatchState.isRunning.value) {
             pause()
         }
     }
 
-    // Methods for notification actions
-    // These are called when user presses buttons in notification
-    // They should NOT call service methods back to avoid circular calls
-    fun pauseFromNotification(elapsedTimeFromService: Long) {
-        if (_isRunning.value) {
-            _isRunning.value = false
-            // Sync with service time
-            _elapsedTime.value = elapsedTimeFromService
-            accumulatedTime = elapsedTimeFromService
-            timerJob?.cancel()
-            saveStopwatchState()
-            // Don't call pauseService() - service already paused itself
-        }
-    }
-
-    fun startOrResumeFromNotification(elapsedTimeFromService: Long) {
-        if (!_isRunning.value) {
-            // Sync with service time
-            _elapsedTime.value = elapsedTimeFromService
-            accumulatedTime = elapsedTimeFromService
-            startTime = System.currentTimeMillis()
-            if (sessionStartTime == 0L) {
-                sessionStartTime = startTime
-            }
-            _isRunning.value = true
-            saveStopwatchState()
-            // Don't call startService() or resumeService() - service already started itself
-
-            timerJob = viewModelScope.launch {
-                var lastSaveTime = System.currentTimeMillis()
-                while (_isRunning.value) {
-                    val currentTime = System.currentTimeMillis()
-                    _elapsedTime.value = accumulatedTime + (currentTime - startTime)
-
-                    // Save state every 5 seconds while running
-                    if (currentTime - lastSaveTime >= 5000) {
-                        saveStopwatchState()
-                        lastSaveTime = currentTime
-                    }
-
-                    delay(if (_showMilliseconds.value) 10L else 1000L)
-                }
-            }
-        }
-    }
-
-    fun lapFromNotification(currentTimeFromService: Long) {
-        if (currentTimeFromService > 0) {
-            // Sync our elapsed time with service
-            _elapsedTime.value = currentTimeFromService
-            if (_isRunning.value) {
-                accumulatedTime = currentTimeFromService
-                startTime = System.currentTimeMillis()
-            } else {
-                accumulatedTime = currentTimeFromService
-            }
-
-            val previousLapTime = _laps.value.lastOrNull()?.totalTime ?: 0L
-            val lapDuration = currentTimeFromService - previousLapTime
-
-            val newLap = LapTime(
-                lapNumber = _laps.value.size + 1,
-                totalTime = currentTimeFromService,
-                lapDuration = lapDuration
-            )
-
-            _laps.value = _laps.value + newLap
-            saveStopwatchState()
-            // Don't call updateServiceState() - service already knows about the lap
-        }
-    }
-
-    fun lapAndPauseFromNotification(currentTimeFromService: Long) {
-        // Add lap first
-        if (currentTimeFromService > 0) {
-            // Sync our elapsed time with service
-            _elapsedTime.value = currentTimeFromService
-            accumulatedTime = currentTimeFromService
-
-            val previousLapTime = _laps.value.lastOrNull()?.totalTime ?: 0L
-            val lapDuration = currentTimeFromService - previousLapTime
-
-            val newLap = LapTime(
-                lapNumber = _laps.value.size + 1,
-                totalTime = currentTimeFromService,
-                lapDuration = lapDuration
-            )
-
-            _laps.value = _laps.value + newLap
-        }
-
-        // Then pause
-        if (_isRunning.value) {
-            _isRunning.value = false
-            timerJob?.cancel()
-        }
-
-        saveStopwatchState()
-        // Don't call service methods - service already handled everything
-    }
-
-    fun resetFromNotification(elapsedTimeFromService: Long) {
-        _isRunning.value = false
-        timerJob?.cancel()
-
-        // Sync with service time
-        _elapsedTime.value = elapsedTimeFromService
-
-        Log.d("StopwatchViewModel", "Reset from notification. ElapsedTime: $elapsedTimeFromService, Laps: ${_laps.value.size}, SessionStartTime: $sessionStartTime")
-
-        // Save session to database if there was any activity
-        if (elapsedTimeFromService > 0L || _laps.value.isNotEmpty()) {
-            Log.d("StopwatchViewModel", "Saving session from notification reset...")
-            viewModelScope.launch {
-                try {
-                    saveSession()
-                    Log.d("StopwatchViewModel", "Session saved successfully")
-                    loadCommentsFromHistory()
-                } catch (e: Exception) {
-                    Log.e("StopwatchViewModel", "Error saving session", e)
-                }
-                // Reset values after saving
-                _elapsedTime.value = 0L
-                accumulatedTime = 0L
-                _laps.value = emptyList()
-                sessionStartTime = 0L
-
-                preferencesManager.clearStopwatchState()
-            }
-        } else {
-            Log.d("StopwatchViewModel", "No activity to save from notification reset")
-            _elapsedTime.value = 0L
-            accumulatedTime = 0L
-            _laps.value = emptyList()
-            sessionStartTime = 0L
-
-            preferencesManager.clearStopwatchState()
-        }
-        // Don't call stopService() - service already stopped itself
-    }
 
     fun toggleMillisecondsDisplay() {
         _showMilliseconds.value = !_showMilliseconds.value
@@ -618,58 +462,5 @@ class StopwatchViewModel(
             action = StopwatchService.ACTION_STOP
         }
         context.startService(intent)
-    }
-
-    private fun updateServiceState() {
-        val intent = Intent(context, StopwatchService::class.java).apply {
-            action = StopwatchService.ACTION_UPDATE_STATE
-            putExtra(StopwatchService.EXTRA_ELAPSED_TIME, _elapsedTime.value)
-            putExtra(StopwatchService.EXTRA_IS_RUNNING, _isRunning.value)
-            putExtra(StopwatchService.EXTRA_LAP_COUNT, _laps.value.size)
-            putExtra(StopwatchService.EXTRA_LAST_LAP_TIME, _laps.value.lastOrNull()?.totalTime ?: 0L)
-        }
-        context.startService(intent)
-    }
-
-    fun requestStateFromService() {
-        val intent = Intent(context, StopwatchService::class.java).apply {
-            action = StopwatchService.ACTION_REQUEST_STATE
-        }
-        try {
-            context.startService(intent)
-        } catch (e: Exception) {
-            // Service not running, ignore
-            Log.d("StopwatchViewModel", "Service not running, cannot request state")
-        }
-    }
-
-    fun updateStateFromService(elapsedTime: Long, isRunning: Boolean) {
-        Log.d("StopwatchViewModel", "Updating state from service: elapsedTime=$elapsedTime, isRunning=$isRunning")
-
-        // Only update if there's a significant difference (avoid minor drift)
-        val timeDiff = kotlin.math.abs(_elapsedTime.value - elapsedTime)
-        if (timeDiff > 100) {  // More than 100ms difference
-            accumulatedTime = elapsedTime
-            _elapsedTime.value = elapsedTime
-
-            if (isRunning && !_isRunning.value) {
-                // Service is running but ViewModel thinks it's not - restart timer
-                startTime = System.currentTimeMillis()
-                _isRunning.value = true
-
-                timerJob?.cancel()
-                timerJob = viewModelScope.launch {
-                    while (_isRunning.value) {
-                        val currentTime = System.currentTimeMillis()
-                        _elapsedTime.value = accumulatedTime + (currentTime - startTime)
-                        delay(if (_showMilliseconds.value) 10L else 1000L)
-                    }
-                }
-            } else if (!isRunning && _isRunning.value) {
-                // Service is paused but ViewModel thinks it's running - stop timer
-                _isRunning.value = false
-                timerJob?.cancel()
-            }
-        }
     }
 }

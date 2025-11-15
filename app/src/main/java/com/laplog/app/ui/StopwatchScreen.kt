@@ -1,10 +1,6 @@
 package com.laplog.app.ui
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,7 +26,6 @@ import com.laplog.app.R
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.database.dao.SessionDao
-import com.laplog.app.service.StopwatchService
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
 
@@ -48,65 +43,10 @@ fun StopwatchScreen(
         factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao)
     )
 
-    // BroadcastReceiver for service actions
-    DisposableEffect(Unit) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                when (intent?.action) {
-                    StopwatchService.BROADCAST_PAUSE -> {
-                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
-                        viewModel.pauseFromNotification(elapsedTime)
-                    }
-                    StopwatchService.BROADCAST_RESUME -> {
-                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
-                        viewModel.startOrResumeFromNotification(elapsedTime)
-                    }
-                    StopwatchService.BROADCAST_LAP -> {
-                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
-                        viewModel.lapFromNotification(elapsedTime)
-                    }
-                    StopwatchService.BROADCAST_LAP_AND_PAUSE -> {
-                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
-                        viewModel.lapAndPauseFromNotification(elapsedTime)
-                    }
-                    StopwatchService.BROADCAST_STOP -> {
-                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
-                        viewModel.resetFromNotification(elapsedTime)
-                    }
-                    StopwatchService.BROADCAST_STATE_UPDATE -> {
-                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
-                        val isRunning = intent.getBooleanExtra(StopwatchService.EXTRA_IS_RUNNING, false)
-                        viewModel.updateStateFromService(elapsedTime, isRunning)
-                    }
-                }
-            }
-        }
-
-        val intentFilter = IntentFilter().apply {
-            addAction(StopwatchService.BROADCAST_PAUSE)
-            addAction(StopwatchService.BROADCAST_RESUME)
-            addAction(StopwatchService.BROADCAST_LAP)
-            addAction(StopwatchService.BROADCAST_LAP_AND_PAUSE)
-            addAction(StopwatchService.BROADCAST_STOP)
-            addAction(StopwatchService.BROADCAST_STATE_UPDATE)
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(receiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            context.registerReceiver(receiver, intentFilter)
-        }
-
-        onDispose {
-            context.unregisterReceiver(receiver)
-        }
-    }
-
-    // Refresh comments from history and sync state with service when screen becomes visible
+    // Refresh comments from history when screen becomes visible
     LaunchedEffect(isVisible) {
         if (isVisible) {
             viewModel.refreshCommentsFromHistory()
-            viewModel.requestStateFromService()
         }
     }
 
