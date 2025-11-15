@@ -307,7 +307,6 @@ class StopwatchService : Service() {
                 "",  // Empty string instead of null for icon visibility
                 stopPendingIntent
             )
-            .setShowActionsInCompactView(0, 1, 2)  // Show all 3 buttons in compact view
             .build()
     }
 
