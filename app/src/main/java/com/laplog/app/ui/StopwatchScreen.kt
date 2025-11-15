@@ -59,13 +59,13 @@ fun StopwatchScreen(
     val elapsedTime by viewModel.elapsedTime.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
     val laps by viewModel.laps.collectAsState()
-    val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val screenOnMode by viewModel.screenOnMode.collectAsState()
     val lockOrientation by viewModel.lockOrientation.collectAsState()
     val currentComment by viewModel.currentComment.collectAsState()
     val usedComments by viewModel.usedComments.collectAsState()
     val commentsFromHistory by viewModel.commentsFromHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
+    val showMilliseconds by viewModel.showMilliseconds.collectAsState()
 
     var expandedCommentDropdown by remember { mutableStateOf(false) }
 
@@ -136,19 +136,6 @@ fun StopwatchScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Show milliseconds toggle
-            IconToggleButton(
-                checked = showMilliseconds,
-                onCheckedChange = { viewModel.toggleMillisecondsDisplay() }
-            ) {
-                Icon(
-                    imageVector = if (showMilliseconds) Icons.Filled.AccessTime else Icons.Outlined.AccessTime,
-                    contentDescription = stringResource(R.string.show_milliseconds),
-                    tint = if (showMilliseconds) MaterialTheme.colorScheme.primary
-                          else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
             // Keep screen on toggle (3 states)
             IconButton(
                 onClick = { viewModel.cycleScreenOnMode() }
@@ -194,9 +181,9 @@ fun StopwatchScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Time display with digital clock font
+        // Time display with digital clock font (no milliseconds on main timer)
         Text(
-            text = viewModel.formatTime(elapsedTime, roundIfNoMillis = false),
+            text = viewModel.formatTime(elapsedTime, includeMillis = false, roundIfNoMillis = false),
             fontSize = 56.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = dseg7Font,
