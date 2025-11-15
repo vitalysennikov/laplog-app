@@ -15,6 +15,8 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import com.laplog.app.MainActivity
 import com.laplog.app.R
 import com.laplog.app.model.StopwatchState
+import com.laplog.app.model.StopwatchCommand
+import com.laplog.app.model.StopwatchCommandManager
 import kotlinx.coroutines.*
 
 class StopwatchService : Service() {
@@ -32,13 +34,24 @@ class StopwatchService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "stopwatch_channel"
+
+        // Actions from ViewModel to control service
         const val ACTION_START = "com.laplog.app.START"
         const val ACTION_PAUSE = "com.laplog.app.PAUSE"
         const val ACTION_STOP = "com.laplog.app.STOP"
+        const val ACTION_RESUME = "com.laplog.app.RESUME"
+
+        // Actions from notification buttons (user interaction)
+        const val ACTION_USER_PAUSE = "com.laplog.app.USER_PAUSE"
+        const val ACTION_USER_RESUME = "com.laplog.app.USER_RESUME"
+        const val ACTION_USER_STOP = "com.laplog.app.USER_STOP"
+        const val ACTION_USER_LAP = "com.laplog.app.USER_LAP"
+        const val ACTION_USER_LAP_AND_PAUSE = "com.laplog.app.USER_LAP_AND_PAUSE"
+
+        // Legacy actions (not used anymore)
         const val ACTION_UPDATE_STATE = "com.laplog.app.UPDATE_STATE"
         const val ACTION_LAP = "com.laplog.app.LAP"
         const val ACTION_LAP_AND_PAUSE = "com.laplog.app.LAP_AND_PAUSE"
-        const val ACTION_RESUME = "com.laplog.app.RESUME"
         const val ACTION_REQUEST_STATE = "com.laplog.app.REQUEST_STATE"
 
         const val EXTRA_USE_SCREEN_DIM = "use_screen_dim"
@@ -77,8 +90,9 @@ class StopwatchService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            // === Actions from ViewModel (service management) ===
             ACTION_START -> {
-                StopwatchState.start()
+                // Service started from ViewModel, just start foreground and notifications
                 useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
@@ -91,7 +105,7 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_RESUME -> {
-                StopwatchState.resume()
+                // Service resumed from ViewModel, just update foreground and notifications
                 useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
@@ -104,7 +118,7 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_PAUSE -> {
-                StopwatchState.pause()
+                // ViewModel requested pause
                 stopNotificationUpdates()
                 updateNotification()
 
@@ -121,6 +135,7 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_STOP -> {
+                // ViewModel requested stop
                 // Release all wake locks when stopped
                 wakeLock?.let {
                     if (it.isHeld) {
@@ -136,13 +151,13 @@ class StopwatchService : Service() {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
-            ACTION_LAP -> {
-                StopwatchState.addLap()
-                updateNotification()
-            }
-            ACTION_LAP_AND_PAUSE -> {
-                StopwatchState.addLap()
-                StopwatchState.pause()
+
+            // === Actions from notification buttons (user interaction) ===
+            ACTION_USER_PAUSE -> {
+                // Notification button pressed - send command to ViewModel
+                serviceScope.launch {
+                    StopwatchCommandManager.sendCommand(StopwatchCommand.Pause)
+                }
                 stopNotificationUpdates()
                 updateNotification()
 
@@ -158,12 +173,80 @@ class StopwatchService : Service() {
                     }
                 }
             }
+            ACTION_USER_RESUME -> {
+                // Notification button pressed - send command to ViewModel
+                serviceScope.launch {
+                    StopwatchCommandManager.sendCommand(StopwatchCommand.Resume)
+                }
+                startForeground(NOTIFICATION_ID, buildNotification())
+                startNotificationUpdates()
+
+                // Acquire appropriate wake lock based on screen mode
+                if (useScreenDimWakeLock) {
+                    screenDimWakeLock?.acquire()
+                } else {
+                    wakeLock?.acquire()
+                }
+            }
+            ACTION_USER_STOP -> {
+                // Notification button pressed - send command to ViewModel
+                serviceScope.launch {
+                    StopwatchCommandManager.sendCommand(StopwatchCommand.Stop)
+                }
+
+                // Release all wake locks when stopped
+                wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+                screenDimWakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
+            ACTION_USER_LAP -> {
+                // Notification button pressed - send command to ViewModel
+                serviceScope.launch {
+                    StopwatchCommandManager.sendCommand(StopwatchCommand.Lap)
+                }
+                updateNotification()
+            }
+            ACTION_USER_LAP_AND_PAUSE -> {
+                // Notification button pressed - send command to ViewModel
+                serviceScope.launch {
+                    StopwatchCommandManager.sendCommand(StopwatchCommand.LapAndPause)
+                }
+                stopNotificationUpdates()
+                updateNotification()
+
+                // Release all wake locks when paused
+                wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+                screenDimWakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+            }
+
+            // === Legacy actions (backward compatibility) ===
             ACTION_UPDATE_STATE -> {
-                // Not needed anymore - using shared StopwatchState
                 updateNotification()
             }
             ACTION_REQUEST_STATE -> {
                 // Not needed anymore - using shared StopwatchState
+            }
+            ACTION_LAP, ACTION_LAP_AND_PAUSE -> {
+                // Legacy actions - handled by new ACTION_USER_* actions
+                updateNotification()
             }
         }
 
@@ -174,8 +257,8 @@ class StopwatchService : Service() {
         notificationJob?.cancel()
         notificationJob = serviceScope.launch {
             while (isActive && StopwatchState.isRunning.value) {
-                // Update elapsed time from shared state
-                StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
+                // Only update notification display - don't modify StopwatchState
+                // Time is managed exclusively by ViewModel to avoid race conditions
                 updateNotification()
                 delay(1000) // Update every second
             }
@@ -241,7 +324,7 @@ class StopwatchService : Service() {
         // Different buttons based on state to match main app
         if (StopwatchState.isRunning.value) {
             // Running: [Pause] [Lap+Pause] [Lap]
-            val pauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_PAUSE }
+            val pauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_USER_PAUSE }
             val pausePendingIntent = PendingIntent.getService(
                 this,
                 REQUEST_CODE_PAUSE,
@@ -249,7 +332,7 @@ class StopwatchService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val lapAndPauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_LAP_AND_PAUSE }
+            val lapAndPauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_USER_LAP_AND_PAUSE }
             val lapAndPausePendingIntent = PendingIntent.getService(
                 this,
                 REQUEST_CODE_LAP_AND_PAUSE,
@@ -257,7 +340,7 @@ class StopwatchService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val lapIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_LAP }
+            val lapIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_USER_LAP }
             val lapPendingIntent = PendingIntent.getService(
                 this,
                 REQUEST_CODE_LAP,
@@ -286,7 +369,7 @@ class StopwatchService : Service() {
                 )
         } else {
             // Paused: [Resume] [Stop]
-            val resumeIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_RESUME }
+            val resumeIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_USER_RESUME }
             val resumePendingIntent = PendingIntent.getService(
                 this,
                 REQUEST_CODE_RESUME,
@@ -294,7 +377,7 @@ class StopwatchService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val stopIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_STOP }
+            val stopIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_USER_STOP }
             val stopPendingIntent = PendingIntent.getService(
                 this,
                 REQUEST_CODE_STOP,
