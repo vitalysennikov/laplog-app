@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.laplog.app.MainActivity
 import com.laplog.app.R
+import com.laplog.app.model.StopwatchState
 import kotlinx.coroutines.*
 
 class StopwatchService : Service() {
@@ -22,11 +23,7 @@ class StopwatchService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var screenDimWakeLock: PowerManager.WakeLock? = null
 
-    private var startTime = 0L
-    private var accumulatedTime = 0L
-    private var isRunning = false
-    private var lapCount = 0
-    private var lastLapTime = 0L
+    // Use shared StopwatchState instead of local variables
     private var useScreenDimWakeLock = false
 
     // Fixed timestamp for stable notification sorting
@@ -44,18 +41,6 @@ class StopwatchService : Service() {
         const val ACTION_RESUME = "com.laplog.app.RESUME"
         const val ACTION_REQUEST_STATE = "com.laplog.app.REQUEST_STATE"
 
-        // Broadcast actions for MainActivity
-        const val BROADCAST_PAUSE = "com.laplog.app.BROADCAST_PAUSE"
-        const val BROADCAST_RESUME = "com.laplog.app.BROADCAST_RESUME"
-        const val BROADCAST_LAP = "com.laplog.app.BROADCAST_LAP"
-        const val BROADCAST_LAP_AND_PAUSE = "com.laplog.app.BROADCAST_LAP_AND_PAUSE"
-        const val BROADCAST_STOP = "com.laplog.app.BROADCAST_STOP"
-        const val BROADCAST_STATE_UPDATE = "com.laplog.app.BROADCAST_STATE_UPDATE"
-
-        const val EXTRA_ELAPSED_TIME = "elapsed_time"
-        const val EXTRA_IS_RUNNING = "is_running"
-        const val EXTRA_LAP_COUNT = "lap_count"
-        const val EXTRA_LAST_LAP_TIME = "last_lap_time"
         const val EXTRA_USE_SCREEN_DIM = "use_screen_dim"
 
         private const val REQUEST_CODE_PAUSE = 100
@@ -92,34 +77,34 @@ class StopwatchService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START, ACTION_RESUME -> {
-                startTime = System.currentTimeMillis()
-                isRunning = true
+            ACTION_START -> {
+                StopwatchState.start()
                 useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
 
                 // Acquire appropriate wake lock based on screen mode
                 if (useScreenDimWakeLock) {
-                    // ALWAYS mode: allow screen to dim but keep it on
                     screenDimWakeLock?.acquire()
                 } else {
-                    // WHILE_RUNNING mode: just keep CPU active
                     wakeLock?.acquire()
                 }
+            }
+            ACTION_RESUME -> {
+                StopwatchState.resume()
+                useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
+                startForeground(NOTIFICATION_ID, buildNotification())
+                startNotificationUpdates()
 
-                // Send broadcast to ViewModel with current state
-                if (intent.action == ACTION_RESUME) {
-                    val resumeBroadcast = Intent(BROADCAST_RESUME).apply {
-                        putExtra(EXTRA_ELAPSED_TIME, accumulatedTime)
-                        putExtra(EXTRA_IS_RUNNING, true)
-                    }
-                    sendBroadcast(resumeBroadcast)
+                // Acquire appropriate wake lock based on screen mode
+                if (useScreenDimWakeLock) {
+                    screenDimWakeLock?.acquire()
+                } else {
+                    wakeLock?.acquire()
                 }
             }
             ACTION_PAUSE -> {
-                isRunning = false
-                accumulatedTime += System.currentTimeMillis() - startTime
+                StopwatchState.pause()
                 stopNotificationUpdates()
                 updateNotification()
 
@@ -134,22 +119,8 @@ class StopwatchService : Service() {
                         it.release()
                     }
                 }
-
-                // Send broadcast to ViewModel with current state
-                val pauseBroadcast = Intent(BROADCAST_PAUSE).apply {
-                    putExtra(EXTRA_ELAPSED_TIME, accumulatedTime)
-                    putExtra(EXTRA_IS_RUNNING, false)
-                }
-                sendBroadcast(pauseBroadcast)
             }
             ACTION_STOP -> {
-                // Calculate final elapsed time before stopping
-                val finalElapsedTime = if (isRunning) {
-                    accumulatedTime + (System.currentTimeMillis() - startTime)
-                } else {
-                    accumulatedTime
-                }
-
                 // Release all wake locks when stopped
                 wakeLock?.let {
                     if (it.isHeld) {
@@ -162,64 +133,17 @@ class StopwatchService : Service() {
                     }
                 }
 
-                // Send broadcast to ViewModel with final state
-                val stopBroadcast = Intent(BROADCAST_STOP).apply {
-                    putExtra(EXTRA_ELAPSED_TIME, finalElapsedTime)
-                }
-                sendBroadcast(stopBroadcast)
-
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
             ACTION_LAP -> {
-                // Calculate current time for the lap
-                val currentTime = if (isRunning) {
-                    accumulatedTime + (System.currentTimeMillis() - startTime)
-                } else {
-                    accumulatedTime
-                }
-
-                // Update lap tracking
-                lastLapTime = currentTime
-                lapCount++
-
-                // Send broadcast to ViewModel with lap info
-                val lapBroadcast = Intent(BROADCAST_LAP).apply {
-                    putExtra(EXTRA_ELAPSED_TIME, currentTime)
-                    putExtra(EXTRA_LAP_COUNT, lapCount)
-                    putExtra(EXTRA_LAST_LAP_TIME, lastLapTime)
-                }
-                sendBroadcast(lapBroadcast)
-
-                // Update notification with new lap info
+                StopwatchState.addLap()
                 updateNotification()
             }
             ACTION_LAP_AND_PAUSE -> {
-                // Calculate current time for the lap
-                val currentTime = if (isRunning) {
-                    accumulatedTime + (System.currentTimeMillis() - startTime)
-                } else {
-                    accumulatedTime
-                }
-
-                // Update lap tracking
-                lastLapTime = currentTime
-                lapCount++
-
-                // Pause the stopwatch
-                isRunning = false
-                accumulatedTime = currentTime
+                StopwatchState.addLap()
+                StopwatchState.pause()
                 stopNotificationUpdates()
-
-                // Send broadcast to ViewModel with lap info and paused state
-                val lapAndPauseBroadcast = Intent(BROADCAST_LAP_AND_PAUSE).apply {
-                    putExtra(EXTRA_ELAPSED_TIME, currentTime)
-                    putExtra(EXTRA_LAP_COUNT, lapCount)
-                    putExtra(EXTRA_LAST_LAP_TIME, lastLapTime)
-                    putExtra(EXTRA_IS_RUNNING, false)
-                }
-                sendBroadcast(lapAndPauseBroadcast)
-
                 updateNotification()
 
                 // Release all wake locks when paused
@@ -235,46 +159,23 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_UPDATE_STATE -> {
-                accumulatedTime = intent.getLongExtra(EXTRA_ELAPSED_TIME, 0L)
-                isRunning = intent.getBooleanExtra(EXTRA_IS_RUNNING, false)
-                lapCount = intent.getIntExtra(EXTRA_LAP_COUNT, 0)
-                lastLapTime = intent.getLongExtra(EXTRA_LAST_LAP_TIME, 0L)
-
-                if (isRunning) {
-                    startTime = System.currentTimeMillis()
-                }
-
+                // Not needed anymore - using shared StopwatchState
                 updateNotification()
             }
             ACTION_REQUEST_STATE -> {
-                // Broadcast current state to ViewModel
-                broadcastCurrentState()
+                // Not needed anymore - using shared StopwatchState
             }
         }
 
         return START_STICKY
     }
 
-    private fun broadcastCurrentState() {
-        val currentTime = if (isRunning) {
-            accumulatedTime + (System.currentTimeMillis() - startTime)
-        } else {
-            accumulatedTime
-        }
-
-        val intent = Intent(BROADCAST_STATE_UPDATE).apply {
-            putExtra(EXTRA_ELAPSED_TIME, currentTime)
-            putExtra(EXTRA_IS_RUNNING, isRunning)
-            putExtra(EXTRA_LAP_COUNT, lapCount)
-            putExtra(EXTRA_LAST_LAP_TIME, lastLapTime)
-        }
-        sendBroadcast(intent)
-    }
-
     private fun startNotificationUpdates() {
         notificationJob?.cancel()
         notificationJob = serviceScope.launch {
-            while (isActive && isRunning) {
+            while (isActive && StopwatchState.isRunning.value) {
+                // Update elapsed time from shared state
+                StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
                 updateNotification()
                 delay(1000) // Update every second
             }
@@ -291,16 +192,13 @@ class StopwatchService : Service() {
     }
 
     private fun buildNotification(): Notification {
-        val currentTime = if (isRunning) {
-            accumulatedTime + (System.currentTimeMillis() - startTime)
-        } else {
-            accumulatedTime
-        }
-
+        val currentTime = StopwatchState.getCurrentElapsedTime()
         val timeString = formatTime(currentTime)
 
         // Build lap info string
+        val lapCount = StopwatchState.getLapCount()
         val lapInfo = if (lapCount > 0) {
+            val lastLapTime = StopwatchState.getLastLapTime()
             val lapDuration = currentTime - lastLapTime
             getString(R.string.notification_lap_info, lapCount, formatTime(lapDuration))
         } else {
@@ -341,7 +239,7 @@ class StopwatchService : Service() {
             .setSortKey("laplog_stopwatch")  // Stable sort key
 
         // Different buttons based on state to match main app
-        if (isRunning) {
+        if (StopwatchState.isRunning.value) {
             // Running: [Pause] [Lap+Pause] [Lap]
             val pauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_PAUSE }
             val pausePendingIntent = PendingIntent.getService(
