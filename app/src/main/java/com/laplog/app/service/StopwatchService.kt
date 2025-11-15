@@ -408,7 +408,7 @@ class StopwatchService : Service() {
             .setContentText(notificationText)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFF1976D2.toInt())  // Material Blue 700 - for action icon tinting
-            .setOngoing(isRunning)  // Can swipe away only when paused
+            .setOngoing(true)  // Cannot swipe away - use Stop button instead
             .setPriority(NotificationCompat.PRIORITY_LOW)  // Lower priority to prevent jumping
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
