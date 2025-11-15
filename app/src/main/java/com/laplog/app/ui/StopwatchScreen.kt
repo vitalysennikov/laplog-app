@@ -53,11 +53,26 @@ fun StopwatchScreen(
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
-                    StopwatchService.BROADCAST_PAUSE -> viewModel.pauseFromNotification()
-                    StopwatchService.BROADCAST_RESUME -> viewModel.startOrResumeFromNotification()
-                    StopwatchService.BROADCAST_LAP -> viewModel.lapFromNotification()
-                    StopwatchService.BROADCAST_LAP_AND_PAUSE -> viewModel.lapAndPauseFromNotification()
-                    StopwatchService.BROADCAST_STOP -> viewModel.resetFromNotification()
+                    StopwatchService.BROADCAST_PAUSE -> {
+                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
+                        viewModel.pauseFromNotification(elapsedTime)
+                    }
+                    StopwatchService.BROADCAST_RESUME -> {
+                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
+                        viewModel.startOrResumeFromNotification(elapsedTime)
+                    }
+                    StopwatchService.BROADCAST_LAP -> {
+                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
+                        viewModel.lapFromNotification(elapsedTime)
+                    }
+                    StopwatchService.BROADCAST_LAP_AND_PAUSE -> {
+                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
+                        viewModel.lapAndPauseFromNotification(elapsedTime)
+                    }
+                    StopwatchService.BROADCAST_STOP -> {
+                        val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
+                        viewModel.resetFromNotification(elapsedTime)
+                    }
                     StopwatchService.BROADCAST_STATE_UPDATE -> {
                         val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
                         val isRunning = intent.getBooleanExtra(StopwatchService.EXTRA_IS_RUNNING, false)

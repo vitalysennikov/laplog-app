@@ -108,9 +108,13 @@ class StopwatchService : Service() {
                     wakeLock?.acquire()
                 }
 
-                // Send broadcast to MainActivity
+                // Send broadcast to ViewModel with current state
                 if (intent.action == ACTION_RESUME) {
-                    sendBroadcast(Intent(BROADCAST_RESUME))
+                    val resumeBroadcast = Intent(BROADCAST_RESUME).apply {
+                        putExtra(EXTRA_ELAPSED_TIME, accumulatedTime)
+                        putExtra(EXTRA_IS_RUNNING, true)
+                    }
+                    sendBroadcast(resumeBroadcast)
                 }
             }
             ACTION_PAUSE -> {
@@ -131,10 +135,21 @@ class StopwatchService : Service() {
                     }
                 }
 
-                // Send broadcast to MainActivity
-                sendBroadcast(Intent(BROADCAST_PAUSE))
+                // Send broadcast to ViewModel with current state
+                val pauseBroadcast = Intent(BROADCAST_PAUSE).apply {
+                    putExtra(EXTRA_ELAPSED_TIME, accumulatedTime)
+                    putExtra(EXTRA_IS_RUNNING, false)
+                }
+                sendBroadcast(pauseBroadcast)
             }
             ACTION_STOP -> {
+                // Calculate final elapsed time before stopping
+                val finalElapsedTime = if (isRunning) {
+                    accumulatedTime + (System.currentTimeMillis() - startTime)
+                } else {
+                    accumulatedTime
+                }
+
                 // Release all wake locks when stopped
                 wakeLock?.let {
                     if (it.isHeld) {
@@ -147,28 +162,64 @@ class StopwatchService : Service() {
                     }
                 }
 
-                // Send broadcast to MainActivity
-                sendBroadcast(Intent(BROADCAST_STOP))
+                // Send broadcast to ViewModel with final state
+                val stopBroadcast = Intent(BROADCAST_STOP).apply {
+                    putExtra(EXTRA_ELAPSED_TIME, finalElapsedTime)
+                }
+                sendBroadcast(stopBroadcast)
 
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
             ACTION_LAP -> {
-                // Send broadcast to MainActivity
-                sendBroadcast(Intent(BROADCAST_LAP))
+                // Calculate current time for the lap
+                val currentTime = if (isRunning) {
+                    accumulatedTime + (System.currentTimeMillis() - startTime)
+                } else {
+                    accumulatedTime
+                }
 
-                // Lap action - just update notification
-                // Actual lap logic is handled in ViewModel
+                // Update lap tracking
+                lastLapTime = currentTime
+                lapCount++
+
+                // Send broadcast to ViewModel with lap info
+                val lapBroadcast = Intent(BROADCAST_LAP).apply {
+                    putExtra(EXTRA_ELAPSED_TIME, currentTime)
+                    putExtra(EXTRA_LAP_COUNT, lapCount)
+                    putExtra(EXTRA_LAST_LAP_TIME, lastLapTime)
+                }
+                sendBroadcast(lapBroadcast)
+
+                // Update notification with new lap info
                 updateNotification()
             }
             ACTION_LAP_AND_PAUSE -> {
-                // Send broadcast to MainActivity
-                sendBroadcast(Intent(BROADCAST_LAP_AND_PAUSE))
+                // Calculate current time for the lap
+                val currentTime = if (isRunning) {
+                    accumulatedTime + (System.currentTimeMillis() - startTime)
+                } else {
+                    accumulatedTime
+                }
 
-                // Lap+Pause action - lap is added in ViewModel, we need to pause here
+                // Update lap tracking
+                lastLapTime = currentTime
+                lapCount++
+
+                // Pause the stopwatch
                 isRunning = false
-                accumulatedTime += System.currentTimeMillis() - startTime
+                accumulatedTime = currentTime
                 stopNotificationUpdates()
+
+                // Send broadcast to ViewModel with lap info and paused state
+                val lapAndPauseBroadcast = Intent(BROADCAST_LAP_AND_PAUSE).apply {
+                    putExtra(EXTRA_ELAPSED_TIME, currentTime)
+                    putExtra(EXTRA_LAP_COUNT, lapCount)
+                    putExtra(EXTRA_LAST_LAP_TIME, lastLapTime)
+                    putExtra(EXTRA_IS_RUNNING, false)
+                }
+                sendBroadcast(lapAndPauseBroadcast)
+
                 updateNotification()
 
                 // Release all wake locks when paused
