@@ -419,9 +419,9 @@ class StopwatchService : Service() {
             .setShowWhen(false)  // Don't show timestamp
             .setSortKey("laplog_stopwatch")  // Stable sort key
 
-        // Add laps in expanded view if there are any and screen is locked
+        // Add laps in expanded view if there are any
         val laps = StopwatchState.laps.value
-        if (laps.isNotEmpty() && isScreenLocked) {
+        if (laps.isNotEmpty()) {
             val inboxStyle = NotificationCompat.InboxStyle()
                 .setBigContentTitle(timeString)
                 .setSummaryText("${laps.size} laps")
