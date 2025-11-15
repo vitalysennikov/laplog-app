@@ -22,6 +22,7 @@ import kotlinx.coroutines.*
 class StopwatchService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     private var notificationJob: Job? = null
+    private var stateListenerJob: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var screenDimWakeLock: PowerManager.WakeLock? = null
 
@@ -85,6 +86,30 @@ class StopwatchService : Service() {
             "LapLog::ScreenDimWakeLock"
         ).apply {
             setReferenceCounted(false)
+        }
+
+        // Start listening to state changes for notification updates
+        startStateListener()
+    }
+
+    private fun startStateListener() {
+        stateListenerJob?.cancel()
+        stateListenerJob = serviceScope.launch {
+            // Listen to laps changes
+            launch {
+                StopwatchState.laps.collect {
+                    // Update notification when laps change
+                    updateNotification()
+                }
+            }
+
+            // Listen to running state changes
+            launch {
+                StopwatchState.isRunning.collect {
+                    // Update notification when state changes (different buttons for running/paused)
+                    updateNotification()
+                }
+            }
         }
     }
 
@@ -159,7 +184,7 @@ class StopwatchService : Service() {
                     StopwatchCommandManager.sendCommand(StopwatchCommand.Pause)
                 }
                 stopNotificationUpdates()
-                updateNotification()
+                // updateNotification() will be called automatically by stateListenerJob
 
                 // Release all wake locks when paused
                 wakeLock?.let {
@@ -178,7 +203,7 @@ class StopwatchService : Service() {
                 serviceScope.launch {
                     StopwatchCommandManager.sendCommand(StopwatchCommand.Resume)
                 }
-                startForeground(NOTIFICATION_ID, buildNotification())
+                // updateNotification() will be called automatically by stateListenerJob
                 startNotificationUpdates()
 
                 // Acquire appropriate wake lock based on screen mode
@@ -214,7 +239,7 @@ class StopwatchService : Service() {
                 serviceScope.launch {
                     StopwatchCommandManager.sendCommand(StopwatchCommand.Lap)
                 }
-                updateNotification()
+                // updateNotification() will be called automatically by stateListenerJob when lap is added
             }
             ACTION_USER_LAP_AND_PAUSE -> {
                 // Notification button pressed - send command to ViewModel
@@ -222,7 +247,7 @@ class StopwatchService : Service() {
                     StopwatchCommandManager.sendCommand(StopwatchCommand.LapAndPause)
                 }
                 stopNotificationUpdates()
-                updateNotification()
+                // updateNotification() will be called automatically by stateListenerJob
 
                 // Release all wake locks when paused
                 wakeLock?.let {
@@ -256,6 +281,7 @@ class StopwatchService : Service() {
     private fun startNotificationUpdates() {
         notificationJob?.cancel()
         notificationJob = serviceScope.launch {
+            // Update every second for time display
             while (isActive && StopwatchState.isRunning.value) {
                 // Only update notification display - don't modify StopwatchState
                 // Time is managed exclusively by ViewModel to avoid race conditions
@@ -436,6 +462,8 @@ class StopwatchService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        notificationJob?.cancel()
+        stateListenerJob?.cancel()
         serviceScope.cancel()
 
         // Make sure to release all wake locks on service destruction
