@@ -40,6 +40,7 @@ class StopwatchService : Service() {
         const val ACTION_STOP = "com.laplog.app.STOP"
         const val ACTION_UPDATE_STATE = "com.laplog.app.UPDATE_STATE"
         const val ACTION_LAP = "com.laplog.app.LAP"
+        const val ACTION_LAP_AND_PAUSE = "com.laplog.app.LAP_AND_PAUSE"
         const val ACTION_RESUME = "com.laplog.app.RESUME"
         const val ACTION_REQUEST_STATE = "com.laplog.app.REQUEST_STATE"
 
@@ -47,6 +48,7 @@ class StopwatchService : Service() {
         const val BROADCAST_PAUSE = "com.laplog.app.BROADCAST_PAUSE"
         const val BROADCAST_RESUME = "com.laplog.app.BROADCAST_RESUME"
         const val BROADCAST_LAP = "com.laplog.app.BROADCAST_LAP"
+        const val BROADCAST_LAP_AND_PAUSE = "com.laplog.app.BROADCAST_LAP_AND_PAUSE"
         const val BROADCAST_STOP = "com.laplog.app.BROADCAST_STOP"
         const val BROADCAST_STATE_UPDATE = "com.laplog.app.BROADCAST_STATE_UPDATE"
 
@@ -60,6 +62,7 @@ class StopwatchService : Service() {
         private const val REQUEST_CODE_LAP = 101
         private const val REQUEST_CODE_STOP = 102
         private const val REQUEST_CODE_RESUME = 103
+        private const val REQUEST_CODE_LAP_AND_PAUSE = 104
     }
 
     override fun onCreate() {
@@ -158,6 +161,28 @@ class StopwatchService : Service() {
                 // Actual lap logic is handled in ViewModel
                 updateNotification()
             }
+            ACTION_LAP_AND_PAUSE -> {
+                // Send broadcast to MainActivity
+                sendBroadcast(Intent(BROADCAST_LAP_AND_PAUSE))
+
+                // Lap+Pause action - lap is added in ViewModel, we need to pause here
+                isRunning = false
+                accumulatedTime += System.currentTimeMillis() - startTime
+                stopNotificationUpdates()
+                updateNotification()
+
+                // Release all wake locks when paused
+                wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+                screenDimWakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+            }
             ACTION_UPDATE_STATE -> {
                 accumulatedTime = intent.getLongExtra(EXTRA_ELAPSED_TIME, 0L)
                 isRunning = intent.getBooleanExtra(EXTRA_IS_RUNNING, false)
@@ -241,41 +266,6 @@ class StopwatchService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Create action intents
-        val pauseResumeIntent = if (isRunning) {
-            Intent(this, StopwatchService::class.java).apply { action = ACTION_PAUSE }
-        } else {
-            Intent(this, StopwatchService::class.java).apply { action = ACTION_RESUME }
-        }
-        val pauseResumePendingIntent = PendingIntent.getService(
-            this,
-            if (isRunning) REQUEST_CODE_PAUSE else REQUEST_CODE_RESUME,
-            pauseResumeIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val lapIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_LAP }
-        val lapPendingIntent = PendingIntent.getService(
-            this,
-            REQUEST_CODE_LAP,
-            lapIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val stopIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_STOP }
-        val stopPendingIntent = PendingIntent.getService(
-            this,
-            REQUEST_CODE_STOP,
-            stopIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val pauseResumeIcon = if (isRunning) {
-            R.drawable.ic_notification_pause
-        } else {
-            R.drawable.ic_notification_play
-        }
-
         // Combine time and lap info for notification text
         val notificationText = if (lapInfo.isNotEmpty()) {
             "$timeString\n$lapInfo"
@@ -283,12 +273,9 @@ class StopwatchService : Service() {
             timeString
         }
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(notificationText)
-            .setStyle(MediaStyle()
-                .setShowActionsInCompactView()  // Empty - no actions in compact view
-            )
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFF1976D2.toInt())  // Material Blue 700 - for action icon tinting
             .setOngoing(true)
@@ -301,22 +288,88 @@ class StopwatchService : Service() {
             .setWhen(notificationCreationTime)  // Fixed time for stable sorting
             .setShowWhen(false)  // Don't show timestamp
             .setSortKey("laplog_stopwatch")  // Stable sort key
-            .addAction(
-                pauseResumeIcon,
-                "",  // Empty string instead of null for icon visibility
-                pauseResumePendingIntent
+
+        // Different buttons based on state to match main app
+        if (isRunning) {
+            // Running: [Pause] [Lap+Pause] [Lap]
+            val pauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_PAUSE }
+            val pausePendingIntent = PendingIntent.getService(
+                this,
+                REQUEST_CODE_PAUSE,
+                pauseIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            .addAction(
-                R.drawable.ic_notification_lap,
-                "",  // Empty string instead of null for icon visibility
-                lapPendingIntent
+
+            val lapAndPauseIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_LAP_AND_PAUSE }
+            val lapAndPausePendingIntent = PendingIntent.getService(
+                this,
+                REQUEST_CODE_LAP_AND_PAUSE,
+                lapAndPauseIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            .addAction(
-                R.drawable.ic_notification_stop,
-                "",  // Empty string instead of null for icon visibility
-                stopPendingIntent
+
+            val lapIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_LAP }
+            val lapPendingIntent = PendingIntent.getService(
+                this,
+                REQUEST_CODE_LAP,
+                lapIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            .build()
+
+            builder
+                .setStyle(MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)  // Show all 3 buttons in compact view
+                )
+                .addAction(
+                    R.drawable.ic_notification_pause,
+                    "",  // Empty string instead of null for icon visibility
+                    pausePendingIntent
+                )
+                .addAction(
+                    R.drawable.ic_notification_lap_pause,  // Filled flag icon for Lap+Pause
+                    "",
+                    lapAndPausePendingIntent
+                )
+                .addAction(
+                    R.drawable.ic_notification_lap,  // Outlined flag icon for Lap only
+                    "",
+                    lapPendingIntent
+                )
+        } else {
+            // Paused: [Resume] [Stop]
+            val resumeIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_RESUME }
+            val resumePendingIntent = PendingIntent.getService(
+                this,
+                REQUEST_CODE_RESUME,
+                resumeIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val stopIntent = Intent(this, StopwatchService::class.java).apply { action = ACTION_STOP }
+            val stopPendingIntent = PendingIntent.getService(
+                this,
+                REQUEST_CODE_STOP,
+                stopIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            builder
+                .setStyle(MediaStyle()
+                    .setShowActionsInCompactView(0, 1)  // Show both buttons in compact view
+                )
+                .addAction(
+                    R.drawable.ic_notification_play,
+                    "",
+                    resumePendingIntent
+                )
+                .addAction(
+                    R.drawable.ic_notification_stop,
+                    "",
+                    stopPendingIntent
+                )
+        }
+
+        return builder.build()
     }
 
     private fun formatTime(timeInMillis: Long): String {

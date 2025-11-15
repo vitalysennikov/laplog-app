@@ -387,6 +387,12 @@ class StopwatchViewModel(
         }
     }
 
+    fun lapAndPauseFromNotification() {
+        if (_isRunning.value && _elapsedTime.value > 0) {
+            addLapAndPause()
+        }
+    }
+
     fun resetFromNotification() {
         reset()
     }

@@ -56,6 +56,7 @@ fun StopwatchScreen(
                     StopwatchService.BROADCAST_PAUSE -> viewModel.pauseFromNotification()
                     StopwatchService.BROADCAST_RESUME -> viewModel.startOrResumeFromNotification()
                     StopwatchService.BROADCAST_LAP -> viewModel.lapFromNotification()
+                    StopwatchService.BROADCAST_LAP_AND_PAUSE -> viewModel.lapAndPauseFromNotification()
                     StopwatchService.BROADCAST_STOP -> viewModel.resetFromNotification()
                     StopwatchService.BROADCAST_STATE_UPDATE -> {
                         val elapsedTime = intent.getLongExtra(StopwatchService.EXTRA_ELAPSED_TIME, 0L)
@@ -70,6 +71,7 @@ fun StopwatchScreen(
             addAction(StopwatchService.BROADCAST_PAUSE)
             addAction(StopwatchService.BROADCAST_RESUME)
             addAction(StopwatchService.BROADCAST_LAP)
+            addAction(StopwatchService.BROADCAST_LAP_AND_PAUSE)
             addAction(StopwatchService.BROADCAST_STOP)
             addAction(StopwatchService.BROADCAST_STATE_UPDATE)
         }
