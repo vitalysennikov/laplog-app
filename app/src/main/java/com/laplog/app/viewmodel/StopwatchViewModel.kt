@@ -210,18 +210,9 @@ class StopwatchViewModel(
     private fun startTimerJob() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
-            var lastSaveTime = System.currentTimeMillis()
             while (StopwatchState.isRunning.value) {
-                val currentTime = System.currentTimeMillis()
                 StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
-
-                // Save state every 5 seconds while running
-                if (currentTime - lastSaveTime >= 5000) {
-                    saveStopwatchState()
-                    lastSaveTime = currentTime
-                }
-
-                delay(if (_showMilliseconds.value) 10L else 1000L)
+                delay(1000L) // Always update once per second for better performance
             }
         }
     }

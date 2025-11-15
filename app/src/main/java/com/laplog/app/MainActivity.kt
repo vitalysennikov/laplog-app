@@ -43,6 +43,8 @@ import com.laplog.app.viewmodel.BackupViewModelFactory
 import androidx.lifecycle.ViewModelProvider
 import java.text.SimpleDateFormat
 import java.util.*
+import com.laplog.app.model.AppState
+import com.laplog.app.service.StopwatchService
 
 class MainActivity : ComponentActivity() {
     private lateinit var preferencesManager: PreferencesManager
@@ -462,6 +464,30 @@ class MainActivity : ComponentActivity() {
         } else {
             String.format("%02d:%02d", minutes, seconds)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // App is in foreground
+        AppState.setAppInForeground(true)
+
+        // Notify service about app state change
+        val intent = Intent(this, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_APP_FOREGROUND
+        }
+        startService(intent)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // App is going to background
+        AppState.setAppInForeground(false)
+
+        // Notify service about app state change
+        val intent = Intent(this, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_APP_BACKGROUND
+        }
+        startService(intent)
     }
 
     private fun applyLanguage(languageCode: String?) {

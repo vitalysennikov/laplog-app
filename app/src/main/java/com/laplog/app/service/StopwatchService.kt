@@ -5,8 +5,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -14,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.laplog.app.MainActivity
 import com.laplog.app.R
+import com.laplog.app.model.AppState
 import com.laplog.app.model.StopwatchState
 import com.laplog.app.model.StopwatchCommand
 import com.laplog.app.model.StopwatchCommandManager
@@ -32,6 +35,26 @@ class StopwatchService : Service() {
     // Fixed timestamp for stable notification sorting
     private val notificationCreationTime = System.currentTimeMillis()
 
+    // BroadcastReceiver for screen on/off events
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_ON -> {
+                    AppState.setScreenOn(true)
+                    // Restart notification updates if needed
+                    if (StopwatchState.isRunning.value && AppState.shouldUpdateNotification()) {
+                        startNotificationUpdates()
+                    }
+                }
+                Intent.ACTION_SCREEN_OFF -> {
+                    AppState.setScreenOn(false)
+                    // Stop notification updates to save battery
+                    stopNotificationUpdates()
+                }
+            }
+        }
+    }
+
     companion object {
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "stopwatch_channel"
@@ -41,6 +64,10 @@ class StopwatchService : Service() {
         const val ACTION_PAUSE = "com.laplog.app.PAUSE"
         const val ACTION_STOP = "com.laplog.app.STOP"
         const val ACTION_RESUME = "com.laplog.app.RESUME"
+
+        // Actions from MainActivity for app state
+        const val ACTION_APP_FOREGROUND = "com.laplog.app.APP_FOREGROUND"
+        const val ACTION_APP_BACKGROUND = "com.laplog.app.APP_BACKGROUND"
 
         // Actions from notification buttons (user interaction)
         const val ACTION_USER_PAUSE = "com.laplog.app.USER_PAUSE"
@@ -87,6 +114,13 @@ class StopwatchService : Service() {
         ).apply {
             setReferenceCounted(false)
         }
+
+        // Register screen on/off broadcast receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        registerReceiver(screenReceiver, filter)
 
         // Start listening to state changes for notification updates
         startStateListener()
@@ -262,6 +296,21 @@ class StopwatchService : Service() {
                 }
             }
 
+            // === Actions from MainActivity (app state changes) ===
+            ACTION_APP_FOREGROUND -> {
+                // App came to foreground - stop notification updates, show static text
+                stopNotificationUpdates()
+                updateNotification() // Update once with static text
+            }
+            ACTION_APP_BACKGROUND -> {
+                // App went to background - start notification updates if running and screen on
+                if (StopwatchState.isRunning.value && AppState.shouldUpdateNotification()) {
+                    startNotificationUpdates()
+                } else {
+                    updateNotification() // Update once with current state
+                }
+            }
+
             // === Legacy actions (backward compatibility) ===
             ACTION_UPDATE_STATE -> {
                 updateNotification()
@@ -281,12 +330,17 @@ class StopwatchService : Service() {
     private fun startNotificationUpdates() {
         notificationJob?.cancel()
         notificationJob = serviceScope.launch {
-            // Update every second for time display
+            // Update every 2 seconds for better battery life
             while (isActive && StopwatchState.isRunning.value) {
                 // Only update notification display - don't modify StopwatchState
                 // Time is managed exclusively by ViewModel to avoid race conditions
-                updateNotification()
-                delay(1000) // Update every second
+
+                // Only update if app is in background and screen is on
+                if (AppState.shouldUpdateNotification()) {
+                    updateNotification()
+                }
+
+                delay(2000) // Update every 2 seconds (optimized for battery)
             }
         }
     }
@@ -303,15 +357,20 @@ class StopwatchService : Service() {
     private fun buildNotification(): Notification {
         val currentTime = StopwatchState.getCurrentElapsedTime()
         val timeString = formatTime(currentTime)
+        val isRunning = StopwatchState.isRunning.value
+        val isAppInForeground = AppState.isAppInForeground.value
 
-        // Build lap info string
-        val lapCount = StopwatchState.getLapCount()
-        val lapInfo = if (lapCount > 0) {
-            val lastLapTime = StopwatchState.getLastLapTime()
-            val lapDuration = currentTime - lastLapTime
-            getString(R.string.notification_lap_info, lapCount, formatTime(lapDuration))
+        // Build notification text based on app state
+        val notificationText = if (isAppInForeground) {
+            // App is open - show static text with Unicode symbol
+            if (isRunning) {
+                "⏱ Stopwatch running"
+            } else {
+                "⏸ Stopwatch paused"
+            }
         } else {
-            ""
+            // App in background - show current time
+            timeString
         }
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -324,19 +383,12 @@ class StopwatchService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Combine time and lap info for notification text
-        val notificationText = if (lapInfo.isNotEmpty()) {
-            "$timeString\n$lapInfo"
-        } else {
-            timeString
-        }
-
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(notificationText)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFF1976D2.toInt())  // Material Blue 700 - for action icon tinting
-            .setOngoing(true)
+            .setOngoing(isRunning)  // Can swipe away only when paused
             .setPriority(NotificationCompat.PRIORITY_LOW)  // Lower priority to prevent jumping
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -346,6 +398,22 @@ class StopwatchService : Service() {
             .setWhen(notificationCreationTime)  // Fixed time for stable sorting
             .setShowWhen(false)  // Don't show timestamp
             .setSortKey("laplog_stopwatch")  // Stable sort key
+
+        // Add laps in expanded view if there are any
+        val laps = StopwatchState.laps.value
+        if (laps.isNotEmpty() && !isAppInForeground) {
+            val inboxStyle = NotificationCompat.InboxStyle()
+                .setBigContentTitle("$timeString")
+                .setSummaryText("${laps.size} laps")
+
+            // Show up to 7 most recent laps in reverse order
+            laps.reversed().take(7).forEach { lap ->
+                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
+                inboxStyle.addLine(lapText)
+            }
+
+            builder.setStyle(inboxStyle)
+        }
 
         // Different buttons based on state to match main app
         if (StopwatchState.isRunning.value) {
@@ -465,6 +533,13 @@ class StopwatchService : Service() {
         notificationJob?.cancel()
         stateListenerJob?.cancel()
         serviceScope.cancel()
+
+        // Unregister screen receiver
+        try {
+            unregisterReceiver(screenReceiver)
+        } catch (e: Exception) {
+            // Receiver might not be registered
+        }
 
         // Make sure to release all wake locks on service destruction
         wakeLock?.let {
