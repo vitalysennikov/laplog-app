@@ -12,6 +12,8 @@ import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.LapTime
 import com.laplog.app.model.StopwatchState
+import com.laplog.app.model.StopwatchCommand
+import com.laplog.app.model.StopwatchCommandManager
 import com.laplog.app.service.StopwatchService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -62,6 +64,69 @@ class StopwatchViewModel(
     init {
         loadCommentsFromHistory()
         restoreStopwatchState()
+
+        // Listen for commands from notification service
+        viewModelScope.launch {
+            StopwatchCommandManager.commands.collect { command ->
+                handleCommand(command)
+            }
+        }
+    }
+
+    private fun handleCommand(command: StopwatchCommand) {
+        // Handle commands from notification service
+        // Don't call service methods to avoid circular calls
+        when (command) {
+            StopwatchCommand.Start -> {
+                StopwatchState.start()
+                saveStopwatchState()
+                startTimerJob()
+            }
+            StopwatchCommand.Pause -> {
+                StopwatchState.pause()
+                timerJob?.cancel()
+                saveStopwatchState()
+            }
+            StopwatchCommand.Resume -> {
+                StopwatchState.resume()
+                saveStopwatchState()
+                startTimerJob()
+            }
+            StopwatchCommand.Stop -> {
+                timerJob?.cancel()
+                val elapsedTime = StopwatchState.elapsedTime.value
+                val laps = StopwatchState.laps.value
+
+                // Save session to database if there was any activity
+                if (elapsedTime > 0L || laps.isNotEmpty()) {
+                    viewModelScope.launch {
+                        try {
+                            saveSession()
+                            loadCommentsFromHistory()
+                        } catch (e: Exception) {
+                            Log.e("StopwatchViewModel", "Error saving session", e)
+                        }
+                        StopwatchState.reset()
+                        preferencesManager.clearStopwatchState()
+                    }
+                } else {
+                    StopwatchState.reset()
+                    preferencesManager.clearStopwatchState()
+                }
+            }
+            StopwatchCommand.Lap -> {
+                StopwatchState.addLap()
+                saveStopwatchState()
+            }
+            StopwatchCommand.LapAndPause -> {
+                StopwatchState.addLap()
+                if (StopwatchState.isRunning.value) {
+                    StopwatchState.pause()
+                    timerJob?.cancel()
+                    saveStopwatchState()
+                }
+            }
+        }
     }
 
     private fun loadCommentsFromHistory() {
