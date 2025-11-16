@@ -518,23 +518,21 @@ class StopwatchService : Service() {
         // Get laps for notification content
         val laps = StopwatchState.laps.value
 
-        // If there are laps, add extended information for expanded view
+        // If there are laps, add extended information
         if (laps.isNotEmpty()) {
-            // Build lap list text for expanded view
+            // Build lap list text for subtext
             val lapListText = buildString {
                 // Show up to 5 most recent laps
                 laps.takeLast(5).reversed().forEach { lap ->
-                    appendLine("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
+                    append("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
+                    if (lap != laps.takeLast(5).reversed().last()) append(" • ")
                 }
-            }.trim()
-
-            // Set big content title with time and laps info
-            mediaStyle.setBigContentTitle("$timeString • ${laps.size} laps")
+            }
 
             // Show lap count in content info (right side)
             builder.setContentInfo("${laps.size}")
 
-            // Add laps list as subtext (visible in expanded view)
+            // Add laps list as subtext
             builder.setSubText(lapListText)
         }
 
