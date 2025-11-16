@@ -88,6 +88,9 @@
     <string name="last_backup">上次备份</string>
     <string name="never">从未</string>
     <string name="backup_now">立即备份</string>
+    <string name="save_backup_to">保存备份到…</string>
+    <string name="backup_saved">备份保存成功</string>
+    <string name="backup_save_error">保存备份时出错</string>
     <string name="available_backups">可用备份</string>
     <string name="no_backups_found">未找到备份</string>
     <string name="restore">恢复</string>

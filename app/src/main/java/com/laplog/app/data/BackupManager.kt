@@ -28,53 +28,25 @@ class BackupManager(
     }
 
     /**
+     * Generate backup data for manual save (can be used with cloud storage)
+     */
+    suspend fun generateBackupData(): Result<Pair<String, String>> {
+        return try {
+            val backupData = createBackupData()
+            val json = backupDataToJson(backupData)
+            val fileName = generateBackupFileName()
+            Result.success(Pair(fileName, json))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Export full database to JSON and save to selected folder
      */
     suspend fun createBackup(folderUri: Uri): Result<BackupFileInfo> {
         return try {
-            // Get all sessions from database
-            val sessions = sessionDao.getAllSessions().first()
-            val backupSessions = mutableListOf<BackupSession>()
-
-            for (session in sessions) {
-                val laps = sessionDao.getLapsForSession(session.id).first()
-                val backupLaps = laps.map { lap ->
-                    BackupLap(
-                        lapNumber = lap.lapNumber,
-                        totalTime = lap.totalTime,
-                        lapDuration = lap.lapDuration
-                    )
-                }
-                backupSessions.add(
-                    BackupSession(
-                        id = session.id,
-                        startTime = session.startTime,
-                        endTime = session.endTime,
-                        totalDuration = session.totalDuration,
-                        comment = session.comment,
-                        laps = backupLaps
-                    )
-                )
-            }
-
-            // Get current settings
-            val backupSettings = BackupSettings(
-                showMilliseconds = preferencesManager.showMilliseconds,
-                screenOnMode = preferencesManager.screenOnMode.name,
-                lockOrientation = preferencesManager.lockOrientation,
-                showMillisecondsInHistory = preferencesManager.showMillisecondsInHistory,
-                invertLapColors = preferencesManager.invertLapColors,
-                appLanguage = preferencesManager.appLanguage,
-                autoBackupEnabled = preferencesManager.autoBackupEnabled,
-                backupRetentionDays = preferencesManager.backupRetentionDays
-            )
-
-            val backupData = BackupData(
-                version = "0.8.0",
-                timestamp = System.currentTimeMillis(),
-                sessions = backupSessions,
-                settings = backupSettings
-            )
+            val backupData = createBackupData()
 
             // Convert to JSON
             val json = backupDataToJson(backupData)
@@ -219,6 +191,53 @@ class BackupManager(
         return deletedCount
     }
 
+    /**
+     * Create backup data from current database state
+     */
+    private suspend fun createBackupData(): BackupData {
+        // Get all sessions from database
+        val sessions = sessionDao.getAllSessions().first()
+        val backupSessions = mutableListOf<BackupSession>()
+
+        for (session in sessions) {
+            val laps = sessionDao.getLapsForSession(session.id).first()
+            val backupLaps = laps.map { lap ->
+                BackupLap(
+                    lapNumber = lap.lapNumber,
+                    totalTime = lap.totalTime,
+                    lapDuration = lap.lapDuration
+                )
+            }
+            backupSessions.add(
+                BackupSession(
+                    id = session.id,
+                    startTime = session.startTime,
+                    endTime = session.endTime,
+                    totalDuration = session.totalDuration,
+                    comment = session.comment,
+                    laps = backupLaps
+                )
+            )
+        }
+
+        // Get current settings
+        val backupSettings = BackupSettings(
+            showMilliseconds = preferencesManager.showMilliseconds,
+            screenOnMode = preferencesManager.screenOnMode.name,
+            lockOrientation = preferencesManager.lockOrientation,
+            showMillisecondsInHistory = preferencesManager.showMillisecondsInHistory,
+            invertLapColors = preferencesManager.invertLapColors,
+            appLanguage = preferencesManager.appLanguage
+        )
+
+        return BackupData(
+            version = "0.9.0",
+            timestamp = System.currentTimeMillis(),
+            sessions = backupSessions,
+            settings = backupSettings
+        )
+    }
+
     private suspend fun restoreReplace(backupData: BackupData) {
         // Delete all existing data
         sessionDao.deleteAllSessions()
@@ -295,8 +314,6 @@ class BackupManager(
         preferencesManager.showMillisecondsInHistory = settings.showMillisecondsInHistory
         preferencesManager.invertLapColors = settings.invertLapColors
         settings.appLanguage?.let { preferencesManager.appLanguage = it }
-        preferencesManager.autoBackupEnabled = settings.autoBackupEnabled
-        preferencesManager.backupRetentionDays = settings.backupRetentionDays
     }
 
     private fun backupDataToJson(data: BackupData): String {
@@ -313,8 +330,6 @@ class BackupManager(
             settingsObj.put("showMillisecondsInHistory", settings.showMillisecondsInHistory)
             settingsObj.put("invertLapColors", settings.invertLapColors)
             settingsObj.put("appLanguage", settings.appLanguage ?: JSONObject.NULL)
-            settingsObj.put("autoBackupEnabled", settings.autoBackupEnabled)
-            settingsObj.put("backupRetentionDays", settings.backupRetentionDays)
             json.put("settings", settingsObj)
         }
 
@@ -357,9 +372,7 @@ class BackupManager(
                 lockOrientation = settingsObj.getBoolean("lockOrientation"),
                 showMillisecondsInHistory = settingsObj.getBoolean("showMillisecondsInHistory"),
                 invertLapColors = settingsObj.getBoolean("invertLapColors"),
-                appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage"),
-                autoBackupEnabled = settingsObj.optBoolean("autoBackupEnabled", false),
-                backupRetentionDays = settingsObj.optInt("backupRetentionDays", 30)
+                appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage")
             )
         } else {
             null

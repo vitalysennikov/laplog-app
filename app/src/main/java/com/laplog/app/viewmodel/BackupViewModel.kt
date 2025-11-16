@@ -105,6 +105,23 @@ class BackupViewModel(
         }
     }
 
+    fun generateManualBackup(onSuccess: (String, String) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            val result = backupManager.generateBackupData()
+            if (result.isSuccess) {
+                val (fileName, jsonData) = result.getOrNull()!!
+                onSuccess(fileName, jsonData)
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Backup generation failed"
+            }
+
+            _isLoading.value = false
+        }
+    }
+
     fun restoreBackup(fileInfo: BackupFileInfo, mode: BackupManager.RestoreMode) {
         viewModelScope.launch {
             _isLoading.value = true

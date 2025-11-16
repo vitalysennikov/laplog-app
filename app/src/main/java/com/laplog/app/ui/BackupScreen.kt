@@ -28,7 +28,8 @@ import java.util.*
 fun BackupScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
-    onSelectFolder: () -> Unit
+    onSelectFolder: () -> Unit,
+    onSaveBackupManually: (String, String) -> Unit
 ) {
     val viewModel: BackupViewModel = viewModel(
         factory = BackupViewModelFactory(
@@ -175,6 +176,23 @@ fun BackupScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.backup_now))
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Save backup to... button (manual save anywhere, including cloud)
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.generateManualBackup { fileName, jsonData ->
+                                onSaveBackupManually(fileName, jsonData)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading
+                    ) {
+                        Icon(Icons.Default.CloudUpload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.save_backup_to))
                     }
                 }
             }

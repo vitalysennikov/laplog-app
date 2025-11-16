@@ -88,6 +88,9 @@
     <string name="last_backup">Последняя резервная копия</string>
     <string name="never">Никогда</string>
     <string name="backup_now">Создать резервную копию</string>
+    <string name="save_backup_to">Сохранить резервную копию…</string>
+    <string name="backup_saved">Резервная копия успешно сохранена</string>
+    <string name="backup_save_error">Ошибка сохранения резервной копии</string>
     <string name="available_backups">Доступные резервные копии</string>
     <string name="no_backups_found">Резервные копии не найдены</string>
     <string name="restore">Восстановить</string>

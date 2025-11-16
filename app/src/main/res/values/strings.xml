@@ -49,7 +49,7 @@
     <string name="about">About</string>
     <string name="version_label">Version</string>
     <string name="version">Version %1$s</string>
-    <string name="version_name">0.8.8</string>
+    <string name="version_name">0.9.0</string>
     <string name="about_description">LapLog Free is a stopwatch app with lap tracking and session history. Track your time with precision and save your sessions for later review.</string>
     <string name="language">Language</string>
     <string name="language_system">System default</string>
@@ -88,6 +88,9 @@
     <string name="last_backup">Last backup</string>
     <string name="never">Never</string>
     <string name="backup_now">Backup Now</string>
+    <string name="save_backup_to">Save Backup To…</string>
+    <string name="backup_saved">Backup saved successfully</string>
+    <string name="backup_save_error">Error saving backup</string>
     <string name="available_backups">Available Backups</string>
     <string name="no_backups_found">No backups found</string>
     <string name="restore">Restore</string>

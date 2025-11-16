@@ -15,9 +15,7 @@ data class BackupSettings(
     val lockOrientation: Boolean,
     val showMillisecondsInHistory: Boolean,
     val invertLapColors: Boolean,
-    val appLanguage: String?,
-    val autoBackupEnabled: Boolean,
-    val backupRetentionDays: Int
+    val appLanguage: String?
 )
 
 data class BackupSession(

@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
     private var pendingExportData: String? = null
     private var pendingFileName: String? = null
+    private var pendingBackupData: String? = null
     private lateinit var backupViewModel: BackupViewModel
 
     private val selectBackupFolderLauncher = registerForActivityResult(
@@ -95,6 +96,25 @@ class MainActivity : ComponentActivity() {
             }
             pendingExportData = null
             pendingFileName = null
+        }
+    }
+
+    private val createBackupDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            val data = pendingBackupData
+            if (data != null) {
+                try {
+                    contentResolver.openOutputStream(it)?.use { outputStream ->
+                        outputStream.write(data.toByteArray())
+                    }
+                    Toast.makeText(this, getString(R.string.backup_saved), Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, getString(R.string.backup_save_error), Toast.LENGTH_SHORT).show()
+                }
+            }
+            pendingBackupData = null
         }
     }
 
@@ -259,7 +279,11 @@ class MainActivity : ComponentActivity() {
                             2 -> BackupScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
-                                onSelectFolder = { launchFolderPicker() }
+                                onSelectFolder = { launchFolderPicker() },
+                                onSaveBackupManually = { fileName, jsonData ->
+                                    pendingBackupData = jsonData
+                                    createBackupDocumentLauncher.launch(fileName)
+                                }
                             )
                         }
                     }
