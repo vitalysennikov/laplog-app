@@ -98,7 +98,11 @@
     <string name="merge">Объединить</string>
     <string name="merge_desc">Добавить данные из резервной копии к существующим</string>
     <string name="delete_backup_title">Удаление резервной копии</string>
+    <string name="delete_backup">Удалить резервную копию</string>
     <string name="delete_backup_message">Удалить этот файл резервной копии?</string>
+    <string name="delete_backups_before">Удалить копии ранее этой</string>
+    <string name="delete_backups_before_message">Удалить эту копию и все копии ранее неё? (всего %1$d копий)</string>
+    <string name="delete_all_backups_message">Удалить все %1$d резервных копий? Это действие нельзя отменить.</string>
 
     <!-- Notification -->
     <string name="stopwatch_notification_channel">Секундомер</string>

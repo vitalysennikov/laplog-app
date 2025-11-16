@@ -132,6 +132,41 @@ class BackupViewModel(
         }
     }
 
+    fun deleteAllBackups() {
+        val folderUriString = _backupFolderUri.value ?: return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val deletedCount = backupManager.deleteAllBackups(Uri.parse(folderUriString))
+                _errorMessage.value = "Deleted $deletedCount backups"
+                loadBackups()
+            } catch (e: Exception) {
+                _errorMessage.value = "Delete failed: ${e.message}"
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun deleteBackupsBefore(fileInfo: BackupFileInfo) {
+        val folderUriString = _backupFolderUri.value ?: return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val deletedCount = backupManager.deleteBackupsBefore(
+                    Uri.parse(folderUriString),
+                    fileInfo.timestamp
+                )
+                _errorMessage.value = "Deleted $deletedCount backups"
+                loadBackups()
+            } catch (e: Exception) {
+                _errorMessage.value = "Delete failed: ${e.message}"
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun loadBackups() {
         val folderUriString = _backupFolderUri.value ?: return
 

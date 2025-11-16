@@ -53,6 +53,9 @@ class StopwatchViewModel(
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
 
+    private val _dimBrightness = MutableStateFlow(preferencesManager.dimBrightness)
+    val dimBrightness: StateFlow<Boolean> = _dimBrightness.asStateFlow()
+
     private val _showPermissionDialog = MutableStateFlow(false)
     val showPermissionDialog: StateFlow<Boolean> = _showPermissionDialog.asStateFlow()
 
@@ -433,15 +436,21 @@ class StopwatchViewModel(
         preferencesManager.invertLapColors = _invertLapColors.value
     }
 
-    fun updateCurrentComment(comment: String) {
-        val trimmedComment = comment.trim()
-        _currentComment.value = trimmedComment
-        preferencesManager.currentComment = trimmedComment
+    fun toggleDimBrightness() {
+        _dimBrightness.value = !_dimBrightness.value
+        preferencesManager.dimBrightness = _dimBrightness.value
+    }
 
-        // Add to used comments if not empty
-        if (trimmedComment.isNotBlank() && !_usedComments.value.contains(trimmedComment)) {
+    fun updateCurrentComment(comment: String) {
+        // Don't trim during input - allow spaces inside comments
+        _currentComment.value = comment
+        preferencesManager.currentComment = comment
+
+        // Add to used comments if not empty (trim for checking and storage)
+        val trimmedForStorage = comment.trim()
+        if (trimmedForStorage.isNotBlank() && !_usedComments.value.contains(trimmedForStorage)) {
             val updated = _usedComments.value.toMutableSet()
-            updated.add(trimmedComment)
+            updated.add(trimmedForStorage)
             _usedComments.value = updated
             preferencesManager.usedComments = updated
         }

@@ -49,11 +49,20 @@ fun BackupScreen(
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
     var showDeleteDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
+    var showDeleteBeforeDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.backup)) }
+                title = { Text(stringResource(R.string.backup)) },
+                actions = {
+                    if (backups.isNotEmpty()) {
+                        IconButton(onClick = { showDeleteAllDialog = true }) {
+                            Icon(Icons.Default.DeleteSweep, contentDescription = "Delete all backups")
+                        }
+                    }
+                }
             )
         }
     ) { paddingValues ->
@@ -208,10 +217,13 @@ fun BackupScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(backups) { backup ->
+                            val backupIndex = backups.indexOf(backup)
                             BackupItem(
                                 backup = backup,
                                 onRestore = { showRestoreDialog = backup },
-                                onDelete = { showDeleteDialog = backup }
+                                onDelete = { showDeleteDialog = backup },
+                                onDeleteBefore = { showDeleteBeforeDialog = backup },
+                                showDeleteBefore = backupIndex < backups.size - 1
                             )
                             if (backup != backups.last()) {
                                 Divider()
@@ -346,14 +358,68 @@ fun BackupScreen(
             }
         )
     }
+
+    // Delete before dialog
+    showDeleteBeforeDialog?.let { backup ->
+        val backupIndex = backups.indexOf(backup)
+        val backupsToDelete = backups.size - backupIndex
+        AlertDialog(
+            onDismissRequest = { showDeleteBeforeDialog = null },
+            title = { Text(stringResource(R.string.delete_confirm_title)) },
+            text = { Text(stringResource(R.string.delete_backups_before_message, backupsToDelete)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteBackupsBefore(backup)
+                        showDeleteBeforeDialog = null
+                    }
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteBeforeDialog = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Delete all dialog
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text(stringResource(R.string.delete_confirm_title)) },
+            text = { Text(stringResource(R.string.delete_all_backups_message, backups.size)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteAllBackups()
+                        showDeleteAllDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
 fun BackupItem(
     backup: BackupFileInfo,
     onRestore: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onDeleteBefore: () -> Unit = {},
+    showDeleteBefore: Boolean = true
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -379,8 +445,29 @@ fun BackupItem(
             IconButton(onClick = onRestore) {
                 Icon(Icons.Default.RestorePage, contentDescription = stringResource(R.string.restore))
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+            IconButton(onClick = { showMenu = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete_backup)) },
+                    onClick = {
+                        showMenu = false
+                        onDelete()
+                    }
+                )
+                if (showDeleteBefore) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete_backups_before)) },
+                        onClick = {
+                            showMenu = false
+                            onDeleteBefore()
+                        }
+                    )
+                }
             }
         }
     }

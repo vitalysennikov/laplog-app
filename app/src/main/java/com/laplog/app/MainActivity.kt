@@ -235,6 +235,15 @@ class MainActivity : ComponentActivity() {
                                         ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                     }
                                 },
+                                onBrightnessChanged = { dimBrightness ->
+                                    val layoutParams = window.attributes
+                                    layoutParams.screenBrightness = if (dimBrightness) {
+                                        0.1f  // Dim to 10%
+                                    } else {
+                                        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE  // Use system brightness
+                                    }
+                                    window.attributes = layoutParams
+                                },
                                 isVisible = pagerState.currentPage == 0
                             )
                             1 -> HistoryScreen(

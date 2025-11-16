@@ -98,7 +98,11 @@
     <string name="merge">Merge</string>
     <string name="merge_desc">Add backup data to existing data</string>
     <string name="delete_backup_title">Delete Backup</string>
+    <string name="delete_backup">Delete backup</string>
     <string name="delete_backup_message">Delete this backup file?</string>
+    <string name="delete_backups_before">Delete backups before this</string>
+    <string name="delete_backups_before_message">Delete this backup and all backups before it? (%1$d backups total)</string>
+    <string name="delete_all_backups_message">Delete all %1$d backups? This cannot be undone.</string>
 
     <!-- Notification -->
     <string name="stopwatch_notification_channel">Stopwatch</string>

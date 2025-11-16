@@ -179,6 +179,46 @@ class BackupManager(
         return deletedCount
     }
 
+    /**
+     * Delete all backups
+     */
+    fun deleteAllBackups(folderUri: Uri): Int {
+        val backups = listBackups(folderUri)
+        var deletedCount = 0
+
+        backups.forEach { backup ->
+            try {
+                DocumentFile.fromSingleUri(context, backup.uri)?.delete()
+                deletedCount++
+            } catch (e: Exception) {
+                // Skip failed deletions
+            }
+        }
+
+        return deletedCount
+    }
+
+    /**
+     * Delete backups before (and including) the specified timestamp
+     */
+    fun deleteBackupsBefore(folderUri: Uri, timestamp: Long): Int {
+        val backups = listBackups(folderUri)
+        var deletedCount = 0
+
+        backups.forEach { backup ->
+            if (backup.timestamp <= timestamp) {
+                try {
+                    DocumentFile.fromSingleUri(context, backup.uri)?.delete()
+                    deletedCount++
+                } catch (e: Exception) {
+                    // Skip failed deletions
+                }
+            }
+        }
+
+        return deletedCount
+    }
+
     private suspend fun restoreReplace(backupData: BackupData) {
         // Delete all existing data
         sessionDao.deleteAllSessions()

@@ -98,7 +98,11 @@
     <string name="merge">合并</string>
     <string name="merge_desc">将备份数据添加到现有数据</string>
     <string name="delete_backup_title">删除备份</string>
+    <string name="delete_backup">删除备份</string>
     <string name="delete_backup_message">删除此备份文件？</string>
+    <string name="delete_backups_before">删除此备份之前的备份</string>
+    <string name="delete_backups_before_message">删除此备份及其之前的所有备份？（共%1$d个备份）</string>
+    <string name="delete_all_backups_message">删除所有%1$d个备份？此操作无法撤销。</string>
 
     <!-- Notification -->
     <string name="stopwatch_notification_channel">秒表</string>

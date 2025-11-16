@@ -36,6 +36,7 @@ fun StopwatchScreen(
     sessionDao: SessionDao,
     onScreenOnModeChanged: (ScreenOnMode, Boolean, Long) -> Unit, // (mode, isRunning, elapsedTime)
     onLockOrientation: (Boolean) -> Unit,
+    onBrightnessChanged: (Boolean) -> Unit = {}, // dimBrightness
     isVisible: Boolean = true
 ) {
     val context = LocalContext.current
@@ -66,6 +67,7 @@ fun StopwatchScreen(
     val commentsFromHistory by viewModel.commentsFromHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
+    val dimBrightness by viewModel.dimBrightness.collectAsState()
 
     var expandedCommentDropdown by remember { mutableStateOf(false) }
 
@@ -77,6 +79,11 @@ fun StopwatchScreen(
     // Update orientation lock
     LaunchedEffect(lockOrientation) {
         onLockOrientation(lockOrientation)
+    }
+
+    // Update brightness dimming
+    LaunchedEffect(dimBrightness) {
+        onBrightnessChanged(dimBrightness)
     }
 
     Column(
@@ -187,6 +194,19 @@ fun StopwatchScreen(
                     imageVector = if (invertLapColors) Icons.Filled.SwapVert else Icons.Outlined.SwapVert,
                     contentDescription = "Invert lap colors",
                     tint = if (invertLapColors) MaterialTheme.colorScheme.primary
+                          else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Dim brightness toggle
+            IconToggleButton(
+                checked = dimBrightness,
+                onCheckedChange = { viewModel.toggleDimBrightness() }
+            ) {
+                Icon(
+                    imageVector = if (dimBrightness) Icons.Filled.Brightness4 else Icons.Outlined.Brightness4,
+                    contentDescription = "Dim brightness",
+                    tint = if (dimBrightness) MaterialTheme.colorScheme.primary
                           else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
