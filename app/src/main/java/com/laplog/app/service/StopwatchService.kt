@@ -507,35 +507,35 @@ class StopwatchService : Service() {
         // Get laps for notification content
         val laps = StopwatchState.laps.value
 
-        // Build custom views for compact and expanded notification
-        val compactView = buildCompactView(timeString, laps)
-        val expandedView = buildExpandedView(timeString, laps)
-
-        // Set custom views
-        builder.setCustomContentView(compactView)
-        builder.setCustomBigContentView(expandedView)
-
-        // Use DecoratedCustomViewStyle to show action buttons with custom content
-        builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
-
-        return builder.build()
-    }
-
-    private fun buildCompactView(timeString: String, laps: List<com.laplog.app.model.LapTime>): RemoteViews {
-        val compactView = RemoteViews(packageName, R.layout.notification_compact)
-
-        // Set time
-        compactView.setTextViewText(R.id.notification_time, timeString)
-
-        // Set lap count if there are laps
+        // Choose notification style based on whether there are laps
         if (laps.isNotEmpty()) {
-            compactView.setTextViewText(R.id.notification_lap_count, "${laps.size}")
-            compactView.setViewVisibility(R.id.notification_lap_count, android.view.View.VISIBLE)
+            // Build custom expanded view for laps
+            val expandedView = buildExpandedView(timeString, laps)
+
+            // Set custom big content view (only for expanded state)
+            builder.setCustomBigContentView(expandedView)
+
+            // Use DecoratedCustomViewStyle to show action buttons with custom content
+            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+
+            // Show lap count in content info
+            builder.setContentInfo("${laps.size}")
         } else {
-            compactView.setViewVisibility(R.id.notification_lap_count, android.view.View.GONE)
+            // Use MediaStyle when no laps - shows buttons nicely
+            val mediaStyle = MediaStyle()
+
+            if (StopwatchState.isRunning.value) {
+                // Running: show all 3 buttons
+                mediaStyle.setShowActionsInCompactView(0, 1, 2)
+            } else {
+                // Paused: show 2 buttons
+                mediaStyle.setShowActionsInCompactView(0, 1)
+            }
+
+            builder.setStyle(mediaStyle)
         }
 
-        return compactView
+        return builder.build()
     }
 
     private fun buildExpandedView(timeString: String, laps: List<com.laplog.app.model.LapTime>): RemoteViews {
