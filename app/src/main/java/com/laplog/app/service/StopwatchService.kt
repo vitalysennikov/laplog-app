@@ -12,7 +12,6 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.laplog.app.MainActivity
@@ -509,16 +508,20 @@ class StopwatchService : Service() {
 
         // Choose notification style based on whether there are laps
         if (laps.isNotEmpty()) {
-            // Build custom expanded view for laps
-            val expandedView = buildExpandedView(timeString, laps)
+            // Use InboxStyle when there are laps - shows list in expanded view + keeps buttons visible
+            val inboxStyle = NotificationCompat.InboxStyle()
+                .setBigContentTitle(timeString)
+                .setSummaryText("${laps.size} laps")
 
-            // Set custom big content view (only for expanded state)
-            builder.setCustomBigContentView(expandedView)
+            // Show up to 7 most recent laps in reverse order
+            laps.takeLast(7).reversed().forEach { lap ->
+                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
+                inboxStyle.addLine(lapText)
+            }
 
-            // Use DecoratedCustomViewStyle to show action buttons with custom content
-            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            builder.setStyle(inboxStyle)
 
-            // Show lap count in content info
+            // Show lap count in content info (right side of compact view)
             builder.setContentInfo("${laps.size}")
         } else {
             // Use MediaStyle when no laps - shows buttons nicely
@@ -536,34 +539,6 @@ class StopwatchService : Service() {
         }
 
         return builder.build()
-    }
-
-    private fun buildExpandedView(timeString: String, laps: List<com.laplog.app.model.LapTime>): RemoteViews {
-        val expandedView = RemoteViews(packageName, R.layout.notification_expanded)
-
-        // Set time
-        expandedView.setTextViewText(R.id.notification_time_expanded, timeString)
-
-        // Set lap count and lap list if there are laps
-        if (laps.isNotEmpty()) {
-            expandedView.setTextViewText(R.id.notification_lap_count_expanded, "${laps.size}")
-            expandedView.setViewVisibility(R.id.notification_lap_count_expanded, android.view.View.VISIBLE)
-
-            // Build lap list text (up to 7 most recent laps)
-            val lapListText = buildString {
-                laps.takeLast(7).reversed().forEach { lap ->
-                    appendLine("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
-                }
-            }.trim()
-
-            expandedView.setTextViewText(R.id.notification_laps_list, lapListText)
-            expandedView.setViewVisibility(R.id.notification_laps_list, android.view.View.VISIBLE)
-        } else {
-            expandedView.setViewVisibility(R.id.notification_lap_count_expanded, android.view.View.GONE)
-            expandedView.setViewVisibility(R.id.notification_laps_list, android.view.View.GONE)
-        }
-
-        return expandedView
     }
 
     private fun formatTime(timeInMillis: Long): String {
