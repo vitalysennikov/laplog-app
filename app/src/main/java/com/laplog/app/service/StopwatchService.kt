@@ -518,22 +518,10 @@ class StopwatchService : Service() {
         // Get laps for notification content
         val laps = StopwatchState.laps.value
 
-        // If there are laps, add extended information
+        // If there are laps, show count in content info
         if (laps.isNotEmpty()) {
-            // Build lap list text for subtext
-            val lapListText = buildString {
-                // Show up to 5 most recent laps
-                laps.takeLast(5).reversed().forEach { lap ->
-                    append("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
-                    if (lap != laps.takeLast(5).reversed().last()) append(" • ")
-                }
-            }
-
-            // Show lap count in content info (right side)
+            // Show lap count in content info (right side of notification)
             builder.setContentInfo("${laps.size}")
-
-            // Add laps list as subtext
-            builder.setSubText(lapListText)
         }
 
         builder.setStyle(mediaStyle)

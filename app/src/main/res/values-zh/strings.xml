@@ -74,7 +74,7 @@
     <string name="toggle_screen_on_always">屏幕始终常亮：秒表运行时保持屏幕常亮，即使在后台</string>
     <string name="toggle_orientation_desc">锁定屏幕方向</string>
     <string name="toggle_invert_colors_desc">反转计次颜色（快/慢）</string>
-    <string name="toggle_dim_brightness_desc">保持亮度（启用时，当屏幕保持开启时保持系统亮度；禁用时，降至10%）</string>
+    <string name="toggle_dim_brightness_desc">保持亮度（适用于RUNNING/ALWAYS模式屏幕保持开启时；启用：保持系统亮度，禁用：超时后降至10%）</string>
 
     <!-- Backup screen -->
     <string name="backup">备份</string>

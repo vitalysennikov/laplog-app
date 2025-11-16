@@ -74,7 +74,7 @@
     <string name="toggle_screen_on_always">Экран ВСЕГДА ВКЛ: Экран не гаснет при работе секундомера, даже в фоне</string>
     <string name="toggle_orientation_desc">Блокировать ориентацию экрана</string>
     <string name="toggle_invert_colors_desc">Инвертировать цвета кругов (быстрее/медленнее)</string>
-    <string name="toggle_dim_brightness_desc">Сохранять яркость (когда включено, сохраняется системная яркость при удержании экрана; когда выключено, яркость уменьшается до 10%)</string>
+    <string name="toggle_dim_brightness_desc">Сохранять яркость (применяется когда экран удерживается в режимах RUNNING/ALWAYS; включено: сохранять системную яркость, выключено: уменьшать до 10% после таймаута)</string>
 
     <!-- Backup screen -->
     <string name="backup">Резервные копии</string>
