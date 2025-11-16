@@ -12,6 +12,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.laplog.app.MainActivity
@@ -506,38 +507,63 @@ class StopwatchService : Service() {
         // Get laps for notification content
         val laps = StopwatchState.laps.value
 
-        // Choose notification style based on whether there are laps
-        if (laps.isNotEmpty()) {
-            // Use InboxStyle when there are laps - shows list in expanded view
-            val inboxStyle = NotificationCompat.InboxStyle()
-                .setBigContentTitle(timeString)
-                .setSummaryText("${laps.size} laps")
+        // Build custom views for compact and expanded notification
+        val compactView = buildCompactView(timeString, laps)
+        val expandedView = buildExpandedView(timeString, laps)
 
-            // Show up to 7 most recent laps in reverse order
-            laps.takeLast(7).reversed().forEach { lap ->
-                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
-                inboxStyle.addLine(lapText)
-            }
+        // Set custom views
+        builder.setCustomContentView(compactView)
+        builder.setCustomBigContentView(expandedView)
 
-            // Show lap count in content info (right side)
-            builder.setContentInfo("${laps.size}")
-            builder.setStyle(inboxStyle)
-        } else {
-            // Use MediaStyle when no laps - shows buttons nicely in compact view
-            val mediaStyle = MediaStyle()
-
-            if (StopwatchState.isRunning.value) {
-                // Running: show all 3 buttons
-                mediaStyle.setShowActionsInCompactView(0, 1, 2)
-            } else {
-                // Paused: show 2 buttons
-                mediaStyle.setShowActionsInCompactView(0, 1)
-            }
-
-            builder.setStyle(mediaStyle)
-        }
+        // Use DecoratedCustomViewStyle to show action buttons with custom content
+        builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
 
         return builder.build()
+    }
+
+    private fun buildCompactView(timeString: String, laps: List<com.laplog.app.model.LapTime>): RemoteViews {
+        val compactView = RemoteViews(packageName, R.layout.notification_compact)
+
+        // Set time
+        compactView.setTextViewText(R.id.notification_time, timeString)
+
+        // Set lap count if there are laps
+        if (laps.isNotEmpty()) {
+            compactView.setTextViewText(R.id.notification_lap_count, "${laps.size}")
+            compactView.setViewVisibility(R.id.notification_lap_count, android.view.View.VISIBLE)
+        } else {
+            compactView.setViewVisibility(R.id.notification_lap_count, android.view.View.GONE)
+        }
+
+        return compactView
+    }
+
+    private fun buildExpandedView(timeString: String, laps: List<com.laplog.app.model.LapTime>): RemoteViews {
+        val expandedView = RemoteViews(packageName, R.layout.notification_expanded)
+
+        // Set time
+        expandedView.setTextViewText(R.id.notification_time_expanded, timeString)
+
+        // Set lap count and lap list if there are laps
+        if (laps.isNotEmpty()) {
+            expandedView.setTextViewText(R.id.notification_lap_count_expanded, "${laps.size}")
+            expandedView.setViewVisibility(R.id.notification_lap_count_expanded, android.view.View.VISIBLE)
+
+            // Build lap list text (up to 7 most recent laps)
+            val lapListText = buildString {
+                laps.takeLast(7).reversed().forEach { lap ->
+                    appendLine("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
+                }
+            }.trim()
+
+            expandedView.setTextViewText(R.id.notification_laps_list, lapListText)
+            expandedView.setViewVisibility(R.id.notification_laps_list, android.view.View.VISIBLE)
+        } else {
+            expandedView.setViewVisibility(R.id.notification_lap_count_expanded, android.view.View.GONE)
+            expandedView.setViewVisibility(R.id.notification_laps_list, android.view.View.GONE)
+        }
+
+        return expandedView
     }
 
     private fun formatTime(timeInMillis: Long): String {
