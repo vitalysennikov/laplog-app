@@ -212,6 +212,24 @@ fun AboutDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+
+                // Dim brightness toggle
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Brightness4,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.toggle_dim_brightness_desc),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         },
         confirmButton = {

@@ -49,7 +49,7 @@
     <string name="about">О программе</string>
     <string name="version_label">Версия</string>
     <string name="version">Версия %1$s</string>
-    <string name="version_name">0.8.8</string>
+    <string name="version_name">0.9.2</string>
     <string name="about_description">LapLog Free — это секундомер с отметками кругов и историей сессий. Отслеживайте время с точностью и сохраняйте сессии для последующего просмотра.</string>
     <string name="language">Язык</string>
     <string name="language_system">Системный</string>
@@ -74,6 +74,7 @@
     <string name="toggle_screen_on_always">Экран ВСЕГДА ВКЛ: Экран не гаснет при работе секундомера, даже в фоне</string>
     <string name="toggle_orientation_desc">Блокировать ориентацию экрана</string>
     <string name="toggle_invert_colors_desc">Инвертировать цвета кругов (быстрее/медленнее)</string>
+    <string name="toggle_dim_brightness_desc">Затухание яркости (когда включено, яркость уменьшается до 10% когда экран удерживается включённым через системный таймаут; когда выключено, сохраняется системная яркость)</string>
 
     <!-- Backup screen -->
     <string name="backup">Резервные копии</string>
@@ -104,7 +105,7 @@
     <string name="delete_backup">Удалить резервную копию</string>
     <string name="delete_backup_message">Удалить этот файл резервной копии?</string>
     <string name="delete_backups_before">Удалить копии ранее этой</string>
-    <string name="delete_backups_before_message">Удалить эту копию и все копии ранее неё? (всего %1$d копий)</string>
+    <string name="delete_backups_before_message">Удалить все копии ранее этой (не включая эту)? (всего %1$d копий)</string>
     <string name="delete_all_backups_message">Удалить все %1$d резервных копий? Это действие нельзя отменить.</string>
 
     <!-- Notification -->

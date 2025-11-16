@@ -380,7 +380,7 @@ fun BackupScreen(
     // Delete before dialog
     showDeleteBeforeDialog?.let { backup ->
         val backupIndex = backups.indexOf(backup)
-        val backupsToDelete = backups.size - backupIndex
+        val backupsToDelete = backups.size - backupIndex - 1
         AlertDialog(
             onDismissRequest = { showDeleteBeforeDialog = null },
             title = { Text(stringResource(R.string.delete_confirm_title)) },

@@ -273,18 +273,45 @@ class StopwatchViewModel(
         if (StopwatchState.isRunning.value) {
             pause()
         } else {
-            // Check permissions before starting
-            if (!preferencesManager.permissionsRequested && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                _showPermissionDialog.value = true
+            // Check if notification permission is needed and granted
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                if (!isNotificationPermissionGranted()) {
+                    // Permission not granted - request it
+                    if (!preferencesManager.permissionsRequested) {
+                        _showPermissionDialog.value = true
+                    } else {
+                        // Permission was requested before but not granted - start anyway
+                        // (user can still use app, just without notifications)
+                        start()
+                    }
+                } else {
+                    // Permission granted - start normally
+                    start()
+                }
             } else {
+                // Android < 13 - no permission needed
                 start()
             }
+        }
+    }
+
+    private fun isNotificationPermissionGranted(): Boolean {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true
         }
     }
 
     fun dismissPermissionDialog() {
         _showPermissionDialog.value = false
         preferencesManager.permissionsRequested = true
+        // Don't start automatically - wait for permission callback
+    }
+
+    fun onPermissionGranted() {
+        // Called when permission is granted
         start()
     }
 

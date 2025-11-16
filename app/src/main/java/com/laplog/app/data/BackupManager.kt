@@ -171,14 +171,14 @@ class BackupManager(
     }
 
     /**
-     * Delete backups before (and including) the specified timestamp
+     * Delete backups before (excluding) the specified timestamp
      */
     fun deleteBackupsBefore(folderUri: Uri, timestamp: Long): Int {
         val backups = listBackups(folderUri)
         var deletedCount = 0
 
         backups.forEach { backup ->
-            if (backup.timestamp <= timestamp) {
+            if (backup.timestamp < timestamp) {
                 try {
                     DocumentFile.fromSingleUri(context, backup.uri)?.delete()
                     deletedCount++

@@ -406,8 +406,10 @@ fun StopwatchScreen(
         NotificationPermissionDialog(
             onDismiss = { viewModel.dismissPermissionDialog() },
             onPermissionResult = { granted ->
+                viewModel.dismissPermissionDialog()
                 if (granted) {
                     viewModel.showBatteryOptimizationDialog()
+                    viewModel.onPermissionGranted()
                 }
             }
         )
