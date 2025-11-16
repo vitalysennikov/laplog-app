@@ -503,28 +503,39 @@ class StopwatchService : Service() {
                 )
         }
 
-        // Always use MediaStyle to keep action buttons visible in compact view
-        val mediaStyle = MediaStyle()
-
-        // Configure which buttons to show in compact view
-        if (StopwatchState.isRunning.value) {
-            // Running: show all 3 buttons
-            mediaStyle.setShowActionsInCompactView(0, 1, 2)
-        } else {
-            // Paused: show 2 buttons
-            mediaStyle.setShowActionsInCompactView(0, 1)
-        }
-
         // Get laps for notification content
         val laps = StopwatchState.laps.value
 
-        // If there are laps, show count in content info
+        // Choose notification style based on whether there are laps
         if (laps.isNotEmpty()) {
-            // Show lap count in content info (right side of notification)
-            builder.setContentInfo("${laps.size}")
-        }
+            // Use InboxStyle when there are laps - shows list in expanded view
+            val inboxStyle = NotificationCompat.InboxStyle()
+                .setBigContentTitle(timeString)
+                .setSummaryText("${laps.size} laps")
 
-        builder.setStyle(mediaStyle)
+            // Show up to 7 most recent laps in reverse order
+            laps.takeLast(7).reversed().forEach { lap ->
+                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
+                inboxStyle.addLine(lapText)
+            }
+
+            // Show lap count in content info (right side)
+            builder.setContentInfo("${laps.size}")
+            builder.setStyle(inboxStyle)
+        } else {
+            // Use MediaStyle when no laps - shows buttons nicely in compact view
+            val mediaStyle = MediaStyle()
+
+            if (StopwatchState.isRunning.value) {
+                // Running: show all 3 buttons
+                mediaStyle.setShowActionsInCompactView(0, 1, 2)
+            } else {
+                // Paused: show 2 buttons
+                mediaStyle.setShowActionsInCompactView(0, 1)
+            }
+
+            builder.setStyle(mediaStyle)
+        }
 
         return builder.build()
     }
