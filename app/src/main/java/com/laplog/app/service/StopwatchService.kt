@@ -215,6 +215,10 @@ class StopwatchService : Service() {
             }
             ACTION_STOP -> {
                 // ViewModel requested stop
+                // Stop all jobs first to prevent notification updates
+                stopNotificationUpdates()
+                stateListenerJob?.cancel()
+
                 // Release all wake locks when stopped
                 wakeLock?.let {
                     if (it.isHeld) {
@@ -268,6 +272,10 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_USER_STOP -> {
+                // Stop all jobs first to prevent notification updates
+                stopNotificationUpdates()
+                stateListenerJob?.cancel()
+
                 // Release all wake locks when stopped
                 wakeLock?.let {
                     if (it.isHeld) {
@@ -279,9 +287,6 @@ class StopwatchService : Service() {
                         it.release()
                     }
                 }
-
-                // Stop notifications first
-                stopNotificationUpdates()
 
                 // Notification button pressed - send command to ViewModel
                 serviceScope.launch {
@@ -498,9 +503,10 @@ class StopwatchService : Service() {
                 )
         }
 
-        // Add laps in expanded view if there are any (must be after buttons)
+        // Add laps in expanded view if there are any
         val laps = StopwatchState.laps.value
         if (laps.isNotEmpty()) {
+            // Use InboxStyle when there are laps to show
             val inboxStyle = NotificationCompat.InboxStyle()
                 .setBigContentTitle(timeString)
                 .setSummaryText("${laps.size} laps")
@@ -512,6 +518,13 @@ class StopwatchService : Service() {
             }
 
             builder.setStyle(inboxStyle)
+        } else {
+            // Use MediaStyle when no laps - shows buttons nicely in compact view
+            if (StopwatchState.isRunning.value) {
+                builder.setStyle(MediaStyle().setShowActionsInCompactView(0, 1, 2))
+            } else {
+                builder.setStyle(MediaStyle().setShowActionsInCompactView(0, 1))
+            }
         }
 
         return builder.build()
