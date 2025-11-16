@@ -503,37 +503,25 @@ class StopwatchService : Service() {
                 )
         }
 
-        // Always use MediaStyle to show buttons in compact view
-        // Show lap information in expanded view using BigTextStyle
-        val laps = StopwatchState.laps.value
-        if (laps.isNotEmpty()) {
-            // Build lap list text for expanded view
-            val lapListText = buildString {
-                appendLine("${laps.size} laps")
-                appendLine()
-                // Show up to 7 most recent laps in reverse order
-                laps.take(7).reversed().forEach { lap ->
-                    appendLine("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
-                }
-            }.trim()
+        // Always use MediaStyle to show action buttons in compact view
+        val mediaStyle = MediaStyle()
 
-            // Use BigTextStyle to show laps in expanded view while keeping buttons visible
-            val bigTextStyle = NotificationCompat.BigTextStyle()
-                .setBigContentTitle(timeString)
-                .bigText(lapListText)
-                .setSummaryText("${laps.size} laps")
-
-            builder.setStyle(bigTextStyle)
-        }
-
-        // Always show action buttons in compact view
         if (StopwatchState.isRunning.value) {
             // Running: show all 3 buttons
-            builder.setShowActionsInCompactView(0, 1, 2)
+            mediaStyle.setShowActionsInCompactView(0, 1, 2)
         } else {
             // Paused: show 2 buttons
-            builder.setShowActionsInCompactView(0, 1)
+            mediaStyle.setShowActionsInCompactView(0, 1)
         }
+
+        // If there are laps, add lap count to notification
+        val laps = StopwatchState.laps.value
+        if (laps.isNotEmpty()) {
+            // Show lap count in content info (small text on the right)
+            builder.setContentInfo("${laps.size} laps")
+        }
+
+        builder.setStyle(mediaStyle)
 
         return builder.build()
     }
