@@ -74,7 +74,7 @@
     <string name="toggle_screen_on_always">Screen ALWAYS ON: Screen stays on while stopwatch is running, even in background</string>
     <string name="toggle_orientation_desc">Lock screen orientation</string>
     <string name="toggle_invert_colors_desc">Invert lap colors (faster/slower)</string>
-    <string name="toggle_dim_brightness_desc">Screen dimming (when enabled, dims screen brightness to 10% when screen is kept on by timeout; when disabled, keeps system brightness)</string>
+    <string name="toggle_dim_brightness_desc">Keep brightness (when enabled, keeps system brightness when screen is kept on; when disabled, dims to 10%)</string>
 
     <!-- Backup screen -->
     <string name="backup">Backup</string>

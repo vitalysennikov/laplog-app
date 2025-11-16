@@ -258,9 +258,9 @@ class MainActivity : ComponentActivity() {
                                 onBrightnessChanged = { dimBrightness ->
                                     val layoutParams = window.attributes
                                     layoutParams.screenBrightness = if (dimBrightness) {
-                                        0.1f  // Dim to 10%
+                                        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE  // Keep system brightness (do not change)
                                     } else {
-                                        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE  // Use system brightness
+                                        0.1f  // Dim to 10% when screen is kept on
                                     }
                                     window.attributes = layoutParams
                                 },
