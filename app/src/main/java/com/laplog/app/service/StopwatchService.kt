@@ -503,28 +503,36 @@ class StopwatchService : Service() {
                 )
         }
 
-        // Add laps in expanded view if there are any
+        // Always use MediaStyle to show buttons in compact view
+        // Show lap information in expanded view using BigTextStyle
         val laps = StopwatchState.laps.value
         if (laps.isNotEmpty()) {
-            // Use InboxStyle when there are laps to show
-            val inboxStyle = NotificationCompat.InboxStyle()
+            // Build lap list text for expanded view
+            val lapListText = buildString {
+                appendLine("${laps.size} laps")
+                appendLine()
+                // Show up to 7 most recent laps in reverse order
+                laps.take(7).reversed().forEach { lap ->
+                    appendLine("Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}")
+                }
+            }.trim()
+
+            // Use BigTextStyle to show laps in expanded view while keeping buttons visible
+            val bigTextStyle = NotificationCompat.BigTextStyle()
                 .setBigContentTitle(timeString)
+                .bigText(lapListText)
                 .setSummaryText("${laps.size} laps")
 
-            // Show up to 7 most recent laps in reverse order
-            laps.take(7).reversed().forEach { lap ->
-                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
-                inboxStyle.addLine(lapText)
-            }
+            builder.setStyle(bigTextStyle)
+        }
 
-            builder.setStyle(inboxStyle)
+        // Always show action buttons in compact view
+        if (StopwatchState.isRunning.value) {
+            // Running: show all 3 buttons
+            builder.setShowActionsInCompactView(0, 1, 2)
         } else {
-            // Use MediaStyle when no laps - shows buttons nicely in compact view
-            if (StopwatchState.isRunning.value) {
-                builder.setStyle(MediaStyle().setShowActionsInCompactView(0, 1, 2))
-            } else {
-                builder.setStyle(MediaStyle().setShowActionsInCompactView(0, 1))
-            }
+            // Paused: show 2 buttons
+            builder.setShowActionsInCompactView(0, 1)
         }
 
         return builder.build()

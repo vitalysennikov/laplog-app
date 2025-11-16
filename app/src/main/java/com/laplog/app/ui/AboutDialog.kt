@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.laplog.app.BuildConfig
 import com.laplog.app.R
 
 @Composable
@@ -34,7 +35,7 @@ fun AboutDialog(
             ) {
                 // Version
                 Text(
-                    text = "${stringResource(R.string.version_label)}: ${stringResource(R.string.version_name)}",
+                    text = "${stringResource(R.string.version_label)}: ${BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
