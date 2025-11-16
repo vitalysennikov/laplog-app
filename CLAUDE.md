@@ -5,8 +5,8 @@
 **LapLog Free** is an Android stopwatch application with lap tracking and session history features. The name reflects two key features: **Lap** marks and **Log** (history) of sessions.
 
 - **Package**: `com.laplog.app`
-- **Current Version**: 0.3.0 (versionCode 4) - IN DEVELOPMENT
-- **Stable Version**: 0.2.0 (tagged)
+- **Current Version**: 0.9.1 (versionCode 26) - IN DEVELOPMENT
+- **Stable Version**: 0.9.0 (tagged)
 - **Min SDK**: 24 (Android 7.0)
 - **Target SDK**: 34 (Android 14)
 - **Latest Build**: GitHub Actions builds APK on every push to main
@@ -151,7 +151,7 @@ See `task_2.md` for detailed requirements.
 - ✅ Stage 7: UI polish and navigation
 - ✅ Bug fix: Session saving to history (Flow.first)
 
-### Version 0.3.0 (IN DEVELOPMENT - dev branch)
+### Version 0.3.0 (COMPLETED)
 - ✅ DSEG7 digital clock font (angular/segmented display style)
 - ✅ Lap statistics: AVG/MEDIAN on stopwatch and history
 - ✅ Enhanced lap display: +/-N.N s difference indicators
@@ -165,6 +165,23 @@ See `task_2.md` for detailed requirements.
 - ✅ Comment moved to session header (next to date)
 - ✅ Seconds added to session timestamps
 - ✅ Fixed session saving bug (Flow.collect → Flow.first)
+
+### Version 0.9.0 (COMPLETED - tagged v0.9.0)
+- ✅ Brightness dimming toggle: allows dimming screen to 10% or use system brightness
+- ✅ Comment spaces fix: preserve spaces inside comments, trim only at edges
+- ✅ Backup deletion options:
+  - Delete all backups option in top bar
+  - Delete backups before selected backup
+  - Confirmation dialogs for all operations
+- ✅ Cloud storage support for backups:
+  - "Save Backup To..." button for manual save anywhere
+  - Compatible with Dropbox, Google Drive, MEGA
+  - Dual backup approach: automatic to folder + manual to cloud
+- ✅ Backup version updated to 0.9.0
+- ✅ String resources added for all languages (EN, RU, ZH)
+
+### Version 0.9.1 (IN DEVELOPMENT)
+- Current development version
 
 ### Known Issues
 - None currently
