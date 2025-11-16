@@ -49,7 +49,7 @@
     <string name="about">关于</string>
     <string name="version_label">版本</string>
     <string name="version">版本 %1$s</string>
-    <string name="version_name">0.8.1</string>
+    <string name="version_name">0.8.7</string>
     <string name="about_description">LapLog Free 是一款具有计次和历史记录功能的秒表应用。精确记录时间并保存您的记录以供日后查看。</string>
     <string name="language">语言</string>
     <string name="language_system">跟随系统</string>

@@ -374,7 +374,7 @@ class StopwatchViewModel(
             startTime = sessionStartTime,
             endTime = endTime,
             totalDuration = elapsedTime,
-            comment = _currentComment.value.takeIf { it.isNotBlank() }
+            comment = _currentComment.value.trim().takeIf { it.isNotBlank() }
         )
 
         val sessionId = sessionDao.insertSession(session)
@@ -434,13 +434,14 @@ class StopwatchViewModel(
     }
 
     fun updateCurrentComment(comment: String) {
-        _currentComment.value = comment
-        preferencesManager.currentComment = comment
+        val trimmedComment = comment.trim()
+        _currentComment.value = trimmedComment
+        preferencesManager.currentComment = trimmedComment
 
         // Add to used comments if not empty
-        if (comment.isNotBlank() && !_usedComments.value.contains(comment)) {
+        if (trimmedComment.isNotBlank() && !_usedComments.value.contains(trimmedComment)) {
             val updated = _usedComments.value.toMutableSet()
-            updated.add(comment)
+            updated.add(trimmedComment)
             _usedComments.value = updated
             preferencesManager.usedComments = updated
         }

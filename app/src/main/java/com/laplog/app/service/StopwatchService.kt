@@ -268,11 +268,6 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_USER_STOP -> {
-                // Notification button pressed - send command to ViewModel
-                serviceScope.launch {
-                    StopwatchCommandManager.sendCommand(StopwatchCommand.Stop)
-                }
-
                 // Release all wake locks when stopped
                 wakeLock?.let {
                     if (it.isHeld) {
@@ -285,6 +280,15 @@ class StopwatchService : Service() {
                     }
                 }
 
+                // Stop notifications first
+                stopNotificationUpdates()
+
+                // Notification button pressed - send command to ViewModel
+                serviceScope.launch {
+                    StopwatchCommandManager.sendCommand(StopwatchCommand.Stop)
+                }
+
+                // Remove notification and stop service
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -409,8 +413,8 @@ class StopwatchService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFF1976D2.toInt())  // Material Blue 700 - for action icon tinting
             .setOngoing(true)  // Cannot swipe away - use Stop button instead
-            .setPriority(NotificationCompat.PRIORITY_LOW)  // Lower priority to prevent jumping
-            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)  // Default priority
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)  // Use SERVICE category to prevent swiping
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setSilent(true)
@@ -418,22 +422,7 @@ class StopwatchService : Service() {
             .setWhen(notificationCreationTime)  // Fixed time for stable sorting
             .setShowWhen(false)  // Don't show timestamp
             .setSortKey("laplog_stopwatch")  // Stable sort key
-
-        // Add laps in expanded view if there are any
-        val laps = StopwatchState.laps.value
-        if (laps.isNotEmpty()) {
-            val inboxStyle = NotificationCompat.InboxStyle()
-                .setBigContentTitle(timeString)
-                .setSummaryText("${laps.size} laps")
-
-            // Show up to 7 most recent laps in reverse order
-            laps.take(7).reversed().forEach { lap ->
-                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
-                inboxStyle.addLine(lapText)
-            }
-
-            builder.setStyle(inboxStyle)
-        }
+            .setAutoCancel(false)  // Don't auto-cancel on click
 
         // Different buttons based on state to match main app
         if (StopwatchState.isRunning.value) {
@@ -463,9 +452,6 @@ class StopwatchService : Service() {
             )
 
             builder
-                .setStyle(MediaStyle()
-                    .setShowActionsInCompactView(0, 1, 2)  // Show all 3 buttons in compact view
-                )
                 .addAction(
                     R.drawable.ic_notification_pause,
                     "",  // Empty string instead of null for icon visibility
@@ -500,9 +486,6 @@ class StopwatchService : Service() {
             )
 
             builder
-                .setStyle(MediaStyle()
-                    .setShowActionsInCompactView(0, 1)  // Show both buttons in compact view
-                )
                 .addAction(
                     R.drawable.ic_notification_play,
                     "",
@@ -513,6 +496,22 @@ class StopwatchService : Service() {
                     "",
                     stopPendingIntent
                 )
+        }
+
+        // Add laps in expanded view if there are any (must be after buttons)
+        val laps = StopwatchState.laps.value
+        if (laps.isNotEmpty()) {
+            val inboxStyle = NotificationCompat.InboxStyle()
+                .setBigContentTitle(timeString)
+                .setSummaryText("${laps.size} laps")
+
+            // Show up to 7 most recent laps in reverse order
+            laps.take(7).reversed().forEach { lap ->
+                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
+                inboxStyle.addLine(lapText)
+            }
+
+            builder.setStyle(inboxStyle)
         }
 
         return builder.build()
