@@ -503,39 +503,23 @@ class StopwatchService : Service() {
                 )
         }
 
-        // Get laps for notification content
-        val laps = StopwatchState.laps.value
+        // Always use MediaStyle to keep action buttons visible in compact view
+        val mediaStyle = MediaStyle()
 
-        // Choose notification style based on whether there are laps
-        if (laps.isNotEmpty()) {
-            // Use InboxStyle when there are laps - shows list in expanded view + keeps buttons visible
-            val inboxStyle = NotificationCompat.InboxStyle()
-                .setBigContentTitle(timeString)
-                .setSummaryText("${laps.size} laps")
-
-            // Show up to 7 most recent laps in reverse order
-            laps.takeLast(7).reversed().forEach { lap ->
-                val lapText = "Lap ${lap.lapNumber}: ${formatTime(lap.lapDuration)}"
-                inboxStyle.addLine(lapText)
-            }
-
-            builder.setStyle(inboxStyle)
-
-            // Show lap count in content info (right side of compact view)
-            builder.setContentInfo("${laps.size}")
+        if (StopwatchState.isRunning.value) {
+            // Running: show all 3 buttons
+            mediaStyle.setShowActionsInCompactView(0, 1, 2)
         } else {
-            // Use MediaStyle when no laps - shows buttons nicely
-            val mediaStyle = MediaStyle()
+            // Paused: show 2 buttons
+            mediaStyle.setShowActionsInCompactView(0, 1)
+        }
 
-            if (StopwatchState.isRunning.value) {
-                // Running: show all 3 buttons
-                mediaStyle.setShowActionsInCompactView(0, 1, 2)
-            } else {
-                // Paused: show 2 buttons
-                mediaStyle.setShowActionsInCompactView(0, 1)
-            }
+        builder.setStyle(mediaStyle)
 
-            builder.setStyle(mediaStyle)
+        // Show lap count in content info (right side) if there are laps
+        val laps = StopwatchState.laps.value
+        if (laps.isNotEmpty()) {
+            builder.setContentInfo("${laps.size}")
         }
 
         return builder.build()
