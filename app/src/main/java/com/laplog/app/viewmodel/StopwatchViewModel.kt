@@ -86,6 +86,8 @@ class StopwatchViewModel(
                 startTimerJob()
             }
             StopwatchCommand.Pause -> {
+                // Update time one last time before pausing to show accurate milliseconds
+                StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
                 StopwatchState.pause()
                 timerJob?.cancel()
                 saveStopwatchState()
@@ -124,6 +126,8 @@ class StopwatchViewModel(
             StopwatchCommand.LapAndPause -> {
                 StopwatchState.addLap()
                 if (StopwatchState.isRunning.value) {
+                    // Update time one last time before pausing to show accurate milliseconds
+                    StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
                     StopwatchState.pause()
                     timerJob?.cancel()
                     saveStopwatchState()
@@ -342,6 +346,8 @@ class StopwatchViewModel(
     }
 
     private fun pause() {
+        // Update time one last time before pausing to show accurate milliseconds
+        StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
         StopwatchState.pause()
         timerJob?.cancel()
 
@@ -432,6 +438,8 @@ class StopwatchViewModel(
     }
 
     fun addLapAndPause() {
+        // Update time before adding lap to capture accurate lap time
+        StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
         StopwatchState.addLap()
         if (StopwatchState.isRunning.value) {
             pause()

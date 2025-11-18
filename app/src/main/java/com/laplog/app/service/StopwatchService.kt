@@ -215,9 +215,11 @@ class StopwatchService : Service() {
             }
             ACTION_STOP -> {
                 // ViewModel requested stop
-                // Stop all jobs first to prevent notification updates
-                stopNotificationUpdates()
+                // Stop all jobs FIRST to prevent any notification updates
+                notificationJob?.cancel()
+                notificationJob = null
                 stateListenerJob?.cancel()
+                stateListenerJob = null
 
                 // Release all wake locks when stopped
                 wakeLock?.let {
@@ -231,6 +233,7 @@ class StopwatchService : Service() {
                     }
                 }
 
+                // Remove notification and stop service
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -272,9 +275,11 @@ class StopwatchService : Service() {
                 }
             }
             ACTION_USER_STOP -> {
-                // Stop all jobs first to prevent notification updates
-                stopNotificationUpdates()
+                // Stop all jobs FIRST to prevent any notification updates
+                notificationJob?.cancel()
+                notificationJob = null
                 stateListenerJob?.cancel()
+                stateListenerJob = null
 
                 // Release all wake locks when stopped
                 wakeLock?.let {
@@ -293,7 +298,8 @@ class StopwatchService : Service() {
                     StopwatchCommandManager.sendCommand(StopwatchCommand.Stop)
                 }
 
-                // Remove notification and stop service
+                // Remove notification and stop service immediately
+                // (don't wait for command to be processed)
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }

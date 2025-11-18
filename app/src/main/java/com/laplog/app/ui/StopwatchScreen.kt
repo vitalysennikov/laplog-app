@@ -214,9 +214,9 @@ fun StopwatchScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Time display with digital clock font (no milliseconds on main timer)
+        // Time display with digital clock font (show milliseconds only when paused)
         Text(
-            text = viewModel.formatTime(elapsedTime, includeMillis = false, roundIfNoMillis = false),
+            text = viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false),
             fontSize = 56.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = dseg7Font,
