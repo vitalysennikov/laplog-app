@@ -242,21 +242,20 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     if (shouldKeepOn) {
-                                        if (dimBrightness) {
-                                            // Fixed brightness at 10% - use FLAG_KEEP_SCREEN_ON
-                                            // This prevents both dimming and screen off
-                                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                            val layoutParams = window.attributes
-                                            layoutParams.screenBrightness = 0.1f
-                                            window.attributes = layoutParams
+                                        // Screen should stay on - use FLAG_KEEP_SCREEN_ON
+                                        // This prevents screen from turning off but allows natural dimming
+                                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+                                        // Control brightness separately
+                                        val layoutParams = window.attributes
+                                        layoutParams.screenBrightness = if (dimBrightness) {
+                                            // Fixed brightness at 10% when dimming is ON
+                                            0.1f
                                         } else {
-                                            // Allow natural dimming - use SCREEN_DIM_WAKE_LOCK via service
-                                            // Remove FLAG_KEEP_SCREEN_ON to allow dimming
-                                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                            val layoutParams = window.attributes
-                                            layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                                            window.attributes = layoutParams
+                                            // Use system brightness - allows natural dimming when dimming is OFF
+                                            WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                                         }
+                                        window.attributes = layoutParams
                                     } else {
                                         // Screen can turn off
                                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
