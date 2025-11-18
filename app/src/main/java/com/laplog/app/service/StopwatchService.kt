@@ -334,15 +334,23 @@ class StopwatchService : Service() {
             // === Actions from MainActivity (app state changes) ===
             ACTION_APP_FOREGROUND -> {
                 // App came to foreground - stop notification updates, show static text
-                stopNotificationUpdates()
-                updateNotification() // Update once with static text
+                // Only process if service is running (in foreground mode)
+                if (StopwatchState.elapsedTime.value > 0 || StopwatchState.isRunning.value) {
+                    stopNotificationUpdates()
+                    updateNotification() // Update once with static text
+                }
             }
             ACTION_APP_BACKGROUND -> {
-                // App went to background - start notification updates if running and screen on
-                if (StopwatchState.isRunning.value && AppState.shouldUpdateNotification()) {
-                    startNotificationUpdates()
-                } else {
-                    updateNotification() // Update once with current state
+                // App went to background
+                // Start service as foreground if stopwatch has activity
+                if (StopwatchState.elapsedTime.value > 0 || StopwatchState.isRunning.value) {
+                    // Ensure service is in foreground mode with notification
+                    startForeground(NOTIFICATION_ID, buildNotification())
+
+                    // Start notification updates if running and screen on
+                    if (StopwatchState.isRunning.value && AppState.shouldUpdateNotification()) {
+                        startNotificationUpdates()
+                    }
                 }
             }
 

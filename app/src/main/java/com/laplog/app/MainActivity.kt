@@ -505,10 +505,14 @@ class MainActivity : ComponentActivity() {
         AppState.setAppInForeground(true)
 
         // Notify service about app state change
-        val intent = Intent(this, StopwatchService::class.java).apply {
-            action = StopwatchService.ACTION_APP_FOREGROUND
+        // Only if stopwatch has activity (not in stopped state)
+        if (com.laplog.app.model.StopwatchState.elapsedTime.value > 0 ||
+            com.laplog.app.model.StopwatchState.isRunning.value) {
+            val intent = Intent(this, StopwatchService::class.java).apply {
+                action = StopwatchService.ACTION_APP_FOREGROUND
+            }
+            startService(intent)
         }
-        startService(intent)
     }
 
     override fun onPause() {
@@ -517,10 +521,14 @@ class MainActivity : ComponentActivity() {
         AppState.setAppInForeground(false)
 
         // Notify service about app state change
-        val intent = Intent(this, StopwatchService::class.java).apply {
-            action = StopwatchService.ACTION_APP_BACKGROUND
+        // Only if stopwatch has activity (not in stopped state)
+        if (com.laplog.app.model.StopwatchState.elapsedTime.value > 0 ||
+            com.laplog.app.model.StopwatchState.isRunning.value) {
+            val intent = Intent(this, StopwatchService::class.java).apply {
+                action = StopwatchService.ACTION_APP_BACKGROUND
+            }
+            startService(intent)
         }
-        startService(intent)
     }
 
     private fun applyLanguage(languageCode: String?) {

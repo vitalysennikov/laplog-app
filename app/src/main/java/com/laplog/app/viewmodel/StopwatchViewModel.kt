@@ -186,7 +186,7 @@ class StopwatchViewModel(
                     // Restart the service
                     resumeService()
                 } else {
-                    // Stopwatch was paused
+                    // Stopwatch was paused (time > 0 but not running)
                     StopwatchState.restore(
                         elapsedTime = savedElapsedTime,
                         isRunning = false,
@@ -194,6 +194,11 @@ class StopwatchViewModel(
                         sessionStartTime = savedSessionStartTime,
                         accumulatedTime = savedAccumulatedTime
                     )
+
+                    // Don't start service when restoring paused state
+                    // Service will be started automatically if:
+                    // 1. User resumes the stopwatch (resumeService called)
+                    // 2. App goes to background while paused (handled by MainActivity)
                 }
             }
         } catch (e: Exception) {
