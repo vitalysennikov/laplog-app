@@ -241,20 +241,19 @@ class MainActivity : ComponentActivity() {
                                         ScreenOnMode.ALWAYS -> true
                                     }
 
-                                    if (shouldKeepOn) {
-                                        // Screen should stay on - use FLAG_KEEP_SCREEN_ON
-                                        // This prevents screen from turning off but allows natural dimming
+                                    if (shouldKeepOn && dimBrightness) {
+                                        // Fixed brightness mode - use FLAG_KEEP_SCREEN_ON
+                                        // This prevents screen off and keeps brightness fixed
                                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-                                        // Control brightness separately
                                         val layoutParams = window.attributes
-                                        layoutParams.screenBrightness = if (dimBrightness) {
-                                            // Fixed brightness at 10% when dimming is ON
-                                            0.1f
-                                        } else {
-                                            // Use system brightness - allows natural dimming when dimming is OFF
-                                            WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                                        }
+                                        layoutParams.screenBrightness = 0.1f
+                                        window.attributes = layoutParams
+                                    } else if (shouldKeepOn && !dimBrightness) {
+                                        // Natural dimming mode - DON'T use FLAG_KEEP_SCREEN_ON
+                                        // Rely on service's SCREEN_DIM_WAKE_LOCK to keep screen on with dimming
+                                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                        val layoutParams = window.attributes
+                                        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                                         window.attributes = layoutParams
                                     } else {
                                         // Screen can turn off

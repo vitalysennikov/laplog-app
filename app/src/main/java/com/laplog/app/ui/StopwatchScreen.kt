@@ -75,6 +75,30 @@ fun StopwatchScreen(
         onScreenOnModeChanged(screenOnMode, isRunning, elapsedTime, dimBrightness)
     }
 
+    // In ALWAYS mode with dimBrightness OFF, keep service running even when stopped
+    // This is needed to hold SCREEN_DIM_WAKE_LOCK for natural screen dimming
+    LaunchedEffect(screenOnMode, dimBrightness, isRunning, elapsedTime) {
+        val needsAlwaysOnService = screenOnMode == ScreenOnMode.ALWAYS &&
+                                   !dimBrightness &&
+                                   elapsedTime == 0L &&
+                                   !isRunning
+
+        if (needsAlwaysOnService) {
+            // Start service to hold SCREEN_DIM_WAKE_LOCK
+            val intent = android.content.Intent(context, com.laplog.app.service.StopwatchService::class.java).apply {
+                action = com.laplog.app.service.StopwatchService.ACTION_ALWAYS_ON
+                putExtra(com.laplog.app.service.StopwatchService.EXTRA_USE_SCREEN_DIM, true)
+            }
+            context.startForegroundService(intent)
+        } else if (elapsedTime == 0L && !isRunning) {
+            // Stop ALWAYS ON service if mode changed or dimBrightness enabled
+            val intent = android.content.Intent(context, com.laplog.app.service.StopwatchService::class.java).apply {
+                action = com.laplog.app.service.StopwatchService.ACTION_STOP
+            }
+            context.startService(intent)
+        }
+    }
+
     // Update orientation lock
     LaunchedEffect(lockOrientation) {
         onLockOrientation(lockOrientation)

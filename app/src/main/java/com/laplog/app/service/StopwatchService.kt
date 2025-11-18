@@ -79,6 +79,9 @@ class StopwatchService : Service() {
         const val ACTION_APP_FOREGROUND = "com.laplog.app.APP_FOREGROUND"
         const val ACTION_APP_BACKGROUND = "com.laplog.app.APP_BACKGROUND"
 
+        // Action for ALWAYS ON mode (screen dimming without stopwatch running)
+        const val ACTION_ALWAYS_ON = "com.laplog.app.ALWAYS_ON"
+
         // Actions from notification buttons (user interaction)
         const val ACTION_USER_PAUSE = "com.laplog.app.USER_PAUSE"
         const val ACTION_USER_RESUME = "com.laplog.app.USER_RESUME"
@@ -169,6 +172,23 @@ class StopwatchService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            // === Special action for ALWAYS ON mode ===
+            ACTION_ALWAYS_ON -> {
+                // Keep screen on with dimming in ALWAYS mode when stopwatch is stopped
+                useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
+
+                // Acquire screen dim wake lock
+                if (useScreenDimWakeLock) {
+                    screenDimWakeLock?.acquire()
+                } else {
+                    wakeLock?.acquire()
+                }
+
+                // Start as foreground service with minimal notification
+                val notification = buildAlwaysOnNotification()
+                startForeground(NOTIFICATION_ID, notification)
+            }
+
             // === Actions from ViewModel (service management) ===
             ACTION_START -> {
                 // Service started from ViewModel, just start foreground and notifications
@@ -537,6 +557,37 @@ class StopwatchService : Service() {
         }
 
         return builder.build()
+    }
+
+    private fun buildAlwaysOnNotification(): Notification {
+        // Minimal notification for ALWAYS ON mode (screen stays on with dimming)
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText("Screen stays on")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF1976D2.toInt())
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)  // Low priority for this notification
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(pendingIntent)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setWhen(notificationCreationTime)
+            .setShowWhen(false)
+            .setSortKey("laplog_screen_on")
+            .setAutoCancel(false)
+            .build()
     }
 
     private fun formatTime(timeInMillis: Long): String {
