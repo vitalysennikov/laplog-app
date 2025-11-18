@@ -36,6 +36,11 @@
   - Исправлена проблема с повторным появлением уведомления при сворачивании приложения сразу после остановки
   - Состояние теперь сбрасывается синхронно, сохранение сессии происходит асинхронно
   - Корректная обработка сценария: работает → пауза → стоп → сворачивание приложения
+- **Обновление wake locks при переключении настроек во время работы**
+  - Переключатели теперь мгновенно влияют на поведение экрана даже когда секундомер работает
+  - При изменении режима экрана (OFF/WHILE_RUNNING/ALWAYS) wake lock обновляется в реальном времени
+  - При включении/выключении затухания яркости wake lock переключается между PARTIAL и SCREEN_DIM
+  - Добавлен ACTION_UPDATE_WAKE_LOCK для обновления wake lock без перезапуска сервиса
 
 ### Технические детали
 - **StopwatchScreen.kt**: изменена логика показа миллисекунд - `includeMillis = !isRunning`
@@ -47,12 +52,16 @@
   - Метод `saveSession()` теперь принимает параметры вместо чтения из StopwatchState
   - Добавлен метод `shouldUseScreenDimWakeLock()` для определения когда использовать SCREEN_DIM_WAKE_LOCK
   - Логика передачи wake lock флага в сервис теперь учитывает screenOnMode и dimBrightness
+  - Добавлен метод `updateServiceWakeLock()` для обновления wake lock при изменении настроек
+  - Методы `cycleScreenOnMode()` и `toggleDimBrightness()` вызывают `updateServiceWakeLock()` если секундомер активен
 - **StopwatchService.kt**:
   - Улучшена логика остановки сервиса - jobs отменяются с установкой в null перед вызовом `stopForeground()`
   - Добавлены проверки состояния в обработчиках ACTION_APP_FOREGROUND/BACKGROUND
   - ACTION_APP_BACKGROUND теперь вызывает `startForeground()` для корректного показа уведомления
   - Добавлен новый ACTION_ALWAYS_ON для режима ALWAYS с dimBrightness = false
   - Метод `buildAlwaysOnNotification()` создает минимальное уведомление "Screen stays on"
+  - Добавлен ACTION_UPDATE_WAKE_LOCK для обновления типа wake lock без перезапуска сервиса
+  - Обработчик освобождает текущий wake lock и захватывает новый на основе EXTRA_USE_SCREEN_DIM
 - **MainActivity.kt**:
   - Условное использование FLAG_KEEP_SCREEN_ON в зависимости от dimBrightness
   - dimBrightness = true: FLAG_KEEP_SCREEN_ON + фиксированная яркость 0.1f

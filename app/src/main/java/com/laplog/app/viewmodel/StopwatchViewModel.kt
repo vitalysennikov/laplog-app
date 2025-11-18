@@ -463,6 +463,11 @@ class StopwatchViewModel(
             ScreenOnMode.ALWAYS -> ScreenOnMode.OFF
         }
         preferencesManager.screenOnMode = _screenOnMode.value
+
+        // Update service wake lock if stopwatch has activity
+        if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
+            updateServiceWakeLock()
+        }
     }
 
     fun toggleLockOrientation() {
@@ -478,6 +483,11 @@ class StopwatchViewModel(
     fun toggleDimBrightness() {
         _dimBrightness.value = !_dimBrightness.value
         preferencesManager.dimBrightness = _dimBrightness.value
+
+        // Update service wake lock if stopwatch has activity
+        if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
+            updateServiceWakeLock()
+        }
     }
 
     fun updateCurrentComment(comment: String) {
@@ -576,6 +586,15 @@ class StopwatchViewModel(
     private fun stopService() {
         val intent = Intent(context, StopwatchService::class.java).apply {
             action = StopwatchService.ACTION_STOP
+        }
+        context.startService(intent)
+    }
+
+    private fun updateServiceWakeLock() {
+        // Send update to service to refresh wake lock based on current settings
+        val intent = Intent(context, StopwatchService::class.java).apply {
+            action = StopwatchService.ACTION_UPDATE_WAKE_LOCK
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, shouldUseScreenDimWakeLock())
         }
         context.startService(intent)
     }

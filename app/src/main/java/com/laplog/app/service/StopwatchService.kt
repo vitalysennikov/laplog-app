@@ -74,6 +74,7 @@ class StopwatchService : Service() {
         const val ACTION_PAUSE = "com.laplog.app.PAUSE"
         const val ACTION_STOP = "com.laplog.app.STOP"
         const val ACTION_RESUME = "com.laplog.app.RESUME"
+        const val ACTION_UPDATE_WAKE_LOCK = "com.laplog.app.UPDATE_WAKE_LOCK"
 
         // Actions from MainActivity for app state
         const val ACTION_APP_FOREGROUND = "com.laplog.app.APP_FOREGROUND"
@@ -231,6 +232,30 @@ class StopwatchService : Service() {
                     if (it.isHeld) {
                         it.release()
                     }
+                }
+            }
+            ACTION_UPDATE_WAKE_LOCK -> {
+                // Settings changed - update wake lock type
+                val newUseScreenDim = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
+
+                // Release current wake lock
+                wakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+                screenDimWakeLock?.let {
+                    if (it.isHeld) {
+                        it.release()
+                    }
+                }
+
+                // Update flag and acquire new wake lock
+                useScreenDimWakeLock = newUseScreenDim
+                if (useScreenDimWakeLock) {
+                    screenDimWakeLock?.acquire()
+                } else {
+                    wakeLock?.acquire()
                 }
             }
             ACTION_STOP -> {
