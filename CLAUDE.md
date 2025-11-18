@@ -5,7 +5,7 @@
 **LapLog Free** is an Android stopwatch application with lap tracking and session history features. The name reflects two key features: **Lap** marks and **Log** (history) of sessions.
 
 - **Package**: `com.laplog.app`
-- **Current Version**: 0.9.4 (versionCode 29) - IN DEVELOPMENT
+- **Current Version**: 0.9.5 (versionCode 30) - IN DEVELOPMENT
 - **Stable Version**: 0.9.0 (tagged)
 - **Min SDK**: 24 (Android 7.0)
 - **Target SDK**: 34 (Android 14)
@@ -180,7 +180,7 @@ See `task_2.md` for detailed requirements.
 - ✅ Backup version updated to 0.9.0
 - ✅ String resources added for all languages (EN, RU, ZH)
 
-### Version 0.9.4 (IN DEVELOPMENT)
+### Version 0.9.5 (IN DEVELOPMENT)
 - ✅ Fixed milliseconds display on main timer (show only when paused)
 - ✅ Fixed main timer update during pause (accurate milliseconds)
 - ✅ Fixed notification not removing when stopwatch stopped
@@ -188,6 +188,9 @@ See `task_2.md` for detailed requirements.
 - ✅ Fixed dimming toggle logic (swapped conditions)
 - ✅ Fixed notification appearing on app start in stopped state
 - ✅ Fixed race condition when stopping stopwatch (state reset synchronously)
+- ✅ Fixed screen dimming in ALWAYS mode when dimBrightness is off
+- ✅ Fixed screen turning off in ALWAYS mode when dimBrightness is off
+- ✅ Add real-time wake lock updates when settings change during runtime
 
 ### Known Issues
 - None currently
