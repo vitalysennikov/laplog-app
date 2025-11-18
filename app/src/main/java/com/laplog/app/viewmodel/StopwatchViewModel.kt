@@ -99,24 +99,26 @@ class StopwatchViewModel(
             }
             StopwatchCommand.Stop -> {
                 timerJob?.cancel()
+
+                // Capture values BEFORE resetting state
                 val elapsedTime = StopwatchState.elapsedTime.value
                 val laps = StopwatchState.laps.value
+                val sessionStartTime = StopwatchState.sessionStartTime
 
-                // Save session to database if there was any activity
+                // Reset state IMMEDIATELY to prevent any race conditions
+                StopwatchState.reset()
+                preferencesManager.clearStopwatchState()
+
+                // Save session to database asynchronously if there was any activity
                 if (elapsedTime > 0L || laps.isNotEmpty()) {
                     viewModelScope.launch {
                         try {
-                            saveSession()
+                            saveSession(elapsedTime, laps, sessionStartTime)
                             loadCommentsFromHistory()
                         } catch (e: Exception) {
                             Log.e("StopwatchViewModel", "Error saving session", e)
                         }
-                        StopwatchState.reset()
-                        preferencesManager.clearStopwatchState()
                     }
-                } else {
-                    StopwatchState.reset()
-                    preferencesManager.clearStopwatchState()
                 }
             }
             StopwatchCommand.Lap -> {
@@ -366,48 +368,45 @@ class StopwatchViewModel(
     fun reset() {
         timerJob?.cancel()
 
-        // Stop service
-        stopService()
-
+        // Capture values BEFORE resetting state
         val elapsedTime = StopwatchState.elapsedTime.value
         val laps = StopwatchState.laps.value
         val sessionStartTime = StopwatchState.sessionStartTime
 
         Log.d("StopwatchViewModel", "Reset called. ElapsedTime: $elapsedTime, Laps: ${laps.size}, SessionStartTime: $sessionStartTime")
 
-        // Save session to database if there was any activity
+        // Stop service
+        stopService()
+
+        // Reset state IMMEDIATELY to prevent service restart if app goes to background
+        // This must happen synchronously before any async operations
+        StopwatchState.reset()
+        preferencesManager.clearStopwatchState()
+
+        // Save session to database asynchronously if there was any activity
         if (elapsedTime > 0L || laps.isNotEmpty()) {
             Log.d("StopwatchViewModel", "Saving session...")
             viewModelScope.launch {
                 try {
-                    saveSession()
+                    saveSession(elapsedTime, laps, sessionStartTime)
                     Log.d("StopwatchViewModel", "Session saved successfully")
                     // Reload comments from history after saving
                     loadCommentsFromHistory()
                 } catch (e: Exception) {
                     Log.e("StopwatchViewModel", "Error saving session", e)
                 }
-                // Reset shared state
-                StopwatchState.reset()
-
-                // Clear saved state
-                preferencesManager.clearStopwatchState()
             }
         } else {
             Log.d("StopwatchViewModel", "No activity to save")
-            // Reset shared state
-            StopwatchState.reset()
-
-            // Clear saved state
-            preferencesManager.clearStopwatchState()
         }
     }
 
-    private suspend fun saveSession() {
+    private suspend fun saveSession(
+        elapsedTime: Long,
+        laps: List<LapTime>,
+        sessionStartTime: Long
+    ) {
         val endTime = System.currentTimeMillis()
-        val sessionStartTime = StopwatchState.sessionStartTime
-        val elapsedTime = StopwatchState.elapsedTime.value
-        val laps = StopwatchState.laps.value
 
         Log.d("StopwatchViewModel", "Creating session: startTime=$sessionStartTime, endTime=$endTime, duration=$elapsedTime")
 
