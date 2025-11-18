@@ -537,11 +537,22 @@ class StopwatchViewModel(
         }
     }
 
+    private fun shouldUseScreenDimWakeLock(): Boolean {
+        // Use SCREEN_DIM_WAKE_LOCK when screen should stay on but allow natural dimming
+        // This happens when dimBrightness is OFF (false) and screenOnMode requires screen on
+        val shouldKeepOn = when (_screenOnMode.value) {
+            ScreenOnMode.OFF -> false
+            ScreenOnMode.WHILE_RUNNING -> StopwatchState.isRunning.value
+            ScreenOnMode.ALWAYS -> true
+        }
+        return shouldKeepOn && !_dimBrightness.value
+    }
+
     private fun startService() {
         val intent = Intent(context, StopwatchService::class.java).apply {
             action = StopwatchService.ACTION_START
-            // Pass screen mode to service: ALWAYS mode uses screen dim wake lock
-            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, _screenOnMode.value == ScreenOnMode.ALWAYS)
+            // Use SCREEN_DIM_WAKE_LOCK to allow dimming while keeping screen on
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, shouldUseScreenDimWakeLock())
         }
         context.startForegroundService(intent)
     }
@@ -549,7 +560,7 @@ class StopwatchViewModel(
     private fun pauseService() {
         val intent = Intent(context, StopwatchService::class.java).apply {
             action = StopwatchService.ACTION_PAUSE
-            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, _screenOnMode.value == ScreenOnMode.ALWAYS)
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, shouldUseScreenDimWakeLock())
         }
         context.startService(intent)
     }
@@ -557,7 +568,7 @@ class StopwatchViewModel(
     private fun resumeService() {
         val intent = Intent(context, StopwatchService::class.java).apply {
             action = StopwatchService.ACTION_RESUME
-            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, _screenOnMode.value == ScreenOnMode.ALWAYS)
+            putExtra(StopwatchService.EXTRA_USE_SCREEN_DIM, shouldUseScreenDimWakeLock())
         }
         context.startService(intent)
     }

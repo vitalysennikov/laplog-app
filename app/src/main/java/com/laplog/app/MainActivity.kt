@@ -233,19 +233,36 @@ class MainActivity : ComponentActivity() {
                             0 -> StopwatchScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
-                                onScreenOnModeChanged = { mode, isRunning, elapsedTime ->
-                                    // OFF: never keep screen on
-                                    // WHILE_RUNNING: keep screen on while running
-                                    // ALWAYS: keep screen on always (allows dimming but not turning off)
+                                onScreenOnModeChanged = { mode, isRunning, elapsedTime, dimBrightness ->
+                                    // Determine if screen should stay on
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
                                         ScreenOnMode.WHILE_RUNNING -> isRunning
-                                        ScreenOnMode.ALWAYS -> true  // Always keep screen on (allows dimming)
+                                        ScreenOnMode.ALWAYS -> true
                                     }
+
                                     if (shouldKeepOn) {
-                                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                        if (dimBrightness) {
+                                            // Fixed brightness at 10% - use FLAG_KEEP_SCREEN_ON
+                                            // This prevents both dimming and screen off
+                                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                            val layoutParams = window.attributes
+                                            layoutParams.screenBrightness = 0.1f
+                                            window.attributes = layoutParams
+                                        } else {
+                                            // Allow natural dimming - use SCREEN_DIM_WAKE_LOCK via service
+                                            // Remove FLAG_KEEP_SCREEN_ON to allow dimming
+                                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                            val layoutParams = window.attributes
+                                            layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                                            window.attributes = layoutParams
+                                        }
                                     } else {
+                                        // Screen can turn off
                                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                        val layoutParams = window.attributes
+                                        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                                        window.attributes = layoutParams
                                     }
                                 },
                                 onLockOrientation = { lock ->
@@ -254,15 +271,6 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                     }
-                                },
-                                onBrightnessChanged = { dimBrightness ->
-                                    val layoutParams = window.attributes
-                                    layoutParams.screenBrightness = if (dimBrightness) {
-                                        0.1f  // Dim to 10% when dimming is enabled
-                                    } else {
-                                        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE  // Use system brightness (allows natural dimming)
-                                    }
-                                    window.attributes = layoutParams
                                 },
                                 isVisible = pagerState.currentPage == 0
                             )

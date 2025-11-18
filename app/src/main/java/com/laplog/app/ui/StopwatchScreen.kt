@@ -34,9 +34,8 @@ import com.laplog.app.viewmodel.StopwatchViewModelFactory
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
-    onScreenOnModeChanged: (ScreenOnMode, Boolean, Long) -> Unit, // (mode, isRunning, elapsedTime)
+    onScreenOnModeChanged: (ScreenOnMode, Boolean, Long, Boolean) -> Unit, // (mode, isRunning, elapsedTime, dimBrightness)
     onLockOrientation: (Boolean) -> Unit,
-    onBrightnessChanged: (Boolean) -> Unit = {}, // dimBrightness
     isVisible: Boolean = true
 ) {
     val context = LocalContext.current
@@ -71,19 +70,14 @@ fun StopwatchScreen(
 
     var expandedCommentDropdown by remember { mutableStateOf(false) }
 
-    // Update screen on state based on mode, running state, and elapsed time
-    LaunchedEffect(isRunning, screenOnMode, elapsedTime) {
-        onScreenOnModeChanged(screenOnMode, isRunning, elapsedTime)
+    // Update screen on state based on mode, running state, elapsed time, and dim brightness
+    LaunchedEffect(isRunning, screenOnMode, elapsedTime, dimBrightness) {
+        onScreenOnModeChanged(screenOnMode, isRunning, elapsedTime, dimBrightness)
     }
 
     // Update orientation lock
     LaunchedEffect(lockOrientation) {
         onLockOrientation(lockOrientation)
-    }
-
-    // Update brightness dimming
-    LaunchedEffect(dimBrightness) {
-        onBrightnessChanged(dimBrightness)
     }
 
     Column(
