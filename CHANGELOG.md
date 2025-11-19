@@ -7,6 +7,29 @@
 
 ---
 
+## [0.9.6] - 2025-11-19
+
+### Исправлено
+- **Уведомление при запуске приложения (исправление окончательное)**
+  - Полностью устранена проблема с появлением уведомления "Stopwatch paused" при запуске приложения
+  - Причина: onCreate() вызывал startStateListener(), который создавал Flow collectors
+  - Collectors вызывали updateNotification() при первом получении значений, создавая уведомление
+  - Это происходило даже если сервис создавался только для получения ACTION_STOP
+  - Решение: state listener теперь запускается только при переходе в foreground mode
+
+### Технические детали
+- **StopwatchService.kt**:
+  - Убран вызов `startStateListener()` из метода `onCreate()`
+  - Добавлены вызовы `startStateListener()` в:
+    - ACTION_ALWAYS_ON: перед `startForeground()`
+    - ACTION_START: перед `startForeground()`
+    - ACTION_RESUME: перед `startForeground()`
+    - ACTION_APP_BACKGROUND: перед `startForeground()` (внутри условия)
+  - State listener теперь создается только когда сервис действительно нужен
+  - Метод `startStateListener()` безопасен для повторных вызовов (отменяет предыдущий job)
+
+---
+
 ## [0.9.5] - 2025-11-18
 
 ### Исправлено
