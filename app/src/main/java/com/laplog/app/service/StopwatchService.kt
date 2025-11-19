@@ -140,8 +140,8 @@ class StopwatchService : Service() {
         // Check initial screen lock state
         checkScreenLockState()
 
-        // Start listening to state changes for notification updates
-        startStateListener()
+        // Don't start state listener here - it will be started when service enters foreground mode
+        // This prevents unnecessary notification creation when service is just being stopped
     }
 
     private fun checkScreenLockState() {
@@ -185,6 +185,9 @@ class StopwatchService : Service() {
                     wakeLock?.acquire()
                 }
 
+                // Start state listener for notification updates
+                startStateListener()
+
                 // Start as foreground service with minimal notification
                 val notification = buildAlwaysOnNotification()
                 startForeground(NOTIFICATION_ID, notification)
@@ -194,6 +197,10 @@ class StopwatchService : Service() {
             ACTION_START -> {
                 // Service started from ViewModel, just start foreground and notifications
                 useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
+
+                // Start state listener for notification updates
+                startStateListener()
+
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
 
@@ -207,6 +214,10 @@ class StopwatchService : Service() {
             ACTION_RESUME -> {
                 // Service resumed from ViewModel, just update foreground and notifications
                 useScreenDimWakeLock = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
+
+                // Start state listener for notification updates
+                startStateListener()
+
                 startForeground(NOTIFICATION_ID, buildNotification())
                 startNotificationUpdates()
 
@@ -389,6 +400,9 @@ class StopwatchService : Service() {
                 // App went to background
                 // Start service as foreground if stopwatch has activity
                 if (StopwatchState.elapsedTime.value > 0 || StopwatchState.isRunning.value) {
+                    // Start state listener for notification updates
+                    startStateListener()
+
                     // Ensure service is in foreground mode with notification
                     startForeground(NOTIFICATION_ID, buildNotification())
 
