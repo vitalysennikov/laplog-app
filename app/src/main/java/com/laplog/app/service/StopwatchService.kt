@@ -185,8 +185,8 @@ class StopwatchService : Service() {
                     wakeLock?.acquire()
                 }
 
-                // Start state listener for notification updates
-                startStateListener()
+                // Don't start state listener - this mode is for stopped stopwatch
+                // We show static "Screen stays on" notification without buttons
 
                 // Start as foreground service with minimal notification
                 val notification = buildAlwaysOnNotification()

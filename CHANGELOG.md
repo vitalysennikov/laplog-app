@@ -15,17 +15,21 @@
   - Причина: onCreate() вызывал startStateListener(), который создавал Flow collectors
   - Collectors вызывали updateNotification() при первом получении значений, создавая уведомление
   - Это происходило даже если сервис создавался только для получения ACTION_STOP
-  - Решение: state listener теперь запускается только при переходе в foreground mode
+  - Решение: state listener теперь запускается только когда секундомер активен
+- **Уведомление в режиме ALWAYS ON**
+  - В режиме ALWAYS ON (секундомер остановлен, экран не выключается) показывается статическое уведомление "Screen stays on"
+  - Уведомление не содержит кнопок управления, так как секундомер не активен
+  - Исправлена проблема когда вместо этого показывалось уведомление "Stopwatch paused" с кнопками Start и Stop
 
 ### Технические детали
 - **StopwatchService.kt**:
   - Убран вызов `startStateListener()` из метода `onCreate()`
   - Добавлены вызовы `startStateListener()` в:
-    - ACTION_ALWAYS_ON: перед `startForeground()`
-    - ACTION_START: перед `startForeground()`
-    - ACTION_RESUME: перед `startForeground()`
-    - ACTION_APP_BACKGROUND: перед `startForeground()` (внутри условия)
-  - State listener теперь создается только когда сервис действительно нужен
+    - ACTION_START: перед `startForeground()` - секундомер запущен
+    - ACTION_RESUME: перед `startForeground()` - секундомер возобновлен
+    - ACTION_APP_BACKGROUND: перед `startForeground()` - приложение в фоне с активным секундомером
+  - ACTION_ALWAYS_ON НЕ запускает state listener - показывает статическое уведомление `buildAlwaysOnNotification()`
+  - State listener теперь создается только когда секундомер активен (время > 0 или работает)
   - Метод `startStateListener()` безопасен для повторных вызовов (отменяет предыдущий job)
 
 ---
