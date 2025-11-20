@@ -12,8 +12,8 @@ android {
         applicationId = "com.laplog.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 31
-        versionName = "0.9.6"
+        versionCode = 32
+        versionName = "0.9.7"
 
         vectorDrawables {
             useSupportLibrary = true
