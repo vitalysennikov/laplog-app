@@ -233,15 +233,29 @@ class StopwatchService : Service() {
                 stopNotificationUpdates()
                 updateNotification()
 
-                // Release all wake locks when paused
+                // Get screen dim wake lock setting
+                val useScreenDim = intent.getBooleanExtra(EXTRA_USE_SCREEN_DIM, false)
+
+                // Release PARTIAL wake lock (we don't need CPU when paused)
                 wakeLock?.let {
                     if (it.isHeld) {
                         it.release()
                     }
                 }
-                screenDimWakeLock?.let {
-                    if (it.isHeld) {
-                        it.release()
+
+                // In ALWAYS mode with dimBrightness=OFF, keep screenDimWakeLock even when paused
+                // Otherwise screen will turn off after dimming
+                if (useScreenDim) {
+                    // Keep screenDimWakeLock to prevent screen from turning off
+                    if (screenDimWakeLock?.isHeld != true) {
+                        screenDimWakeLock?.acquire()
+                    }
+                } else {
+                    // Release screenDimWakeLock if not in ALWAYS mode with dimBrightness=OFF
+                    screenDimWakeLock?.let {
+                        if (it.isHeld) {
+                            it.release()
+                        }
                     }
                 }
             }

@@ -20,6 +20,11 @@
   - В режиме ALWAYS ON (секундомер остановлен, экран не выключается) показывается статическое уведомление "Screen stays on"
   - Уведомление не содержит кнопок управления, так как секундомер не активен
   - Исправлена проблема когда вместо этого показывалось уведомление "Stopwatch paused" с кнопками Start и Stop
+- **Экран выключается на паузе в режиме ALWAYS с dimBrightness=OFF**
+  - Исправлена проблема когда экран выключался после затухания яркости при паузе секундомера
+  - В режиме ALWAYS + dimBrightness=OFF на паузе должно работать так же, как в состоянии СТОП: яркость затухает, но экран не выключается
+  - Причина: ACTION_PAUSE освобождал все wake locks, включая screenDimWakeLock
+  - Решение: в ACTION_PAUSE сохраняется screenDimWakeLock если useScreenDim=true (режим ALWAYS + dimBrightness=OFF)
 
 ### Технические детали
 - **StopwatchService.kt**:
@@ -29,6 +34,10 @@
     - ACTION_RESUME: перед `startForeground()` - секундомер возобновлен
     - ACTION_APP_BACKGROUND: перед `startForeground()` - приложение в фоне с активным секундомером
   - ACTION_ALWAYS_ON НЕ запускает state listener - показывает статическое уведомление `buildAlwaysOnNotification()`
+  - ACTION_PAUSE: изменена логика освобождения wake locks
+    - PARTIAL_WAKE_LOCK всегда освобождается (не нужен CPU на паузе)
+    - SCREEN_DIM_WAKE_LOCK сохраняется если useScreenDim=true (режим ALWAYS + dimBrightness=OFF)
+    - Это предотвращает выключение экрана на паузе в режиме ALWAYS
   - State listener теперь создается только когда секундомер активен (время > 0 или работает)
   - Метод `startStateListener()` безопасен для повторных вызовов (отменяет предыдущий job)
 
