@@ -71,6 +71,19 @@
     <string name="median">MEDIAN</string>
     <string name="duration">Duration</string>
 
+    <!-- Charts screen -->
+    <string name="charts">Charts</string>
+    <string name="select_name">Select name</string>
+    <string name="select_session_name">Select session name</string>
+    <string name="no_sessions_with_names">No sessions with names found. Add names to your sessions in the History tab to view charts.</string>
+    <string name="no_data_for_chart">Not enough data to display chart. At least 2 laps are required per session.</string>
+    <string name="average_lap_time">Average Lap Time</string>
+    <string name="median_lap_time">Median Lap Time</string>
+    <string name="statistics_summary">Statistics Summary</string>
+    <string name="total_sessions">Total Sessions</string>
+    <string name="overall_average">Overall Average</string>
+    <string name="overall_median">Overall Median</string>
+
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Toggle buttons</string>
     <string name="toggle_milliseconds_desc">Show/hide milliseconds</string>

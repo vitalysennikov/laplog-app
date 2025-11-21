@@ -90,6 +90,11 @@ dependencies {
     // Media for notification MediaStyle
     implementation("androidx.media:media:1.7.0")
 
+    // Vico - Charts library for Compose
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+    implementation("com.patrykandpatrick.vico:core:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

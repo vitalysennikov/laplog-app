@@ -32,6 +32,7 @@ import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.model.SessionWithLaps
 import com.laplog.app.ui.AboutDialog
 import com.laplog.app.ui.BackupScreen
+import com.laplog.app.ui.ChartsScreen
 import com.laplog.app.ui.HistoryScreen
 import com.laplog.app.ui.StopwatchScreen
 import com.laplog.app.ui.WelcomeDialog
@@ -135,7 +136,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             StopwatchTheme {
-                val pagerState = rememberPagerState(pageCount = { 3 })
+                val pagerState = rememberPagerState(pageCount = { 4 })
                 val coroutineScope = rememberCoroutineScope()
                 var showAboutDialog by remember { mutableStateOf(false) }
                 var showRestartDialog by remember { mutableStateOf(false) }
@@ -210,12 +211,22 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                                 NavigationBarItem(
-                                    icon = { Icon(Icons.Default.Backup, contentDescription = null) },
-                                    label = { Text(getString(R.string.backup)) },
+                                    icon = { Icon(Icons.Default.ShowChart, contentDescription = null) },
+                                    label = { Text(getString(R.string.charts)) },
                                     selected = pagerState.currentPage == 2,
                                     onClick = {
                                         coroutineScope.launch {
                                             pagerState.animateScrollToPage(2)
+                                        }
+                                    }
+                                )
+                                NavigationBarItem(
+                                    icon = { Icon(Icons.Default.Backup, contentDescription = null) },
+                                    label = { Text(getString(R.string.backup)) },
+                                    selected = pagerState.currentPage == 3,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(3)
                                         }
                                     }
                                 )
@@ -282,7 +293,10 @@ class MainActivity : ComponentActivity() {
                                     showRestartDialog = true
                                 }
                             )
-                            2 -> BackupScreen(
+                            2 -> ChartsScreen(
+                                sessionDao = database.sessionDao()
+                            )
+                            3 -> BackupScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
                                 onSelectFolder = { launchFolderPicker() },

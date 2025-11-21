@@ -71,6 +71,19 @@
     <string name="median">中位数</string>
     <string name="duration">时长</string>
 
+    <!-- Charts screen -->
+    <string name="charts">图表</string>
+    <string name="select_name">选择名称</string>
+    <string name="select_session_name">选择记录名称</string>
+    <string name="no_sessions_with_names">未找到带有名称的记录。请在历史记录标签页中为您的记录添加名称以查看图表。</string>
+    <string name="no_data_for_chart">数据不足，无法显示图表。每条记录至少需要 2 次计次。</string>
+    <string name="average_lap_time">平均计次时间</string>
+    <string name="median_lap_time">中位数计次时间</string>
+    <string name="statistics_summary">统计摘要</string>
+    <string name="total_sessions">总记录数</string>
+    <string name="overall_average">总平均值</string>
+    <string name="overall_median">总中位数</string>
+
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">切换按钮</string>
     <string name="toggle_milliseconds_desc">显示/隐藏毫秒</string>

@@ -71,6 +71,19 @@
     <string name="median">МЕДИАНА</string>
     <string name="duration">Длительность</string>
 
+    <!-- Charts screen -->
+    <string name="charts">Графики</string>
+    <string name="select_name">Выбрать название</string>
+    <string name="select_session_name">Выбрать название сессии</string>
+    <string name="no_sessions_with_names">Не найдено сессий с названиями. Добавьте названия к сессиям во вкладке История, чтобы просмотреть графики.</string>
+    <string name="no_data_for_chart">Недостаточно данных для отображения графика. Требуется минимум 2 круга на сессию.</string>
+    <string name="average_lap_time">Среднее время круга</string>
+    <string name="median_lap_time">Медиана времени круга</string>
+    <string name="statistics_summary">Сводная статистика</string>
+    <string name="total_sessions">Всего сессий</string>
+    <string name="overall_average">Общее среднее</string>
+    <string name="overall_median">Общая медиана</string>
+
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Кнопки переключения</string>
     <string name="toggle_milliseconds_desc">Показать/скрыть миллисекунды</string>

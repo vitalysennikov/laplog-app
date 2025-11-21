@@ -36,4 +36,7 @@ interface SessionDao {
 
     @Query("SELECT DISTINCT name FROM sessions WHERE name IS NOT NULL AND name != '' ORDER BY name ASC")
     suspend fun getDistinctNames(): List<String>
+
+    @Query("SELECT * FROM sessions WHERE name = :sessionName ORDER BY startTime ASC")
+    suspend fun getSessionsByName(sessionName: String): List<SessionEntity>
 }
