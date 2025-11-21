@@ -342,20 +342,23 @@ fun AverageLapChart(
         }
     }
 
-    ProvideChartStyle {
-        Chart(
-            chart = lineChart(),
-            model = chartEntryModelProducer.getModel(),
-            startAxis = rememberStartAxis(
-                valueFormatter = yAxisValueFormatter
-            ),
-            bottomAxis = rememberBottomAxis(
-                valueFormatter = xAxisValueFormatter
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-        )
+    val model = chartEntryModelProducer.getModel()
+    if (model != null) {
+        ProvideChartStyle {
+            Chart(
+                chart = lineChart(),
+                model = model,
+                startAxis = rememberStartAxis(
+                    valueFormatter = yAxisValueFormatter
+                ),
+                bottomAxis = rememberBottomAxis(
+                    valueFormatter = xAxisValueFormatter
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            )
+        }
     }
 }
 
@@ -396,19 +399,22 @@ fun MedianLapChart(
         }
     }
 
-    ProvideChartStyle {
-        Chart(
-            chart = lineChart(),
-            model = chartEntryModelProducer.getModel(),
-            startAxis = rememberStartAxis(
-                valueFormatter = yAxisValueFormatter
-            ),
-            bottomAxis = rememberBottomAxis(
-                valueFormatter = xAxisValueFormatter
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-        )
+    val model = chartEntryModelProducer.getModel()
+    if (model != null) {
+        ProvideChartStyle {
+            Chart(
+                chart = lineChart(),
+                model = model,
+                startAxis = rememberStartAxis(
+                    valueFormatter = yAxisValueFormatter
+                ),
+                bottomAxis = rememberBottomAxis(
+                    valueFormatter = xAxisValueFormatter
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            )
+        }
     }
 }
