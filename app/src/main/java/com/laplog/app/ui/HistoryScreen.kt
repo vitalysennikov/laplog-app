@@ -59,6 +59,7 @@ fun HistoryScreen(
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     var showExportMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -78,6 +79,21 @@ fun HistoryScreen(
                             Icon(
                                 imageVector = if (expandAll) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
                                 contentDescription = if (expandAll) "Collapse All" else "Expand All"
+                            )
+                        }
+                    }
+                    // Filter by name
+                    BadgedBox(
+                        badge = {
+                            if (filterName != null) {
+                                Badge()
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = { showFilterDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = stringResource(R.string.filter_by_name)
                             )
                         }
                     }
@@ -240,6 +256,19 @@ fun HistoryScreen(
                 onLanguageChange = { languageCode ->
                     onLanguageChange(languageCode)
                     showAboutDialog = false
+                }
+            )
+        }
+
+        // Filter dialog
+        if (showFilterDialog) {
+            FilterDialog(
+                namesFromHistory = namesFromHistory,
+                currentFilter = filterName,
+                onDismiss = { showFilterDialog = false },
+                onFilterSelected = { name ->
+                    viewModel.setFilterName(name)
+                    showFilterDialog = false
                 }
             )
         }
@@ -865,4 +894,68 @@ fun SessionTableItem(
             )
         }
     }
+}
+
+@Composable
+fun FilterDialog(
+    namesFromHistory: List<String>,
+    currentFilter: String?,
+    onDismiss: () -> Unit,
+    onFilterSelected: (String?) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.filter_by_name)) },
+        text = {
+            LazyColumn {
+                // "All" option to clear filter
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFilterSelected(null) }
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentFilter == null,
+                            onClick = { onFilterSelected(null) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.all_sessions),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                // List of names
+                items(namesFromHistory.size) { index ->
+                    val name = namesFromHistory[index]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFilterSelected(name) }
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentFilter == name,
+                            onClick = { onFilterSelected(name) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    )
 }

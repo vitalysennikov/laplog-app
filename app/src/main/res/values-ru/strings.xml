@@ -28,6 +28,9 @@
     <string name="add_notes">Добавить заметку</string>
     <string name="edit_notes">Изменить заметку</string>
     <string name="notes_hint">Заметка (необязательно)</string>
+    <string name="filter_by_name">Фильтр по названию</string>
+    <string name="all_sessions">Все сессии</string>
+    <string name="close">Закрыть</string>
     <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
 
