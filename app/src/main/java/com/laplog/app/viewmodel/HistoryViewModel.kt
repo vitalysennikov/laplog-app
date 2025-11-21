@@ -21,8 +21,8 @@ class HistoryViewModel(
     private val _sessions = MutableStateFlow<List<SessionWithLaps>>(emptyList())
     val sessions: StateFlow<List<SessionWithLaps>> = _sessions.asStateFlow()
 
-    private val _usedComments = MutableStateFlow<Set<String>>(emptySet())
-    val usedComments: StateFlow<Set<String>> = _usedComments.asStateFlow()
+    private val _usedNames = MutableStateFlow<Set<String>>(emptySet())
+    val usedNames: StateFlow<Set<String>> = _usedNames.asStateFlow()
 
     private val _expandAll = MutableStateFlow(true) // default: all expanded
     val expandAll: StateFlow<Boolean> = _expandAll.asStateFlow()
@@ -33,18 +33,24 @@ class HistoryViewModel(
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
 
-    private val _commentsFromHistory = MutableStateFlow<List<String>>(emptyList())
-    val commentsFromHistory: StateFlow<List<String>> = _commentsFromHistory.asStateFlow()
+    private val _namesFromHistory = MutableStateFlow<List<String>>(emptyList())
+    val namesFromHistory: StateFlow<List<String>> = _namesFromHistory.asStateFlow()
+
+    private val _filterName = MutableStateFlow<String?>(null)
+    val filterName: StateFlow<String?> = _filterName.asStateFlow()
+
+    private val _showTableView = MutableStateFlow(false)
+    val showTableView: StateFlow<Boolean> = _showTableView.asStateFlow()
 
     init {
         loadSessions()
-        loadUsedComments()
-        loadCommentsFromHistory()
+        loadUsedNames()
+        loadNamesFromHistory()
     }
 
-    private fun loadCommentsFromHistory() {
+    private fun loadNamesFromHistory() {
         viewModelScope.launch {
-            _commentsFromHistory.value = sessionDao.getDistinctComments()
+            _namesFromHistory.value = sessionDao.getDistinctNames()
         }
     }
 
@@ -62,9 +68,17 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.getAllSessions().collect { sessionEntities ->
                 Log.d("HistoryViewModel", "Loaded ${sessionEntities.size} sessions from database")
+
+                // Apply filter if set
+                val filteredSessions = if (_filterName.value != null) {
+                    sessionEntities.filter { it.name == _filterName.value }
+                } else {
+                    sessionEntities
+                }
+
                 val sessionsWithLaps = mutableListOf<SessionWithLaps>()
 
-                for (session in sessionEntities) {
+                for (session in filteredSessions) {
                     Log.d("HistoryViewModel", "Session ID: ${session.id}, StartTime: ${session.startTime}, Duration: ${session.totalDuration}")
                     // Get first emission from laps flow using first()
                     val laps = sessionDao.getLapsForSession(session.id).first()
@@ -78,25 +92,40 @@ class HistoryViewModel(
         }
     }
 
-    private fun loadUsedComments() {
-        _usedComments.value = preferencesManager.usedComments
+    private fun loadUsedNames() {
+        _usedNames.value = preferencesManager.usedNames
     }
 
-    fun updateSessionComment(sessionId: Long, comment: String) {
+    fun updateSessionName(sessionId: Long, name: String) {
         viewModelScope.launch {
-            sessionDao.updateSessionComment(sessionId, comment)
+            sessionDao.updateSessionName(sessionId, name)
 
-            // Add to used comments
-            if (comment.isNotBlank()) {
-                val updated = _usedComments.value.toMutableSet()
-                updated.add(comment)
-                _usedComments.value = updated
-                preferencesManager.usedComments = updated
+            // Add to used names
+            if (name.isNotBlank()) {
+                val updated = _usedNames.value.toMutableSet()
+                updated.add(name)
+                _usedNames.value = updated
+                preferencesManager.usedNames = updated
             }
 
             loadSessions()
-            loadCommentsFromHistory() // Reload comments from database
+            loadNamesFromHistory() // Reload names from database
         }
+    }
+
+    fun updateSessionNotes(sessionId: Long, notes: String) {
+        viewModelScope.launch {
+            sessionDao.updateSessionNotes(sessionId, notes)
+            loadSessions()
+        }
+    }
+
+    fun setFilterName(name: String?) {
+        _filterName.value = name
+    }
+
+    fun toggleTableView() {
+        _showTableView.value = !_showTableView.value
     }
 
     fun deleteSession(session: SessionEntity) {

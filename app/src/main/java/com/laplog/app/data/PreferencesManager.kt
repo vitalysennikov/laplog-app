@@ -30,17 +30,17 @@ class PreferencesManager(context: Context) {
         }
         set(value) = prefs.edit().putString(KEY_SCREEN_ON_MODE, value.name).apply()
 
-    var usedComments: Set<String>
-        get() = prefs.getStringSet(KEY_USED_COMMENTS, emptySet()) ?: emptySet()
-        set(value) = prefs.edit().putStringSet(KEY_USED_COMMENTS, value).apply()
+    var usedNames: Set<String>
+        get() = prefs.getStringSet(KEY_USED_NAMES, emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet(KEY_USED_NAMES, value).apply()
 
     var lockOrientation: Boolean
         get() = prefs.getBoolean(KEY_LOCK_ORIENTATION, false)
         set(value) = prefs.edit().putBoolean(KEY_LOCK_ORIENTATION, value).apply()
 
-    var currentComment: String
-        get() = prefs.getString(KEY_CURRENT_COMMENT, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_CURRENT_COMMENT, value).apply()
+    var currentName: String
+        get() = prefs.getString(KEY_CURRENT_NAME, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_CURRENT_NAME, value).apply()
 
     var showMillisecondsInHistory: Boolean
         get() = prefs.getBoolean(KEY_SHOW_MILLISECONDS_IN_HISTORY, true)
@@ -125,9 +125,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_SHOW_MILLISECONDS = "show_milliseconds"
         private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"  // Legacy
         private const val KEY_SCREEN_ON_MODE = "screen_on_mode"
-        private const val KEY_USED_COMMENTS = "used_comments"
+        private const val KEY_USED_NAMES = "used_names"
         private const val KEY_LOCK_ORIENTATION = "lock_orientation"
-        private const val KEY_CURRENT_COMMENT = "current_comment"
+        private const val KEY_CURRENT_NAME = "current_name"
         private const val KEY_SHOW_MILLISECONDS_IN_HISTORY = "show_milliseconds_in_history"
         private const val KEY_INVERT_LAP_COLORS = "invert_lap_colors"
         private const val KEY_BACKUP_FOLDER_URI = "backup_folder_uri"

@@ -41,14 +41,14 @@ class StopwatchViewModel(
     private val _lockOrientation = MutableStateFlow(preferencesManager.lockOrientation)
     val lockOrientation: StateFlow<Boolean> = _lockOrientation.asStateFlow()
 
-    private val _currentComment = MutableStateFlow(preferencesManager.currentComment)
-    val currentComment: StateFlow<String> = _currentComment.asStateFlow()
+    private val _currentName = MutableStateFlow(preferencesManager.currentName)
+    val currentName: StateFlow<String> = _currentName.asStateFlow()
 
-    private val _usedComments = MutableStateFlow<Set<String>>(preferencesManager.usedComments)
-    val usedComments: StateFlow<Set<String>> = _usedComments.asStateFlow()
+    private val _usedNames = MutableStateFlow<Set<String>>(preferencesManager.usedNames)
+    val usedNames: StateFlow<Set<String>> = _usedNames.asStateFlow()
 
-    private val _commentsFromHistory = MutableStateFlow<List<String>>(emptyList())
-    val commentsFromHistory: StateFlow<List<String>> = _commentsFromHistory.asStateFlow()
+    private val _namesFromHistory = MutableStateFlow<List<String>>(emptyList())
+    val namesFromHistory: StateFlow<List<String>> = _namesFromHistory.asStateFlow()
 
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
@@ -65,7 +65,7 @@ class StopwatchViewModel(
     private var timerJob: Job? = null
 
     init {
-        loadCommentsFromHistory()
+        loadNamesFromHistory()
         restoreStopwatchState()
 
         // Listen for commands from notification service
@@ -114,7 +114,7 @@ class StopwatchViewModel(
                     viewModelScope.launch {
                         try {
                             saveSession(elapsedTime, laps, sessionStartTime)
-                            loadCommentsFromHistory()
+                            loadNamesFromHistory()
                         } catch (e: Exception) {
                             Log.e("StopwatchViewModel", "Error saving session", e)
                         }
@@ -138,14 +138,14 @@ class StopwatchViewModel(
         }
     }
 
-    private fun loadCommentsFromHistory() {
+    private fun loadNamesFromHistory() {
         viewModelScope.launch {
-            _commentsFromHistory.value = sessionDao.getDistinctComments()
+            _namesFromHistory.value = sessionDao.getDistinctNames()
         }
     }
 
-    fun refreshCommentsFromHistory() {
-        loadCommentsFromHistory()
+    fun refreshNamesFromHistory() {
+        loadNamesFromHistory()
     }
 
     private fun restoreStopwatchState() {
@@ -414,7 +414,7 @@ class StopwatchViewModel(
             startTime = sessionStartTime,
             endTime = endTime,
             totalDuration = elapsedTime,
-            comment = _currentComment.value.trim().takeIf { it.isNotBlank() }
+            name = _currentName.value.trim().takeIf { it.isNotBlank() }
         )
 
         val sessionId = sessionDao.insertSession(session)
@@ -490,18 +490,18 @@ class StopwatchViewModel(
         }
     }
 
-    fun updateCurrentComment(comment: String) {
-        // Don't trim during input - allow spaces inside comments
-        _currentComment.value = comment
-        preferencesManager.currentComment = comment
+    fun updateCurrentName(name: String) {
+        // Don't trim during input - allow spaces inside names
+        _currentName.value = name
+        preferencesManager.currentName = name
 
-        // Add to used comments if not empty (trim for checking and storage)
-        val trimmedForStorage = comment.trim()
-        if (trimmedForStorage.isNotBlank() && !_usedComments.value.contains(trimmedForStorage)) {
-            val updated = _usedComments.value.toMutableSet()
+        // Add to used names if not empty (trim for checking and storage)
+        val trimmedForStorage = name.trim()
+        if (trimmedForStorage.isNotBlank() && !_usedNames.value.contains(trimmedForStorage)) {
+            val updated = _usedNames.value.toMutableSet()
             updated.add(trimmedForStorage)
-            _usedComments.value = updated
-            preferencesManager.usedComments = updated
+            _usedNames.value = updated
+            preferencesManager.usedNames = updated
         }
     }
 

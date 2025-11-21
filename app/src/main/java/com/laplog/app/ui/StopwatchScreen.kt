@@ -43,10 +43,10 @@ fun StopwatchScreen(
         factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao)
     )
 
-    // Refresh comments from history when screen becomes visible
+    // Refresh names from history when screen becomes visible
     LaunchedEffect(isVisible) {
         if (isVisible) {
-            viewModel.refreshCommentsFromHistory()
+            viewModel.refreshNamesFromHistory()
         }
     }
 
@@ -61,14 +61,14 @@ fun StopwatchScreen(
     val laps by viewModel.laps.collectAsState()
     val screenOnMode by viewModel.screenOnMode.collectAsState()
     val lockOrientation by viewModel.lockOrientation.collectAsState()
-    val currentComment by viewModel.currentComment.collectAsState()
-    val usedComments by viewModel.usedComments.collectAsState()
-    val commentsFromHistory by viewModel.commentsFromHistory.collectAsState()
+    val currentName by viewModel.currentName.collectAsState()
+    val usedNames by viewModel.usedNames.collectAsState()
+    val namesFromHistory by viewModel.namesFromHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val dimBrightness by viewModel.dimBrightness.collectAsState()
 
-    var expandedCommentDropdown by remember { mutableStateOf(false) }
+    var expandedNameDropdown by remember { mutableStateOf(false) }
 
     // Update screen on state based on mode, running state, elapsed time, and dim brightness
     LaunchedEffect(isRunning, screenOnMode, elapsedTime, dimBrightness) {
@@ -112,41 +112,41 @@ fun StopwatchScreen(
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Comment dropdown from history
+        // Name dropdown from history
         ExposedDropdownMenuBox(
-            expanded = expandedCommentDropdown,
+            expanded = expandedNameDropdown,
             onExpandedChange = {
-                if (!isRunning) expandedCommentDropdown = it
+                if (!isRunning) expandedNameDropdown = it
             }
         ) {
             OutlinedTextField(
-                value = currentComment,
-                onValueChange = { viewModel.updateCurrentComment(it) },
-                label = { Text(stringResource(R.string.comment_hint)) },
+                value = currentName,
+                onValueChange = { viewModel.updateCurrentName(it) },
+                label = { Text(stringResource(R.string.name_hint)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(),
                 singleLine = true,
                 enabled = !isRunning,
                 trailingIcon = {
-                    if (commentsFromHistory.isNotEmpty()) {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCommentDropdown)
+                    if (namesFromHistory.isNotEmpty()) {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNameDropdown)
                     }
                 },
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
             )
 
-            if (commentsFromHistory.isNotEmpty()) {
+            if (namesFromHistory.isNotEmpty()) {
                 ExposedDropdownMenu(
-                    expanded = expandedCommentDropdown,
-                    onDismissRequest = { expandedCommentDropdown = false }
+                    expanded = expandedNameDropdown,
+                    onDismissRequest = { expandedNameDropdown = false }
                 ) {
-                    commentsFromHistory.forEach { comment ->
+                    namesFromHistory.forEach { name ->
                         DropdownMenuItem(
-                            text = { Text(comment) },
+                            text = { Text(name) },
                             onClick = {
-                                viewModel.updateCurrentComment(comment)
-                                expandedCommentDropdown = false
+                                viewModel.updateCurrentName(name)
+                                expandedNameDropdown = false
                             }
                         )
                     }

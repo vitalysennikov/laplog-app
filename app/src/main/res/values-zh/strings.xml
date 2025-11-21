@@ -22,9 +22,12 @@
     <string name="session_duration">时长：%1$s</string>
     <string name="session_laps">%1$d 次计次</string>
     <string name="no_laps">无计次</string>
-    <string name="add_comment">添加备注</string>
-    <string name="edit_comment">编辑备注</string>
-    <string name="comment_hint">备注（可选）</string>
+    <string name="add_name">添加名称</string>
+    <string name="edit_name">编辑名称</string>
+    <string name="name_hint">名称（可选）</string>
+    <string name="add_notes">添加备注</string>
+    <string name="edit_notes">编辑备注</string>
+    <string name="notes_hint">备注（可选）</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
 

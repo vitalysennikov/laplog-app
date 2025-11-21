@@ -28,9 +28,12 @@ interface SessionDao {
     @Query("DELETE FROM sessions")
     suspend fun deleteAllSessions()
 
-    @Query("UPDATE sessions SET comment = :comment WHERE id = :sessionId")
-    suspend fun updateSessionComment(sessionId: Long, comment: String)
+    @Query("UPDATE sessions SET name = :name WHERE id = :sessionId")
+    suspend fun updateSessionName(sessionId: Long, name: String)
 
-    @Query("SELECT DISTINCT comment FROM sessions WHERE comment IS NOT NULL AND comment != '' ORDER BY comment ASC")
-    suspend fun getDistinctComments(): List<String>
+    @Query("UPDATE sessions SET notes = :notes WHERE id = :sessionId")
+    suspend fun updateSessionNotes(sessionId: Long, notes: String)
+
+    @Query("SELECT DISTINCT name FROM sessions WHERE name IS NOT NULL AND name != '' ORDER BY name ASC")
+    suspend fun getDistinctNames(): List<String>
 }

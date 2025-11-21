@@ -47,11 +47,13 @@ fun HistoryScreen(
     )
 
     val sessions by viewModel.sessions.collectAsState()
-    val usedComments by viewModel.usedComments.collectAsState()
-    val commentsFromHistory by viewModel.commentsFromHistory.collectAsState()
+    val usedNames by viewModel.usedNames.collectAsState()
+    val namesFromHistory by viewModel.namesFromHistory.collectAsState()
     val expandAll by viewModel.expandAll.collectAsState()
     val showMillisecondsInHistory by viewModel.showMillisecondsInHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
+    val filterName by viewModel.filterName.collectAsState()
+    val showTableView by viewModel.showTableView.collectAsState()
 
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -63,12 +65,21 @@ fun HistoryScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.history)) },
                 actions = {
-                    // Expand/Collapse all toggle
-                    IconButton(onClick = { viewModel.toggleExpandAll() }) {
+                    // Table/Card view toggle
+                    IconButton(onClick = { viewModel.toggleTableView() }) {
                         Icon(
-                            imageVector = if (expandAll) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
-                            contentDescription = if (expandAll) "Collapse All" else "Expand All"
+                            imageVector = if (showTableView) Icons.Default.ViewList else Icons.Default.TableChart,
+                            contentDescription = if (showTableView) "Card View" else "Table View"
                         )
+                    }
+                    // Expand/Collapse all toggle (only in card view)
+                    if (!showTableView) {
+                        IconButton(onClick = { viewModel.toggleExpandAll() }) {
+                            Icon(
+                                imageVector = if (expandAll) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
+                                contentDescription = if (expandAll) "Collapse All" else "Expand All"
+                            )
+                        }
                     }
                     // Milliseconds toggle for history
                     IconToggleButton(
@@ -130,22 +141,33 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
                 items(sessions) { sessionWithLaps ->
-                    SessionItem(
-                        sessionWithLaps = sessionWithLaps,
-                        commentsFromHistory = commentsFromHistory,
-                        onUpdateComment = { comment ->
-                            viewModel.updateSessionComment(sessionWithLaps.session.id, comment)
-                        },
-                        onDelete = { viewModel.deleteSession(sessionWithLaps.session) },
-                        onDeleteBefore = { viewModel.deleteSessionsBefore(sessionWithLaps.session.startTime) },
-                        formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
-                        formatDifference = { diff -> viewModel.formatDifference(diff, showMillisecondsInHistory) },
-                        fontFamily = dseg7Font,
-                        totalSessionCount = sessions.size,
-                        sessionIndex = sessions.indexOf(sessionWithLaps),
-                        expandAll = expandAll,
-                        invertLapColors = invertLapColors
-                    )
+                    if (showTableView) {
+                        SessionTableItem(
+                            sessionWithLaps = sessionWithLaps,
+                            formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
+                            fontFamily = dseg7Font
+                        )
+                    } else {
+                        SessionItem(
+                            sessionWithLaps = sessionWithLaps,
+                            namesFromHistory = namesFromHistory,
+                            onUpdateName = { name ->
+                                viewModel.updateSessionName(sessionWithLaps.session.id, name)
+                            },
+                            onUpdateNotes = { notes ->
+                                viewModel.updateSessionNotes(sessionWithLaps.session.id, notes)
+                            },
+                            onDelete = { viewModel.deleteSession(sessionWithLaps.session) },
+                            onDeleteBefore = { viewModel.deleteSessionsBefore(sessionWithLaps.session.startTime) },
+                            formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
+                            formatDifference = { diff -> viewModel.formatDifference(diff, showMillisecondsInHistory) },
+                            fontFamily = dseg7Font,
+                            totalSessionCount = sessions.size,
+                            sessionIndex = sessions.indexOf(sessionWithLaps),
+                            expandAll = expandAll,
+                            invertLapColors = invertLapColors
+                        )
+                    }
                     Divider()
                 }
             }
@@ -228,8 +250,9 @@ fun HistoryScreen(
 @Composable
 fun SessionItem(
     sessionWithLaps: SessionWithLaps,
-    commentsFromHistory: List<String>,
-    onUpdateComment: (String) -> Unit,
+    namesFromHistory: List<String>,
+    onUpdateName: (String) -> Unit,
+    onUpdateNotes: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteBefore: () -> Unit,
     formatTime: (Long) -> String,
@@ -246,7 +269,8 @@ fun SessionItem(
     LaunchedEffect(expandAll) {
         expanded = expandAll
     }
-    var showCommentDialog by remember { mutableStateOf(false) }
+    var showNameDialog by remember { mutableStateOf(false) }
+    var showNotesDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showDeleteBeforeDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
@@ -283,14 +307,14 @@ fun SessionItem(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        // Show comment inline only when collapsed
-                        if (!expanded && !session.comment.isNullOrBlank()) {
+                        // Show name inline only when collapsed
+                        if (!expanded && !session.name.isNullOrBlank()) {
                             Text(
                                 text = "\u2014", // Em dash
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = session.comment,
+                                text = session.name,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 maxLines = 1,
@@ -298,13 +322,24 @@ fun SessionItem(
                             )
                         }
                     }
-                    // Show comment on separate line when expanded
-                    if (expanded && !session.comment.isNullOrBlank()) {
+                    // Show name on separate line when expanded
+                    if (expanded && !session.name.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = session.comment,
+                            text = session.name,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    // Show notes on separate line when expanded (always expanded, not collapsed)
+                    if (!session.notes.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = session.notes,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -379,15 +414,29 @@ fun SessionItem(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                if (session.comment.isNullOrBlank())
-                                    stringResource(R.string.add_comment)
+                                if (session.name.isNullOrBlank())
+                                    stringResource(R.string.add_name)
                                 else
-                                    stringResource(R.string.edit_comment)
+                                    stringResource(R.string.edit_name)
                             )
                         },
                         onClick = {
                             showMenu = false
-                            showCommentDialog = true
+                            showNameDialog = true
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                if (session.notes.isNullOrBlank())
+                                    stringResource(R.string.add_notes)
+                                else
+                                    stringResource(R.string.edit_notes)
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            showNotesDialog = true
                         }
                     )
                     DropdownMenuItem(
@@ -544,15 +593,27 @@ fun SessionItem(
         }
     }
 
-    // Comment dialog
-    if (showCommentDialog) {
-        CommentDialog(
-            currentComment = session.comment ?: "",
-            commentsFromHistory = commentsFromHistory,
-            onDismiss = { showCommentDialog = false },
-            onSave = { comment ->
-                onUpdateComment(comment)
-                showCommentDialog = false
+    // Name dialog
+    if (showNameDialog) {
+        NameDialog(
+            currentName = session.name ?: "",
+            namesFromHistory = namesFromHistory,
+            onDismiss = { showNameDialog = false },
+            onSave = { name ->
+                onUpdateName(name)
+                showNameDialog = false
+            }
+        )
+    }
+
+    // Notes dialog
+    if (showNotesDialog) {
+        NotesDialog(
+            currentNotes = session.notes ?: "",
+            onDismiss = { showNotesDialog = false },
+            onSave = { notes ->
+                onUpdateNotes(notes)
+                showNotesDialog = false
             }
         )
     }
@@ -608,57 +669,57 @@ fun SessionItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommentDialog(
-    currentComment: String,
-    commentsFromHistory: List<String>,
+fun NameDialog(
+    currentName: String,
+    namesFromHistory: List<String>,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
-    var comment by remember { mutableStateOf(currentComment) }
-    var expandedCommentDropdown by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf(currentName) }
+    var expandedNameDropdown by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (currentComment.isBlank())
-                    stringResource(R.string.add_comment)
+                if (currentName.isBlank())
+                    stringResource(R.string.add_name)
                 else
-                    stringResource(R.string.edit_comment)
+                    stringResource(R.string.edit_name)
             )
         },
         text = {
             ExposedDropdownMenuBox(
-                expanded = expandedCommentDropdown,
-                onExpandedChange = { expandedCommentDropdown = it }
+                expanded = expandedNameDropdown,
+                onExpandedChange = { expandedNameDropdown = it }
             ) {
                 OutlinedTextField(
-                    value = comment,
-                    onValueChange = { comment = it },
-                    label = { Text(stringResource(R.string.comment_hint)) },
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.name_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(),
                     singleLine = true,
                     trailingIcon = {
-                        if (commentsFromHistory.isNotEmpty()) {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCommentDropdown)
+                        if (namesFromHistory.isNotEmpty()) {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNameDropdown)
                         }
                     },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )
 
-                if (commentsFromHistory.isNotEmpty()) {
+                if (namesFromHistory.isNotEmpty()) {
                     ExposedDropdownMenu(
-                        expanded = expandedCommentDropdown,
-                        onDismissRequest = { expandedCommentDropdown = false }
+                        expanded = expandedNameDropdown,
+                        onDismissRequest = { expandedNameDropdown = false }
                     ) {
-                        commentsFromHistory.forEach { historyComment ->
+                        namesFromHistory.forEach { historyName ->
                             DropdownMenuItem(
-                                text = { Text(historyComment) },
+                                text = { Text(historyName) },
                                 onClick = {
-                                    comment = historyComment
-                                    expandedCommentDropdown = false
+                                    name = historyName
+                                    expandedNameDropdown = false
                                 }
                             )
                         }
@@ -667,7 +728,7 @@ fun CommentDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(comment) }) {
+            TextButton(onClick = { onSave(name) }) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -677,4 +738,131 @@ fun CommentDialog(
             }
         }
     )
+}
+
+@Composable
+fun NotesDialog(
+    currentNotes: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var notes by remember { mutableStateOf(currentNotes) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (currentNotes.isBlank())
+                    stringResource(R.string.add_notes)
+                else
+                    stringResource(R.string.edit_notes)
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text(stringResource(R.string.notes_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 5
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(notes) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun SessionTableItem(
+    sessionWithLaps: SessionWithLaps,
+    formatTime: (Long) -> String,
+    fontFamily: FontFamily
+) {
+    val session = sessionWithLaps.session
+    val laps = sessionWithLaps.laps
+    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val dateStr = dateFormat.format(Date(session.startTime))
+
+    // Calculate statistics
+    val lapCount = laps.size
+    val avgDuration = if (laps.size >= 2) {
+        laps.map { it.lapDuration }.average().toLong()
+    } else null
+    val medianDuration = if (laps.size >= 2) {
+        val sorted = laps.map { it.lapDuration }.sorted()
+        sorted[sorted.size / 2]
+    } else null
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Date and name
+            Column(modifier = Modifier.weight(1.5f)) {
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (!session.name.isNullOrBlank()) {
+                    Text(
+                        text = session.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Duration
+            Text(
+                text = formatTime(session.totalDuration),
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = fontFamily,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            // Lap count
+            Text(
+                text = lapCount.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(0.8f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            // Average
+            Text(
+                text = avgDuration?.let { formatTime(it) } ?: "—",
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = fontFamily,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            // Median
+            Text(
+                text = medianDuration?.let { formatTime(it) } ?: "—",
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = fontFamily,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
 }

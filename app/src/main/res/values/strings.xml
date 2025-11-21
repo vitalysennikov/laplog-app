@@ -22,9 +22,12 @@
     <string name="session_duration">Duration: %1$s</string>
     <string name="session_laps">%1$d laps</string>
     <string name="no_laps">No laps</string>
-    <string name="add_comment">Add comment</string>
-    <string name="edit_comment">Edit comment</string>
-    <string name="comment_hint">Comment (optional)</string>
+    <string name="add_name">Add name</string>
+    <string name="edit_name">Edit name</string>
+    <string name="name_hint">Name (optional)</string>
+    <string name="add_notes">Add notes</string>
+    <string name="edit_notes">Edit notes</string>
+    <string name="notes_hint">Notes (optional)</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
 

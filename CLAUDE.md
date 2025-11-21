@@ -5,8 +5,8 @@
 **LapLog Free** is an Android stopwatch application with lap tracking and session history features. The name reflects two key features: **Lap** marks and **Log** (history) of sessions.
 
 - **Package**: `com.laplog.app`
-- **Current Version**: 0.9.7 (versionCode 32) - IN DEVELOPMENT
-- **Stable Version**: 0.9.0 (tagged)
+- **Current Version**: 0.10.0 (versionCode 33) - IN DEVELOPMENT
+- **Stable Version**: 0.9.7 (tagged)
 - **Min SDK**: 24 (Android 7.0)
 - **Target SDK**: 34 (Android 14)
 - **Latest Build**: GitHub Actions builds APK on every push to main
@@ -80,16 +80,17 @@ com.laplog.app/
 - **Small App Name**: Added at bottom above navigation bar (labelSmall style)
 
 ### Stage 3: Room Database ✅
-- **SessionEntity**: Stores session metadata (startTime, endTime, totalDuration, comment)
+- **SessionEntity**: Stores session metadata (startTime, endTime, totalDuration, name, notes)
 - **LapEntity**: Stores individual lap marks with foreign key to SessionEntity
 - **Auto-save**: Sessions saved to database when Reset button is pressed
 - **Cascade Delete**: Deleting a session automatically deletes associated laps
 
-### Stage 4: Comments with Autocomplete ✅
-- **Add/Edit Comments**: Attach text comments to saved sessions
-- **Autocomplete**: Suggests previously used comments while typing
-- **Persistent Storage**: Used comments saved in SharedPreferences
-- **Comment Dialog**: Clean UI for entering and editing comments
+### Stage 4: Names and Notes with Autocomplete ✅
+- **Add/Edit Names**: Attach session names (наименование) to saved sessions
+- **Add/Edit Notes**: Attach additional notes (заметка) to sessions in history
+- **Autocomplete**: Suggests previously used names while typing
+- **Persistent Storage**: Used names saved in SharedPreferences
+- **Dialogs**: Clean UI for entering and editing names and notes
 
 ### Stage 5: Delete Functions ✅
 - **Delete Session**: Remove individual session with confirmation
@@ -120,7 +121,8 @@ CREATE TABLE sessions (
     startTime INTEGER NOT NULL,
     endTime INTEGER NOT NULL,
     totalDuration INTEGER NOT NULL,
-    comment TEXT
+    name TEXT,
+    notes TEXT
 );
 ```
 
@@ -180,7 +182,16 @@ See `task_2.md` for detailed requirements.
 - ✅ Backup version updated to 0.9.0
 - ✅ String resources added for all languages (EN, RU, ZH)
 
-### Version 0.9.7 (IN DEVELOPMENT)
+### Version 0.10.0 (IN DEVELOPMENT)
+- ✅ Renamed "comment" field to "name" (наименование)
+- ✅ Added "notes" field (заметка) for additional session information
+- ✅ Added table view for sessions showing date, name, duration, lap count, average, and median
+- ✅ Added filter by session name in history (backend ready, UI pending)
+- ✅ Database migration from version 1 to 2
+- ✅ Updated all UI screens to use name and notes fields
+- ✅ Updated string resources for all languages (EN, RU, ZH)
+
+### Version 0.9.7 (COMPLETED - tagged v0.9.7)
 - ✅ Fixed milliseconds display on main timer (show only when paused)
 - ✅ Fixed main timer update during pause (accurate milliseconds)
 - ✅ Fixed notification not removing when stopwatch stopped

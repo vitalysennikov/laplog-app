@@ -22,9 +22,12 @@
     <string name="session_duration">Длительность: %1$s</string>
     <string name="session_laps">%1$d кругов</string>
     <string name="no_laps">Нет кругов</string>
-    <string name="add_comment">Добавить комментарий</string>
-    <string name="edit_comment">Изменить комментарий</string>
-    <string name="comment_hint">Комментарий (необязательно)</string>
+    <string name="add_name">Добавить наименование</string>
+    <string name="edit_name">Изменить наименование</string>
+    <string name="name_hint">Наименование (необязательно)</string>
+    <string name="add_notes">Добавить заметку</string>
+    <string name="edit_notes">Изменить заметку</string>
+    <string name="notes_hint">Заметка (необязательно)</string>
     <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
 

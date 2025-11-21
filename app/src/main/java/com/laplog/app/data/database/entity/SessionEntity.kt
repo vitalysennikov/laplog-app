@@ -10,5 +10,6 @@ data class SessionEntity(
     val startTime: Long,
     val endTime: Long,
     val totalDuration: Long,
-    val comment: String? = null
+    val name: String? = null,
+    val notes: String? = null
 )
