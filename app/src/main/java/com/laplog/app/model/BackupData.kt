@@ -23,7 +23,9 @@ data class BackupSession(
     val startTime: Long,
     val endTime: Long,
     val totalDuration: Long,
-    val comment: String?,
+    val name: String? = null,
+    val notes: String? = null,
+    val comment: String? = null, // Legacy field for backward compatibility
     val laps: List<BackupLap>
 )
 

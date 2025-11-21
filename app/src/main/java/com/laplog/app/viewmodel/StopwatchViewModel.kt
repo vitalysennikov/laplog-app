@@ -390,8 +390,8 @@ class StopwatchViewModel(
                 try {
                     saveSession(elapsedTime, laps, sessionStartTime)
                     Log.d("StopwatchViewModel", "Session saved successfully")
-                    // Reload comments from history after saving
-                    loadCommentsFromHistory()
+                    // Reload names from history after saving
+                    loadNamesFromHistory()
                 } catch (e: Exception) {
                     Log.e("StopwatchViewModel", "Error saving session", e)
                 }

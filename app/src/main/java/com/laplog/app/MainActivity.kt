@@ -430,20 +430,21 @@ class MainActivity : ComponentActivity() {
         val csv = StringBuilder()
 
         // Header
-        csv.append("Date,Start Time,End Time,Duration (ms),Duration,Comment,Lap Number,Lap Total Time (ms),Lap Duration (ms)\n")
+        csv.append("Date,Start Time,End Time,Duration (ms),Duration,Name,Notes,Lap Number,Lap Total Time (ms),Lap Duration (ms)\n")
 
         sessions.forEach { sessionWithLaps ->
             val session = sessionWithLaps.session
             val startDate = dateFormat.format(Date(session.startTime))
             val endDate = dateFormat.format(Date(session.endTime))
             val duration = formatDuration(session.totalDuration)
-            val comment = session.comment?.replace(",", ";") ?: ""
+            val name = session.name?.replace(",", ";") ?: ""
+            val notes = session.notes?.replace(",", ";") ?: ""
 
             if (sessionWithLaps.laps.isEmpty()) {
-                csv.append("$startDate,$startDate,$endDate,${session.totalDuration},$duration,$comment,,,\n")
+                csv.append("$startDate,$startDate,$endDate,${session.totalDuration},$duration,$name,$notes,,,\n")
             } else {
                 sessionWithLaps.laps.forEach { lap ->
-                    csv.append("$startDate,$startDate,$endDate,${session.totalDuration},$duration,$comment,${lap.lapNumber},${lap.totalTime},${lap.lapDuration}\n")
+                    csv.append("$startDate,$startDate,$endDate,${session.totalDuration},$duration,$name,$notes,${lap.lapNumber},${lap.totalTime},${lap.lapDuration}\n")
                 }
             }
         }
@@ -467,7 +468,8 @@ class MainActivity : ComponentActivity() {
             json.append("      \"startTime\": \"${dateFormat.format(Date(session.startTime))}\",\n")
             json.append("      \"endTime\": \"${dateFormat.format(Date(session.endTime))}\",\n")
             json.append("      \"totalDuration\": ${session.totalDuration},\n")
-            json.append("      \"comment\": ${if (session.comment != null) "\"${session.comment.replace("\"", "\\\"")}\"" else "null"},\n")
+            json.append("      \"name\": ${if (session.name != null) "\"${session.name.replace("\"", "\\\"")}\"" else "null"},\n")
+            json.append("      \"notes\": ${if (session.notes != null) "\"${session.notes.replace("\"", "\\\"")}\"" else "null"},\n")
             json.append("      \"laps\": [\n")
 
             sessionWithLaps.laps.forEachIndexed { lapIndex, lap ->

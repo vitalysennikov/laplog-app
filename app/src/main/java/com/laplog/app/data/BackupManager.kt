@@ -214,7 +214,8 @@ class BackupManager(
                     startTime = session.startTime,
                     endTime = session.endTime,
                     totalDuration = session.totalDuration,
-                    comment = session.comment,
+                    name = session.name,
+                    notes = session.notes,
                     laps = backupLaps
                 )
             )
@@ -231,7 +232,7 @@ class BackupManager(
         )
 
         return BackupData(
-            version = "0.9.0",
+            version = "0.10.0",
             timestamp = System.currentTimeMillis(),
             sessions = backupSessions,
             settings = backupSettings
@@ -249,7 +250,8 @@ class BackupManager(
                 startTime = backupSession.startTime,
                 endTime = backupSession.endTime,
                 totalDuration = backupSession.totalDuration,
-                comment = backupSession.comment
+                name = backupSession.name ?: backupSession.comment, // Use comment as fallback for old backups
+                notes = backupSession.notes
             )
             val sessionId = sessionDao.insertSession(session)
 
@@ -280,7 +282,8 @@ class BackupManager(
                 startTime = backupSession.startTime,
                 endTime = backupSession.endTime,
                 totalDuration = backupSession.totalDuration,
-                comment = backupSession.comment
+                name = backupSession.name ?: backupSession.comment, // Use comment as fallback for old backups
+                notes = backupSession.notes
             )
             val sessionId = sessionDao.insertSession(session)
 
