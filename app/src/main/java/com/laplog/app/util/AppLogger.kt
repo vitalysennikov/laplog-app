@@ -120,7 +120,7 @@ object AppLogger {
         withContext(Dispatchers.IO) {
             try {
                 if (::logFile.isInitialized && logFile.exists()) {
-                    i("AppLogger", "Clearing log file")
+                    Log.i(TAG, "Clearing log file")
                     logFile.writeText("")
                 }
             } catch (e: Exception) {
