@@ -11,5 +11,12 @@ data class SessionEntity(
     val endTime: Long,
     val totalDuration: Long,
     val name: String? = null,
-    val notes: String? = null
+    val notes: String? = null,
+    // Translations cache
+    val name_en: String? = null,
+    val name_ru: String? = null,
+    val name_zh: String? = null,
+    val notes_en: String? = null,
+    val notes_ru: String? = null,
+    val notes_zh: String? = null
 )

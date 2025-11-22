@@ -12,7 +12,7 @@ import com.laplog.app.data.database.entity.SessionEntity
 
 @Database(
     entities = [SessionEntity::class, LapEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,6 +31,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add translation cache columns
+                db.execSQL("ALTER TABLE sessions ADD COLUMN name_en TEXT")
+                db.execSQL("ALTER TABLE sessions ADD COLUMN name_ru TEXT")
+                db.execSQL("ALTER TABLE sessions ADD COLUMN name_zh TEXT")
+                db.execSQL("ALTER TABLE sessions ADD COLUMN notes_en TEXT")
+                db.execSQL("ALTER TABLE sessions ADD COLUMN notes_ru TEXT")
+                db.execSQL("ALTER TABLE sessions ADD COLUMN notes_zh TEXT")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -38,7 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "laplog_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

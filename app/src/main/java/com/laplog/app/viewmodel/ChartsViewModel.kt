@@ -3,7 +3,9 @@ package com.laplog.app.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionStatistics
 import com.laplog.app.model.ChartData
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +15,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ChartsViewModel(
-    private val sessionDao: SessionDao
+    private val sessionDao: SessionDao,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     private val _availableNames = MutableStateFlow<List<String>>(emptyList())
@@ -115,6 +118,20 @@ class ChartsViewModel(
                 _isLoading.value = false
             }
         }
+    }
+
+    /**
+     * Get displayed name for session based on current language
+     * Falls back to original name if translation not available
+     */
+    fun getDisplayedName(session: SessionEntity): String {
+        val currentLang = preferencesManager.getCurrentLanguage()
+        return when (currentLang) {
+            "en" -> session.name_en ?: session.name
+            "ru" -> session.name_ru ?: session.name
+            "zh" -> session.name_zh ?: session.name
+            else -> session.name
+        } ?: ""
     }
 
     fun formatTime(timeInMillis: Long): String {

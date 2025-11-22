@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.model.SessionWithLaps
 import com.laplog.app.ui.AboutDialog
@@ -50,6 +51,7 @@ import com.laplog.app.service.StopwatchService
 class MainActivity : ComponentActivity() {
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var database: AppDatabase
+    private lateinit var translationManager: TranslationManager
     private var pendingExportData: String? = null
     private var pendingFileName: String? = null
     private var pendingBackupData: String? = null
@@ -124,6 +126,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         preferencesManager = PreferencesManager(applicationContext)
         database = AppDatabase.getDatabase(applicationContext)
+        translationManager = TranslationManager(database.sessionDao())
 
         // Apply language setting
         applyLanguage(preferencesManager.appLanguage)
@@ -286,6 +289,7 @@ class MainActivity : ComponentActivity() {
                             1 -> HistoryScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
+                                translationManager = translationManager,
                                 onExportCsv = { sessions -> exportToCsv(sessions) },
                                 onExportJson = { sessions -> exportToJson(sessions) },
                                 onLanguageChange = { languageCode ->
@@ -294,7 +298,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                             2 -> ChartsScreen(
-                                sessionDao = database.sessionDao()
+                                sessionDao = database.sessionDao(),
+                                preferencesManager = preferencesManager
                             )
                             3 -> BackupScreen(
                                 preferencesManager = preferencesManager,

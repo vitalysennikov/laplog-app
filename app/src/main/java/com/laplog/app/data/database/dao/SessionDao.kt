@@ -39,4 +39,31 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE name = :sessionName ORDER BY startTime ASC")
     suspend fun getSessionsByName(sessionName: String): List<SessionEntity>
+
+    @Query("""
+        UPDATE sessions
+        SET name_en = :nameEn, name_ru = :nameRu, name_zh = :nameZh
+        WHERE id = :sessionId
+    """)
+    suspend fun updateSessionNameTranslations(
+        sessionId: Long,
+        nameEn: String?,
+        nameRu: String?,
+        nameZh: String?
+    )
+
+    @Query("""
+        UPDATE sessions
+        SET notes_en = :notesEn, notes_ru = :notesRu, notes_zh = :notesZh
+        WHERE id = :sessionId
+    """)
+    suspend fun updateSessionNotesTranslations(
+        sessionId: Long,
+        notesEn: String?,
+        notesRu: String?,
+        notesZh: String?
+    )
+
+    @Query("SELECT * FROM sessions WHERE (name IS NOT NULL AND name != '') ORDER BY startTime DESC")
+    suspend fun getSessionsNeedingTranslation(): List<SessionEntity>
 }

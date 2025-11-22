@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.laplog.app.R
+import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.ChartsViewModel
 import com.laplog.app.viewmodel.ChartsViewModelFactory
@@ -35,10 +36,11 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartsScreen(
-    sessionDao: SessionDao
+    sessionDao: SessionDao,
+    preferencesManager: PreferencesManager
 ) {
     val viewModel: ChartsViewModel = viewModel(
-        factory = ChartsViewModelFactory(sessionDao)
+        factory = ChartsViewModelFactory(sessionDao, preferencesManager)
     )
 
     val availableNames by viewModel.availableNames.collectAsState()

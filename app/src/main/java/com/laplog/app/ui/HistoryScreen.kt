@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.laplog.app.R
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionWithLaps
@@ -33,12 +34,13 @@ import java.util.*
 fun HistoryScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
+    translationManager: TranslationManager,
     onExportCsv: (List<SessionWithLaps>) -> Unit,
     onExportJson: (List<SessionWithLaps>) -> Unit,
     onLanguageChange: (String?) -> Unit
 ) {
     val viewModel: HistoryViewModel = viewModel(
-        factory = HistoryViewModelFactory(preferencesManager, sessionDao)
+        factory = HistoryViewModelFactory(preferencesManager, sessionDao, translationManager)
     )
 
     // Digital clock style font

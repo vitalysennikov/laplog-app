@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionWithLaps
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 
 class HistoryViewModel(
     private val preferencesManager: PreferencesManager,
-    private val sessionDao: SessionDao
+    private val sessionDao: SessionDao,
+    private val translationManager: TranslationManager
 ) : ViewModel() {
 
     private var loadSessionsJob: Job? = null
@@ -112,6 +114,18 @@ class HistoryViewModel(
                 updated.add(name)
                 _usedNames.value = updated
                 preferencesManager.usedNames = updated
+
+                // Translate to all languages
+                val currentLang = preferencesManager.getCurrentLanguage()
+                val (nameEn, nameRu, nameZh) = translateToAllLanguages(name, currentLang)
+
+                // Save translations
+                sessionDao.updateSessionNameTranslations(
+                    sessionId = sessionId,
+                    nameEn = nameEn,
+                    nameRu = nameRu,
+                    nameZh = nameZh
+                )
             }
 
             loadSessions()
@@ -122,6 +136,21 @@ class HistoryViewModel(
     fun updateSessionNotes(sessionId: Long, notes: String) {
         viewModelScope.launch {
             sessionDao.updateSessionNotes(sessionId, notes)
+
+            // Translate to all languages if notes are not blank
+            if (notes.isNotBlank()) {
+                val currentLang = preferencesManager.getCurrentLanguage()
+                val (notesEn, notesRu, notesZh) = translateToAllLanguages(notes, currentLang)
+
+                // Save translations
+                sessionDao.updateSessionNotesTranslations(
+                    sessionId = sessionId,
+                    notesEn = notesEn,
+                    notesRu = notesRu,
+                    notesZh = notesZh
+                )
+            }
+
             loadSessions()
         }
     }
@@ -161,6 +190,69 @@ class HistoryViewModel(
 
     fun toggleExpandAll() {
         _expandAll.value = !_expandAll.value
+    }
+
+    /**
+     * Translate text to all supported languages (EN, RU, ZH)
+     * Returns Triple of (nameEn, nameRu, nameZh)
+     */
+    private suspend fun translateToAllLanguages(text: String, fromLang: String): Triple<String?, String?, String?> {
+        val translations = translationManager.translateSession(
+            sessionId = 0, // Not used in translation
+            currentLang = fromLang,
+            targetLang = "en",
+            name = text,
+            notes = null
+        )
+        val nameEn = translations.first
+
+        val translationsRu = translationManager.translateSession(
+            sessionId = 0,
+            currentLang = fromLang,
+            targetLang = "ru",
+            name = text,
+            notes = null
+        )
+        val nameRu = translationsRu.first
+
+        val translationsZh = translationManager.translateSession(
+            sessionId = 0,
+            currentLang = fromLang,
+            targetLang = "zh",
+            name = text,
+            notes = null
+        )
+        val nameZh = translationsZh.first
+
+        return Triple(nameEn, nameRu, nameZh)
+    }
+
+    /**
+     * Get displayed name for session based on current language
+     * Falls back to original name if translation not available
+     */
+    fun getDisplayedName(session: SessionEntity): String {
+        val currentLang = preferencesManager.getCurrentLanguage()
+        return when (currentLang) {
+            "en" -> session.name_en ?: session.name
+            "ru" -> session.name_ru ?: session.name
+            "zh" -> session.name_zh ?: session.name
+            else -> session.name
+        } ?: ""
+    }
+
+    /**
+     * Get displayed notes for session based on current language
+     * Falls back to original notes if translation not available
+     */
+    fun getDisplayedNotes(session: SessionEntity): String? {
+        val currentLang = preferencesManager.getCurrentLanguage()
+        return when (currentLang) {
+            "en" -> session.notes_en ?: session.notes
+            "ru" -> session.notes_ru ?: session.notes
+            "zh" -> session.notes_zh ?: session.notes
+            else -> session.notes
+        }
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = false): String {

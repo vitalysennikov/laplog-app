@@ -2,6 +2,7 @@ package com.laplog.app.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import java.util.Locale
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(
@@ -118,6 +119,24 @@ class PreferencesManager(context: Context) {
             .remove(KEY_STOPWATCH_LAST_UPDATE_TIME)
             .remove(KEY_STOPWATCH_LAPS_JSON)
             .apply()
+    }
+
+    /**
+     * Get current language code (en, ru, or zh)
+     * Returns app language if set, otherwise system locale
+     */
+    fun getCurrentLanguage(): String {
+        val savedLang = appLanguage
+        if (savedLang != null) {
+            return savedLang
+        }
+
+        // Fall back to system locale
+        val systemLang = Locale.getDefault().language
+        return when (systemLang) {
+            "en", "ru", "zh" -> systemLang
+            else -> "en" // Default to English for unsupported languages
+        }
     }
 
     companion object {
