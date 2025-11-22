@@ -239,7 +239,7 @@ class BackupManager(
         )
 
         return BackupData(
-            version = "0.12.0",
+            version = "0.12.1",
             timestamp = System.currentTimeMillis(),
             sessions = backupSessions,
             settings = backupSettings
