@@ -9,6 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.worker.BackupWorker
@@ -21,10 +22,11 @@ import java.util.concurrent.TimeUnit
 class BackupViewModel(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
-    sessionDao: SessionDao
+    sessionDao: SessionDao,
+    translationManager: TranslationManager
 ) : ViewModel() {
 
-    private val backupManager = BackupManager(context, preferencesManager, sessionDao)
+    private val backupManager = BackupManager(context, preferencesManager, sessionDao, translationManager)
 
     private val _backupFolderUri = MutableStateFlow(preferencesManager.backupFolderUri)
     val backupFolderUri: StateFlow<String?> = _backupFolderUri.asStateFlow()

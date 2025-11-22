@@ -20,7 +20,8 @@ import java.util.*
 class BackupManager(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
-    private val sessionDao: SessionDao
+    private val sessionDao: SessionDao,
+    private val translationManager: TranslationManager
 ) {
     companion object {
         private const val BACKUP_PREFIX = "laplog_backup_"
@@ -216,6 +217,12 @@ class BackupManager(
                     totalDuration = session.totalDuration,
                     name = session.name,
                     notes = session.notes,
+                    name_en = session.name_en,
+                    name_ru = session.name_ru,
+                    name_zh = session.name_zh,
+                    notes_en = session.notes_en,
+                    notes_ru = session.notes_ru,
+                    notes_zh = session.notes_zh,
                     laps = backupLaps
                 )
             )
@@ -232,7 +239,7 @@ class BackupManager(
         )
 
         return BackupData(
-            version = "0.10.0",
+            version = "0.12.0",
             timestamp = System.currentTimeMillis(),
             sessions = backupSessions,
             settings = backupSettings
@@ -245,15 +252,32 @@ class BackupManager(
 
         // Insert backup data
         backupData.sessions.forEach { backupSession ->
+            val finalName = backupSession.name ?: backupSession.comment // Use comment as fallback for old backups
+            val finalNotes = backupSession.notes
+
             val session = SessionEntity(
                 id = 0, // Let database generate new ID
                 startTime = backupSession.startTime,
                 endTime = backupSession.endTime,
                 totalDuration = backupSession.totalDuration,
-                name = backupSession.name ?: backupSession.comment, // Use comment as fallback for old backups
-                notes = backupSession.notes
+                name = finalName,
+                notes = finalNotes,
+                name_en = backupSession.name_en,
+                name_ru = backupSession.name_ru,
+                name_zh = backupSession.name_zh,
+                notes_en = backupSession.notes_en,
+                notes_ru = backupSession.notes_ru,
+                notes_zh = backupSession.notes_zh
             )
             val sessionId = sessionDao.insertSession(session)
+
+            // Auto-translate if translations are missing
+            if (finalName != null && (backupSession.name_en == null || backupSession.name_ru == null || backupSession.name_zh == null)) {
+                autoTranslateName(sessionId, finalName)
+            }
+            if (finalNotes != null && !finalNotes.isBlank() && (backupSession.notes_en == null || backupSession.notes_ru == null || backupSession.notes_zh == null)) {
+                autoTranslateNotes(sessionId, finalNotes)
+            }
 
             val laps = backupSession.laps.map { backupLap ->
                 LapEntity(
@@ -277,15 +301,32 @@ class BackupManager(
     private suspend fun restoreMerge(backupData: BackupData) {
         // Insert backup data (merge with existing)
         backupData.sessions.forEach { backupSession ->
+            val finalName = backupSession.name ?: backupSession.comment // Use comment as fallback for old backups
+            val finalNotes = backupSession.notes
+
             val session = SessionEntity(
                 id = 0, // Let database generate new ID
                 startTime = backupSession.startTime,
                 endTime = backupSession.endTime,
                 totalDuration = backupSession.totalDuration,
-                name = backupSession.name ?: backupSession.comment, // Use comment as fallback for old backups
-                notes = backupSession.notes
+                name = finalName,
+                notes = finalNotes,
+                name_en = backupSession.name_en,
+                name_ru = backupSession.name_ru,
+                name_zh = backupSession.name_zh,
+                notes_en = backupSession.notes_en,
+                notes_ru = backupSession.notes_ru,
+                notes_zh = backupSession.notes_zh
             )
             val sessionId = sessionDao.insertSession(session)
+
+            // Auto-translate if translations are missing
+            if (finalName != null && (backupSession.name_en == null || backupSession.name_ru == null || backupSession.name_zh == null)) {
+                autoTranslateName(sessionId, finalName)
+            }
+            if (finalNotes != null && !finalNotes.isBlank() && (backupSession.notes_en == null || backupSession.notes_ru == null || backupSession.notes_zh == null)) {
+                autoTranslateNotes(sessionId, finalNotes)
+            }
 
             val laps = backupSession.laps.map { backupLap ->
                 LapEntity(
@@ -319,6 +360,90 @@ class BackupManager(
         settings.appLanguage?.let { preferencesManager.appLanguage = it }
     }
 
+    /**
+     * Auto-translate session name to all languages
+     */
+    private suspend fun autoTranslateName(sessionId: Long, name: String) {
+        val currentLang = preferencesManager.getCurrentLanguage()
+
+        // Translate to English
+        val (nameEn, _) = translationManager.translateSession(
+            sessionId = sessionId,
+            currentLang = currentLang,
+            targetLang = "en",
+            name = name,
+            notes = null
+        )
+
+        // Translate to Russian
+        val (nameRu, _) = translationManager.translateSession(
+            sessionId = sessionId,
+            currentLang = currentLang,
+            targetLang = "ru",
+            name = name,
+            notes = null
+        )
+
+        // Translate to Chinese
+        val (nameZh, _) = translationManager.translateSession(
+            sessionId = sessionId,
+            currentLang = currentLang,
+            targetLang = "zh",
+            name = name,
+            notes = null
+        )
+
+        // Save translations
+        sessionDao.updateSessionNameTranslations(
+            sessionId = sessionId,
+            nameEn = nameEn,
+            nameRu = nameRu,
+            nameZh = nameZh
+        )
+    }
+
+    /**
+     * Auto-translate session notes to all languages
+     */
+    private suspend fun autoTranslateNotes(sessionId: Long, notes: String) {
+        val currentLang = preferencesManager.getCurrentLanguage()
+
+        // Translate to English
+        val (_, notesEn) = translationManager.translateSession(
+            sessionId = sessionId,
+            currentLang = currentLang,
+            targetLang = "en",
+            name = null,
+            notes = notes
+        )
+
+        // Translate to Russian
+        val (_, notesRu) = translationManager.translateSession(
+            sessionId = sessionId,
+            currentLang = currentLang,
+            targetLang = "ru",
+            name = null,
+            notes = notes
+        )
+
+        // Translate to Chinese
+        val (_, notesZh) = translationManager.translateSession(
+            sessionId = sessionId,
+            currentLang = currentLang,
+            targetLang = "zh",
+            name = null,
+            notes = notes
+        )
+
+        // Save translations
+        sessionDao.updateSessionNotesTranslations(
+            sessionId = sessionId,
+            notesEn = notesEn,
+            notesRu = notesRu,
+            notesZh = notesZh
+        )
+    }
+
     private fun backupDataToJson(data: BackupData): String {
         val json = JSONObject()
         json.put("version", data.version)
@@ -343,7 +468,16 @@ class BackupManager(
             sessionObj.put("startTime", session.startTime)
             sessionObj.put("endTime", session.endTime)
             sessionObj.put("totalDuration", session.totalDuration)
-            sessionObj.put("comment", session.comment ?: JSONObject.NULL)
+            sessionObj.put("name", session.name ?: JSONObject.NULL)
+            sessionObj.put("notes", session.notes ?: JSONObject.NULL)
+            sessionObj.put("name_en", session.name_en ?: JSONObject.NULL)
+            sessionObj.put("name_ru", session.name_ru ?: JSONObject.NULL)
+            sessionObj.put("name_zh", session.name_zh ?: JSONObject.NULL)
+            sessionObj.put("notes_en", session.notes_en ?: JSONObject.NULL)
+            sessionObj.put("notes_ru", session.notes_ru ?: JSONObject.NULL)
+            sessionObj.put("notes_zh", session.notes_zh ?: JSONObject.NULL)
+            // Keep comment for backward compatibility
+            sessionObj.put("comment", session.comment ?: session.name ?: JSONObject.NULL)
 
             val lapsArray = JSONArray()
             session.laps.forEach { lap ->
@@ -403,7 +537,15 @@ class BackupManager(
                     startTime = sessionObj.getLong("startTime"),
                     endTime = sessionObj.getLong("endTime"),
                     totalDuration = sessionObj.getLong("totalDuration"),
-                    comment = if (sessionObj.isNull("comment")) null else sessionObj.getString("comment"),
+                    name = if (sessionObj.has("name") && !sessionObj.isNull("name")) sessionObj.getString("name") else null,
+                    notes = if (sessionObj.has("notes") && !sessionObj.isNull("notes")) sessionObj.getString("notes") else null,
+                    comment = if (sessionObj.has("comment") && !sessionObj.isNull("comment")) sessionObj.getString("comment") else null,
+                    name_en = if (sessionObj.has("name_en") && !sessionObj.isNull("name_en")) sessionObj.getString("name_en") else null,
+                    name_ru = if (sessionObj.has("name_ru") && !sessionObj.isNull("name_ru")) sessionObj.getString("name_ru") else null,
+                    name_zh = if (sessionObj.has("name_zh") && !sessionObj.isNull("name_zh")) sessionObj.getString("name_zh") else null,
+                    notes_en = if (sessionObj.has("notes_en") && !sessionObj.isNull("notes_en")) sessionObj.getString("notes_en") else null,
+                    notes_ru = if (sessionObj.has("notes_ru") && !sessionObj.isNull("notes_ru")) sessionObj.getString("notes_ru") else null,
+                    notes_zh = if (sessionObj.has("notes_zh") && !sessionObj.isNull("notes_zh")) sessionObj.getString("notes_zh") else null,
                     laps = laps
                 )
             )

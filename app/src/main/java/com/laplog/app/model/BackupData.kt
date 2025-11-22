@@ -26,6 +26,12 @@ data class BackupSession(
     val name: String? = null,
     val notes: String? = null,
     val comment: String? = null, // Legacy field for backward compatibility
+    val name_en: String? = null,
+    val name_ru: String? = null,
+    val name_zh: String? = null,
+    val notes_en: String? = null,
+    val notes_ru: String? = null,
+    val notes_zh: String? = null,
     val laps: List<BackupLap>
 )
 

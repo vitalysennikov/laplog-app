@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.AppDatabase
 
 class BackupWorker(
@@ -16,7 +17,8 @@ class BackupWorker(
     override suspend fun doWork(): Result {
         val preferencesManager = PreferencesManager(applicationContext)
         val database = AppDatabase.getDatabase(applicationContext)
-        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao())
+        val translationManager = TranslationManager(database.sessionDao())
+        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager)
 
         // Check if auto backup is enabled
         if (!preferencesManager.autoBackupEnabled) {
