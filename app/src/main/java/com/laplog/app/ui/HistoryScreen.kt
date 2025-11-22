@@ -240,6 +240,7 @@ fun HistoryScreen(
                 }
             }
         }
+    }
 
         // Delete all dialog
         if (showDeleteAllDialog) {
