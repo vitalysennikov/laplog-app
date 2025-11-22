@@ -7,6 +7,7 @@ import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionWithLaps
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +18,8 @@ class HistoryViewModel(
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao
 ) : ViewModel() {
+
+    private var loadSessionsJob: Job? = null
 
     private val _sessions = MutableStateFlow<List<SessionWithLaps>>(emptyList())
     val sessions: StateFlow<List<SessionWithLaps>> = _sessions.asStateFlow()
@@ -65,7 +68,10 @@ class HistoryViewModel(
     }
 
     private fun loadSessions() {
-        viewModelScope.launch {
+        // Cancel previous job if exists
+        loadSessionsJob?.cancel()
+
+        loadSessionsJob = viewModelScope.launch {
             sessionDao.getAllSessions().collect { sessionEntities ->
                 Log.d("HistoryViewModel", "Loaded ${sessionEntities.size} sessions from database")
 
@@ -122,6 +128,7 @@ class HistoryViewModel(
 
     fun setFilterName(name: String?) {
         _filterName.value = name
+        loadSessions()
     }
 
     fun toggleTableView() {
