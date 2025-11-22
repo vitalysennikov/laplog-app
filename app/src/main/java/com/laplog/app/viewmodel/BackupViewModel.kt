@@ -211,27 +211,33 @@ class BackupViewModel(
     }
 
     private fun loadLogContent() {
-        _logContent.value = AppLogger.getLogFileContent()
+        viewModelScope.launch {
+            _logContent.value = AppLogger.getLogFileContent()
+        }
     }
 
     fun exportLogs(onExport: (String, String) -> Unit) {
-        val logContent = AppLogger.getLogFileContent()
-        if (logContent.isNotEmpty()) {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.getDefault())
-            val fileName = "laplog_logs_${dateFormat.format(Date())}.txt"
-            AppLogger.i("BackupViewModel", "Exporting logs to file: $fileName")
-            onExport(fileName, logContent)
-        } else {
-            AppLogger.w("BackupViewModel", "No logs to export")
-            _errorMessage.value = "No logs available to export"
+        viewModelScope.launch {
+            val logContent = AppLogger.getLogFileContent()
+            if (logContent.isNotEmpty()) {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.getDefault())
+                val fileName = "laplog_logs_${dateFormat.format(Date())}.txt"
+                AppLogger.i("BackupViewModel", "Exporting logs to file: $fileName")
+                onExport(fileName, logContent)
+            } else {
+                AppLogger.w("BackupViewModel", "No logs to export")
+                _errorMessage.value = "No logs available to export"
+            }
         }
     }
 
     fun clearLogs() {
-        AppLogger.i("BackupViewModel", "Clearing logs")
-        AppLogger.clearLogs()
-        loadLogContent()
-        _errorMessage.value = "Logs cleared"
+        viewModelScope.launch {
+            AppLogger.i("BackupViewModel", "Clearing logs")
+            AppLogger.clearLogs()
+            loadLogContent()
+            _errorMessage.value = "Logs cleared"
+        }
     }
 
     private fun schedulePeriodicBackup() {

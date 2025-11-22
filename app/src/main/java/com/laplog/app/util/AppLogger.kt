@@ -89,16 +89,16 @@ object AppLogger {
     /**
      * Get log file for export
      */
-    suspend fun getLogFileContent(): String? = withContext(Dispatchers.IO) {
+    suspend fun getLogFileContent(): String = withContext(Dispatchers.IO) {
         try {
             if (::logFile.isInitialized && logFile.exists()) {
                 logFile.readText()
             } else {
-                null
+                ""
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read log file", e)
-            null
+            ""
         }
     }
 
@@ -116,14 +116,16 @@ object AppLogger {
     /**
      * Clear log file
      */
-    suspend fun clearLogs() = withContext(Dispatchers.IO) {
-        try {
-            if (::logFile.isInitialized && logFile.exists()) {
-                i("AppLogger", "Clearing log file")
-                logFile.writeText("")
+    suspend fun clearLogs() {
+        withContext(Dispatchers.IO) {
+            try {
+                if (::logFile.isInitialized && logFile.exists()) {
+                    i("AppLogger", "Clearing log file")
+                    logFile.writeText("")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to clear log file", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to clear log file", e)
         }
     }
 }

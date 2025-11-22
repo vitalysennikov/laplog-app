@@ -58,20 +58,23 @@ class BackupManager(
             // Save to file
             val fileName = generateBackupFileName()
             val folder = DocumentFile.fromTreeUri(context, folderUri)
-                ?: return Result.failure(Exception("Invalid folder URI")).also {
-                    AppLogger.e("BackupManager", "Invalid folder URI")
-                }
+            if (folder == null) {
+                AppLogger.e("BackupManager", "Invalid folder URI")
+                return Result.failure(Exception("Invalid folder URI"))
+            }
 
             val file = folder.createFile("application/json", fileName)
-                ?: return Result.failure(Exception("Failed to create backup file")).also {
-                    AppLogger.e("BackupManager", "Failed to create backup file")
-                }
-
-            context.contentResolver.openOutputStream(file.uri)?.use { outputStream ->
-                outputStream.write(json.toByteArray())
-            } ?: return Result.failure(Exception("Failed to write backup file")).also {
-                AppLogger.e("BackupManager", "Failed to write backup file")
+            if (file == null) {
+                AppLogger.e("BackupManager", "Failed to create backup file")
+                return Result.failure(Exception("Failed to create backup file"))
             }
+
+            val outputStream = context.contentResolver.openOutputStream(file.uri)
+            if (outputStream == null) {
+                AppLogger.e("BackupManager", "Failed to write backup file")
+                return Result.failure(Exception("Failed to write backup file"))
+            }
+            outputStream.use { it.write(json.toByteArray()) }
 
             val fileInfo = BackupFileInfo(
                 uri = file.uri,
@@ -127,8 +130,10 @@ class BackupManager(
             // Read JSON from file
             val json = context.contentResolver.openInputStream(fileUri)?.use { inputStream ->
                 inputStream.readBytes().toString(Charsets.UTF_8)
-            } ?: return Result.failure(Exception("Failed to read backup file")).also {
+            }
+            if (json == null) {
                 AppLogger.e("BackupManager", "Failed to read backup file from URI")
+                return Result.failure(Exception("Failed to read backup file"))
             }
 
             val backupData = jsonToBackupData(json)
