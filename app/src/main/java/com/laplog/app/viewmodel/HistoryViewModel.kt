@@ -139,6 +139,7 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.deleteSession(session)
             loadSessions()
+            loadNamesFromHistory() // Update names list
         }
     }
 
@@ -146,6 +147,7 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.deleteSessionsBefore(beforeTime)
             loadSessions()
+            loadNamesFromHistory() // Update names list
         }
     }
 
@@ -153,6 +155,7 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.deleteAllSessions()
             loadSessions()
+            loadNamesFromHistory() // Update names list
         }
     }
 

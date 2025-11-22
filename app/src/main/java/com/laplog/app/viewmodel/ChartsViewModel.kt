@@ -32,6 +32,11 @@ class ChartsViewModel(
         loadAvailableNames()
     }
 
+    fun refresh() {
+        loadAvailableNames()
+        _selectedName.value?.let { loadChartData(it) }
+    }
+
     private fun loadAvailableNames() {
         viewModelScope.launch {
             try {
@@ -42,6 +47,10 @@ class ChartsViewModel(
                 // Auto-select first name if available
                 if (names.isNotEmpty() && _selectedName.value == null) {
                     selectName(names.first())
+                } else if (names.isEmpty()) {
+                    // Clear selection if no names available
+                    _selectedName.value = null
+                    _chartData.value = null
                 }
             } catch (e: Exception) {
                 Log.e("ChartsViewModel", "Error loading names", e)
