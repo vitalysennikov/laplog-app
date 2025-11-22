@@ -29,6 +29,7 @@
     <string name="edit_notes">Edit notes</string>
     <string name="notes_hint">Notes (optional)</string>
     <string name="filter_by_name">Filter by name</string>
+    <string name="clear_filter">Clear filter</string>
     <string name="all_sessions">All sessions</string>
     <string name="close">Close</string>
     <string name="save">Save</string>

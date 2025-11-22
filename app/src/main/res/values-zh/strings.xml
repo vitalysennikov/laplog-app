@@ -29,6 +29,7 @@
     <string name="edit_notes">编辑备注</string>
     <string name="notes_hint">备注（可选）</string>
     <string name="filter_by_name">按名称筛选</string>
+    <string name="clear_filter">清除筛选</string>
     <string name="all_sessions">所有记录</string>
     <string name="close">关闭</string>
     <string name="save">保存</string>
