@@ -2,6 +2,7 @@ package com.laplog.app.data
 
 import android.util.Log
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -36,14 +37,18 @@ class TranslationManager(
         name: String?,
         notes: String?
     ): Pair<String?, String?> = withContext(Dispatchers.IO) {
+        AppLogger.d("TranslationManager", "translateSession: sessionId=$sessionId, $currentLang -> $targetLang, name='$name'")
+
         // No translation needed if same language
         if (currentLang == targetLang) {
+            AppLogger.d("TranslationManager", "Session $sessionId: Same language, skipping translation")
             return@withContext Pair(name, notes)
         }
 
         val translatedName = name?.let { translate(it, currentLang, targetLang) }
         val translatedNotes = notes?.let { translate(it, currentLang, targetLang) }
 
+        AppLogger.i("TranslationManager", "Session $sessionId: Translation complete - name: '${name}' -> '${translatedName}', target: $targetLang")
         Pair(translatedName, translatedNotes)
     }
 
@@ -57,9 +62,11 @@ class TranslationManager(
     ): String? {
         if (text.isBlank()) return text
 
+        AppLogger.d("TranslationManager", "Translating: '$text' ($fromLang -> $toLang)")
+
         // Tier 1: Check built-in dictionary
         BuiltInDictionary.getTranslation(text, toLang)?.let {
-            Log.d(TAG, "Translation from built-in dictionary: $text -> $it")
+            AppLogger.i("TranslationManager", "Translation from built-in dictionary: '$text' -> '$it' ($toLang)")
             return it
         }
 
@@ -68,16 +75,20 @@ class TranslationManager(
 
         // Tier 3: Try online API
         try {
+            AppLogger.d("TranslationManager", "Attempting MyMemory API translation: '$text' ($fromLang -> $toLang)")
             val translation = translateWithMyMemory(text, fromLang, toLang)
             if (translation != null) {
-                Log.d(TAG, "Translation from MyMemory API: $text -> $translation")
+                AppLogger.i("TranslationManager", "Translation from MyMemory API: '$text' -> '$translation' ($toLang)")
                 return translation
+            } else {
+                AppLogger.w("TranslationManager", "MyMemory API returned null for: '$text' ($fromLang -> $toLang)")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error translating with API: ${e.message}")
+            AppLogger.e("TranslationManager", "Error translating with API: ${e.message}", e)
         }
 
         // Return original if no translation available
+        AppLogger.w("TranslationManager", "No translation available for: '$text' ($fromLang -> $toLang), returning null")
         return null
     }
 
@@ -95,6 +106,8 @@ class TranslationManager(
             val langPair = "${mapLangCode(fromLang)}|${mapLangCode(toLang)}"
             val urlString = "$MYMEMORY_API_URL?q=$encodedText&langpair=$langPair"
 
+            AppLogger.d("TranslationManager", "MyMemory API request: $langPair")
+
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
@@ -102,6 +115,8 @@ class TranslationManager(
             connection.readTimeout = 5000
 
             val responseCode = connection.responseCode
+            AppLogger.d("TranslationManager", "MyMemory API response code: $responseCode")
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val reader = BufferedReader(InputStreamReader(connection.inputStream))
                 val response = reader.readText()
@@ -112,17 +127,21 @@ class TranslationManager(
                 val responseData = jsonResponse.getJSONObject("responseData")
                 val translatedText = responseData.getString("translatedText")
 
+                AppLogger.d("TranslationManager", "MyMemory API result: '$text' -> '$translatedText'")
+
                 // Check if translation actually happened (API sometimes returns original text)
                 if (translatedText != text) {
                     return@withContext translatedText
+                } else {
+                    AppLogger.w("TranslationManager", "MyMemory API returned same text (no translation)")
                 }
             } else {
-                Log.w(TAG, "MyMemory API returned code: $responseCode")
+                AppLogger.w("TranslationManager", "MyMemory API returned code: $responseCode")
             }
 
             connection.disconnect()
         } catch (e: Exception) {
-            Log.e(TAG, "MyMemory API error", e)
+            AppLogger.e("TranslationManager", "MyMemory API error: ${e.message}", e)
         }
 
         return@withContext null

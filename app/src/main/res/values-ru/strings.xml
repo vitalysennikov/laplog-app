@@ -150,4 +150,13 @@
     <string name="backup_found_message">Найдена резервная копия от: %1$s\n\nВосстановить её?</string>
     <string name="no_backup_found_title">Резервная копия не найдена</string>
     <string name="no_backup_found_message">В выбранной папке не найдено файлов резервных копий. Вы можете начать использовать приложение с нуля или создать папку для резервных копий в разделе Backup.</string>
+
+    <!-- App Logs -->
+    <string name="app_logs">Логи приложения</string>
+    <string name="view_logs">Просмотр логов</string>
+    <string name="export_logs">Экспорт логов</string>
+    <string name="clear_logs">Очистить логи</string>
+    <string name="logs_cleared">Логи успешно очищены</string>
+    <string name="no_logs">Нет доступных логов</string>
+    <string name="log_file_exported">Файл логов успешно экспортирован</string>
 </resources>

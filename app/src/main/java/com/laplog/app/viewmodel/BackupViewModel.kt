@@ -12,11 +12,15 @@ import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.model.BackupFileInfo
+import com.laplog.app.util.AppLogger
 import com.laplog.app.worker.BackupWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class BackupViewModel(
@@ -49,8 +53,12 @@ class BackupViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _logContent = MutableStateFlow("")
+    val logContent: StateFlow<String> = _logContent.asStateFlow()
+
     init {
         loadBackups()
+        loadLogContent()
     }
 
     fun setBackupFolder(uri: Uri) {
@@ -200,6 +208,30 @@ class BackupViewModel(
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    private fun loadLogContent() {
+        _logContent.value = AppLogger.getLogFileContent()
+    }
+
+    fun exportLogs(onExport: (String, String) -> Unit) {
+        val logContent = AppLogger.getLogFileContent()
+        if (logContent.isNotEmpty()) {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.getDefault())
+            val fileName = "laplog_logs_${dateFormat.format(Date())}.txt"
+            AppLogger.i("BackupViewModel", "Exporting logs to file: $fileName")
+            onExport(fileName, logContent)
+        } else {
+            AppLogger.w("BackupViewModel", "No logs to export")
+            _errorMessage.value = "No logs available to export"
+        }
+    }
+
+    fun clearLogs() {
+        AppLogger.i("BackupViewModel", "Clearing logs")
+        AppLogger.clearLogs()
+        loadLogContent()
+        _errorMessage.value = "Logs cleared"
     }
 
     private fun schedulePeriodicBackup() {

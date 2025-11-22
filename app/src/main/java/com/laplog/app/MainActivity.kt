@@ -47,6 +47,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.laplog.app.model.AppState
 import com.laplog.app.service.StopwatchService
+import com.laplog.app.util.AppLogger
 
 class MainActivity : ComponentActivity() {
     private lateinit var preferencesManager: PreferencesManager
@@ -124,12 +125,18 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize logger
+        AppLogger.init(applicationContext)
+        AppLogger.i("MainActivity", "App started")
+
         preferencesManager = PreferencesManager(applicationContext)
         database = AppDatabase.getDatabase(applicationContext)
         translationManager = TranslationManager(database.sessionDao())
 
         // Apply language setting
         applyLanguage(preferencesManager.appLanguage)
+        AppLogger.i("MainActivity", "Language applied: ${preferencesManager.appLanguage ?: "system default"}")
 
         // Initialize BackupViewModel
         backupViewModel = ViewModelProvider(

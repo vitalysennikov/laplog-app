@@ -11,6 +11,7 @@ import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.model.BackupLap
 import com.laplog.app.model.BackupSession
 import com.laplog.app.model.BackupSettings
+import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -46,8 +47,10 @@ class BackupManager(
      * Export full database to JSON and save to selected folder
      */
     suspend fun createBackup(folderUri: Uri): Result<BackupFileInfo> {
+        AppLogger.i("BackupManager", "Creating backup to folder: $folderUri")
         return try {
             val backupData = createBackupData()
+            AppLogger.d("BackupManager", "Backup data created: ${backupData.sessions.size} sessions")
 
             // Convert to JSON
             val json = backupDataToJson(backupData)
@@ -55,14 +58,20 @@ class BackupManager(
             // Save to file
             val fileName = generateBackupFileName()
             val folder = DocumentFile.fromTreeUri(context, folderUri)
-                ?: return Result.failure(Exception("Invalid folder URI"))
+                ?: return Result.failure(Exception("Invalid folder URI")).also {
+                    AppLogger.e("BackupManager", "Invalid folder URI")
+                }
 
             val file = folder.createFile("application/json", fileName)
-                ?: return Result.failure(Exception("Failed to create backup file"))
+                ?: return Result.failure(Exception("Failed to create backup file")).also {
+                    AppLogger.e("BackupManager", "Failed to create backup file")
+                }
 
             context.contentResolver.openOutputStream(file.uri)?.use { outputStream ->
                 outputStream.write(json.toByteArray())
-            } ?: return Result.failure(Exception("Failed to write backup file"))
+            } ?: return Result.failure(Exception("Failed to write backup file")).also {
+                AppLogger.e("BackupManager", "Failed to write backup file")
+            }
 
             val fileInfo = BackupFileInfo(
                 uri = file.uri,
@@ -71,8 +80,10 @@ class BackupManager(
                 size = json.toByteArray().size.toLong()
             )
 
+            AppLogger.i("BackupManager", "Backup created successfully: $fileName (${fileInfo.size} bytes)")
             Result.success(fileInfo)
         } catch (e: Exception) {
+            AppLogger.e("BackupManager", "Failed to create backup: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -111,21 +122,33 @@ class BackupManager(
      * Restore database from backup
      */
     suspend fun restoreBackup(fileUri: Uri, mode: RestoreMode): Result<Int> {
+        AppLogger.i("BackupManager", "Restoring backup from: $fileUri, mode: $mode")
         return try {
             // Read JSON from file
             val json = context.contentResolver.openInputStream(fileUri)?.use { inputStream ->
                 inputStream.readBytes().toString(Charsets.UTF_8)
-            } ?: return Result.failure(Exception("Failed to read backup file"))
-
-            val backupData = jsonToBackupData(json)
-
-            when (mode) {
-                RestoreMode.REPLACE -> restoreReplace(backupData)
-                RestoreMode.MERGE -> restoreMerge(backupData)
+            } ?: return Result.failure(Exception("Failed to read backup file")).also {
+                AppLogger.e("BackupManager", "Failed to read backup file from URI")
             }
 
+            val backupData = jsonToBackupData(json)
+            AppLogger.i("BackupManager", "Backup data parsed: version=${backupData.version}, ${backupData.sessions.size} sessions")
+
+            when (mode) {
+                RestoreMode.REPLACE -> {
+                    AppLogger.i("BackupManager", "Starting REPLACE mode restoration")
+                    restoreReplace(backupData)
+                }
+                RestoreMode.MERGE -> {
+                    AppLogger.i("BackupManager", "Starting MERGE mode restoration")
+                    restoreMerge(backupData)
+                }
+            }
+
+            AppLogger.i("BackupManager", "Backup restored successfully: ${backupData.sessions.size} sessions")
             Result.success(backupData.sessions.size)
         } catch (e: Exception) {
+            AppLogger.e("BackupManager", "Failed to restore backup: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -239,7 +262,7 @@ class BackupManager(
         )
 
         return BackupData(
-            version = "0.12.1",
+            version = "0.12.2",
             timestamp = System.currentTimeMillis(),
             sessions = backupSessions,
             settings = backupSettings
@@ -248,12 +271,17 @@ class BackupManager(
 
     private suspend fun restoreReplace(backupData: BackupData) {
         // Delete all existing data
+        AppLogger.i("BackupManager", "Deleting all existing sessions")
         sessionDao.deleteAllSessions()
 
         // Insert backup data
-        backupData.sessions.forEach { backupSession ->
+        AppLogger.i("BackupManager", "Restoring ${backupData.sessions.size} sessions")
+        backupData.sessions.forEachIndexed { index, backupSession ->
             val finalName = backupSession.name ?: backupSession.comment // Use comment as fallback for old backups
             val finalNotes = backupSession.notes
+
+            AppLogger.d("BackupManager", "Restoring session ${index + 1}/${backupData.sessions.size}: name='$finalName', " +
+                    "translations: name_en=${backupSession.name_en != null}, name_ru=${backupSession.name_ru != null}, name_zh=${backupSession.name_zh != null}")
 
             val session = SessionEntity(
                 id = 0, // Let database generate new ID
@@ -273,9 +301,11 @@ class BackupManager(
 
             // Auto-translate if translations are missing
             if (finalName != null && (backupSession.name_en == null || backupSession.name_ru == null || backupSession.name_zh == null)) {
+                AppLogger.i("BackupManager", "Session $sessionId: Auto-translating name '$finalName' (missing translations)")
                 autoTranslateName(sessionId, finalName)
             }
             if (finalNotes != null && !finalNotes.isBlank() && (backupSession.notes_en == null || backupSession.notes_ru == null || backupSession.notes_zh == null)) {
+                AppLogger.i("BackupManager", "Session $sessionId: Auto-translating notes (missing translations)")
                 autoTranslateNotes(sessionId, finalNotes)
             }
 
@@ -294,15 +324,20 @@ class BackupManager(
 
         // Restore settings if available
         backupData.settings?.let { settings ->
+            AppLogger.i("BackupManager", "Restoring settings: language=${settings.appLanguage}")
             restoreSettings(settings)
         }
     }
 
     private suspend fun restoreMerge(backupData: BackupData) {
         // Insert backup data (merge with existing)
-        backupData.sessions.forEach { backupSession ->
+        AppLogger.i("BackupManager", "Merging ${backupData.sessions.size} sessions with existing data")
+        backupData.sessions.forEachIndexed { index, backupSession ->
             val finalName = backupSession.name ?: backupSession.comment // Use comment as fallback for old backups
             val finalNotes = backupSession.notes
+
+            AppLogger.d("BackupManager", "Merging session ${index + 1}/${backupData.sessions.size}: name='$finalName', " +
+                    "translations: name_en=${backupSession.name_en != null}, name_ru=${backupSession.name_ru != null}, name_zh=${backupSession.name_zh != null}")
 
             val session = SessionEntity(
                 id = 0, // Let database generate new ID
@@ -322,9 +357,11 @@ class BackupManager(
 
             // Auto-translate if translations are missing
             if (finalName != null && (backupSession.name_en == null || backupSession.name_ru == null || backupSession.name_zh == null)) {
+                AppLogger.i("BackupManager", "Session $sessionId: Auto-translating name '$finalName' (missing translations)")
                 autoTranslateName(sessionId, finalName)
             }
             if (finalNotes != null && !finalNotes.isBlank() && (backupSession.notes_en == null || backupSession.notes_ru == null || backupSession.notes_zh == null)) {
+                AppLogger.i("BackupManager", "Session $sessionId: Auto-translating notes (missing translations)")
                 autoTranslateNotes(sessionId, finalNotes)
             }
 
@@ -343,6 +380,7 @@ class BackupManager(
 
         // Restore settings if available
         backupData.settings?.let { settings ->
+            AppLogger.i("BackupManager", "Restoring settings: language=${settings.appLanguage}")
             restoreSettings(settings)
         }
     }
@@ -365,6 +403,7 @@ class BackupManager(
      */
     private suspend fun autoTranslateName(sessionId: Long, name: String) {
         val currentLang = preferencesManager.getCurrentLanguage()
+        AppLogger.i("BackupManager", "Auto-translating name for session $sessionId: '$name' (current language: $currentLang)")
 
         // Translate to English
         val (nameEn, _) = translationManager.translateSession(
@@ -374,6 +413,7 @@ class BackupManager(
             name = name,
             notes = null
         )
+        AppLogger.d("BackupManager", "Session $sessionId: name_en = '$nameEn'")
 
         // Translate to Russian
         val (nameRu, _) = translationManager.translateSession(
@@ -383,6 +423,7 @@ class BackupManager(
             name = name,
             notes = null
         )
+        AppLogger.d("BackupManager", "Session $sessionId: name_ru = '$nameRu'")
 
         // Translate to Chinese
         val (nameZh, _) = translationManager.translateSession(
@@ -392,6 +433,7 @@ class BackupManager(
             name = name,
             notes = null
         )
+        AppLogger.d("BackupManager", "Session $sessionId: name_zh = '$nameZh'")
 
         // Save translations
         sessionDao.updateSessionNameTranslations(
@@ -400,6 +442,7 @@ class BackupManager(
             nameRu = nameRu,
             nameZh = nameZh
         )
+        AppLogger.i("BackupManager", "Session $sessionId: Name translations saved successfully")
     }
 
     /**
@@ -407,6 +450,7 @@ class BackupManager(
      */
     private suspend fun autoTranslateNotes(sessionId: Long, notes: String) {
         val currentLang = preferencesManager.getCurrentLanguage()
+        AppLogger.i("BackupManager", "Auto-translating notes for session $sessionId (current language: $currentLang)")
 
         // Translate to English
         val (_, notesEn) = translationManager.translateSession(
@@ -416,6 +460,7 @@ class BackupManager(
             name = null,
             notes = notes
         )
+        AppLogger.d("BackupManager", "Session $sessionId: notes_en translated")
 
         // Translate to Russian
         val (_, notesRu) = translationManager.translateSession(
@@ -425,6 +470,7 @@ class BackupManager(
             name = null,
             notes = notes
         )
+        AppLogger.d("BackupManager", "Session $sessionId: notes_ru translated")
 
         // Translate to Chinese
         val (_, notesZh) = translationManager.translateSession(
@@ -434,6 +480,7 @@ class BackupManager(
             name = null,
             notes = notes
         )
+        AppLogger.d("BackupManager", "Session $sessionId: notes_zh translated")
 
         // Save translations
         sessionDao.updateSessionNotesTranslations(
@@ -442,6 +489,7 @@ class BackupManager(
             notesRu = notesRu,
             notesZh = notesZh
         )
+        AppLogger.i("BackupManager", "Session $sessionId: Notes translations saved successfully")
     }
 
     private fun backupDataToJson(data: BackupData): String {

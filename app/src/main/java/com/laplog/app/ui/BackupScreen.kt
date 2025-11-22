@@ -57,6 +57,7 @@ fun BackupScreen(
     var showDeleteDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
     var showDeleteBeforeDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
+    var showLogsDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -198,6 +199,66 @@ fun BackupScreen(
                         Icon(Icons.Default.CloudUpload, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(stringResource(R.string.save_backup_to))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // App Logs card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.app_logs),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // View Logs button
+                    OutlinedButton(
+                        onClick = { showLogsDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Article, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.view_logs))
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Export Logs button
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.exportLogs { fileName, logContent ->
+                                onSaveBackupManually(fileName, logContent)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.FileDownload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.export_logs))
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Clear Logs button
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.clearLogs()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.DeleteForever, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.clear_logs))
                     }
                 }
             }
@@ -427,6 +488,40 @@ fun BackupScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteAllDialog = false }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // View logs dialog
+    if (showLogsDialog) {
+        val logContent by viewModel.logContent.collectAsState()
+
+        AlertDialog(
+            onDismissRequest = { showLogsDialog = false },
+            title = { Text(stringResource(R.string.app_logs)) },
+            text = {
+                if (logContent.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = logContent,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            )
+                        }
+                    }
+                } else {
+                    Text(stringResource(R.string.no_logs))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLogsDialog = false }) {
+                    Text(stringResource(R.string.close))
                 }
             }
         )

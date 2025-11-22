@@ -8,6 +8,7 @@ import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionWithLaps
+import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,30 +76,33 @@ class HistoryViewModel(
 
         loadSessionsJob = viewModelScope.launch {
             sessionDao.getAllSessions().collect { sessionEntities ->
-                Log.d("HistoryViewModel", "Loaded ${sessionEntities.size} sessions from database")
+                AppLogger.d("HistoryViewModel", "Loaded ${sessionEntities.size} sessions from database")
 
                 // Update available names list when sessions change
                 loadNamesFromHistory()
 
                 // Apply filter if set
                 val filteredSessions = if (_filterName.value != null) {
+                    AppLogger.d("HistoryViewModel", "Applying filter: name='${_filterName.value}'")
                     sessionEntities.filter { it.name == _filterName.value }
                 } else {
                     sessionEntities
                 }
 
+                AppLogger.d("HistoryViewModel", "Filtered to ${filteredSessions.size} sessions")
+
                 val sessionsWithLaps = mutableListOf<SessionWithLaps>()
 
                 for (session in filteredSessions) {
-                    Log.d("HistoryViewModel", "Session ID: ${session.id}, StartTime: ${session.startTime}, Duration: ${session.totalDuration}")
+                    AppLogger.d("HistoryViewModel", "Session ID: ${session.id}, StartTime: ${session.startTime}, Duration: ${session.totalDuration}")
                     // Get first emission from laps flow using first()
                     val laps = sessionDao.getLapsForSession(session.id).first()
-                    Log.d("HistoryViewModel", "Session ${session.id} has ${laps.size} laps")
+                    AppLogger.d("HistoryViewModel", "Session ${session.id} has ${laps.size} laps")
                     sessionsWithLaps.add(SessionWithLaps(session, laps))
                 }
 
                 _sessions.value = sessionsWithLaps
-                Log.d("HistoryViewModel", "Updated sessions state with ${sessionsWithLaps.size} sessions")
+                AppLogger.i("HistoryViewModel", "Updated sessions state with ${sessionsWithLaps.size} sessions")
             }
         }
     }
@@ -109,6 +113,7 @@ class HistoryViewModel(
 
     fun updateSessionName(sessionId: Long, name: String) {
         viewModelScope.launch {
+            AppLogger.i("HistoryViewModel", "Updating session $sessionId name to '$name'")
             sessionDao.updateSessionName(sessionId, name)
 
             // Add to used names
@@ -120,7 +125,10 @@ class HistoryViewModel(
 
                 // Translate to all languages
                 val currentLang = preferencesManager.getCurrentLanguage()
+                AppLogger.i("HistoryViewModel", "Session $sessionId: Translating name from $currentLang to all languages")
                 val (nameEn, nameRu, nameZh) = translateToAllLanguages(name, currentLang)
+
+                AppLogger.d("HistoryViewModel", "Session $sessionId: Translations - EN: '$nameEn', RU: '$nameRu', ZH: '$nameZh'")
 
                 // Save translations
                 sessionDao.updateSessionNameTranslations(
@@ -129,6 +137,7 @@ class HistoryViewModel(
                     nameRu = nameRu,
                     nameZh = nameZh
                 )
+                AppLogger.i("HistoryViewModel", "Session $sessionId: Name translations saved")
             }
 
             loadSessions()
@@ -159,6 +168,7 @@ class HistoryViewModel(
     }
 
     fun setFilterName(name: String?) {
+        AppLogger.i("HistoryViewModel", "Setting filter name: ${if (name != null) "'$name'" else "null (clearing filter)"}")
         _filterName.value = name
         loadSessions()
     }
@@ -199,6 +209,7 @@ class HistoryViewModel(
      * Refresh data after backup restoration or external changes
      */
     fun refreshData() {
+        AppLogger.i("HistoryViewModel", "Refreshing data (backup restoration or external changes)")
         loadSessions()
         loadNamesFromHistory()
     }
@@ -244,12 +255,17 @@ class HistoryViewModel(
      */
     fun getDisplayedName(session: SessionEntity): String {
         val currentLang = preferencesManager.getCurrentLanguage()
-        return when (currentLang) {
+        val result = when (currentLang) {
             "en" -> session.name_en ?: session.name
             "ru" -> session.name_ru ?: session.name
             "zh" -> session.name_zh ?: session.name
             else -> session.name
         } ?: ""
+
+        AppLogger.d("HistoryViewModel", "getDisplayedName: session=${session.id}, lang=$currentLang, " +
+                "name='${session.name}', name_en='${session.name_en}', name_ru='${session.name_ru}', name_zh='${session.name_zh}', result='$result'")
+
+        return result
     }
 
     /**
@@ -258,12 +274,18 @@ class HistoryViewModel(
      */
     fun getDisplayedNotes(session: SessionEntity): String? {
         val currentLang = preferencesManager.getCurrentLanguage()
-        return when (currentLang) {
+        val result = when (currentLang) {
             "en" -> session.notes_en ?: session.notes
             "ru" -> session.notes_ru ?: session.notes
             "zh" -> session.notes_zh ?: session.notes
             else -> session.notes
         }
+
+        if (result != null) {
+            AppLogger.d("HistoryViewModel", "getDisplayedNotes: session=${session.id}, lang=$currentLang, has_result=true")
+        }
+
+        return result
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = false): String {
