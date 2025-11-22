@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.laplog.app.R
 import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.viewmodel.BackupViewModel
@@ -31,11 +32,15 @@ fun BackupScreen(
     onSelectFolder: () -> Unit,
     onSaveBackupManually: (String, String) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val translationManager = remember { TranslationManager(sessionDao) }
+
     val viewModel: BackupViewModel = viewModel(
         factory = BackupViewModelFactory(
-            context = androidx.compose.ui.platform.LocalContext.current,
+            context = context,
             preferencesManager = preferencesManager,
-            sessionDao = sessionDao
+            sessionDao = sessionDao,
+            translationManager = translationManager
         )
     )
 
