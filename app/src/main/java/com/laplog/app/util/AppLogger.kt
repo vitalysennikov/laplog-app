@@ -122,6 +122,8 @@ object AppLogger {
                 if (::logFile.isInitialized && logFile.exists()) {
                     Log.i(TAG, "Clearing log file")
                     logFile.writeText("")
+                } else {
+                    // Log file not initialized
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to clear log file", e)
