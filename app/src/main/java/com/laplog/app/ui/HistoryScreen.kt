@@ -67,7 +67,18 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.history)) },
+                title = {
+                    Column {
+                        Text(stringResource(R.string.history))
+                        if (filterName != null) {
+                            Text(
+                                text = "${stringResource(R.string.filter_by_name)}: $filterName",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
                 actions = {
                     // Table/Card view toggle
                     IconButton(onClick = { viewModel.toggleTableView() }) {

@@ -77,6 +77,9 @@ class HistoryViewModel(
             sessionDao.getAllSessions().collect { sessionEntities ->
                 Log.d("HistoryViewModel", "Loaded ${sessionEntities.size} sessions from database")
 
+                // Update available names list when sessions change
+                loadNamesFromHistory()
+
                 // Apply filter if set
                 val filteredSessions = if (_filterName.value != null) {
                     sessionEntities.filter { it.name == _filterName.value }
@@ -190,6 +193,14 @@ class HistoryViewModel(
 
     fun toggleExpandAll() {
         _expandAll.value = !_expandAll.value
+    }
+
+    /**
+     * Refresh data after backup restoration or external changes
+     */
+    fun refreshData() {
+        loadSessions()
+        loadNamesFromHistory()
     }
 
     /**
