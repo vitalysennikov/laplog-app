@@ -19,4 +19,32 @@ data class SessionEntity(
     val notes_en: String? = null,
     val notes_ru: String? = null,
     val notes_zh: String? = null
-)
+) {
+    /**
+     * Get localized name based on language code
+     * @param languageCode "en", "ru", "zh", or null for system default
+     * @return Localized name or original name if translation not available
+     */
+    fun getLocalizedName(languageCode: String?): String? {
+        return when (languageCode) {
+            "en" -> name_en?.takeIf { it.isNotBlank() && it != "null" } ?: name
+            "ru" -> name_ru?.takeIf { it.isNotBlank() && it != "null" } ?: name
+            "zh" -> name_zh?.takeIf { it.isNotBlank() && it != "null" } ?: name
+            else -> name // System default or unknown language
+        }
+    }
+
+    /**
+     * Get localized notes based on language code
+     * @param languageCode "en", "ru", "zh", or null for system default
+     * @return Localized notes or original notes if translation not available
+     */
+    fun getLocalizedNotes(languageCode: String?): String? {
+        return when (languageCode) {
+            "en" -> notes_en?.takeIf { it.isNotBlank() && it != "null" } ?: notes
+            "ru" -> notes_ru?.takeIf { it.isNotBlank() && it != "null" } ?: notes
+            "zh" -> notes_zh?.takeIf { it.isNotBlank() && it != "null" } ?: notes
+            else -> notes // System default or unknown language
+        }
+    }
+}

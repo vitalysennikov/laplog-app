@@ -59,6 +59,13 @@ fun BackupScreen(
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     var showLogsDialog by remember { mutableStateOf(false) }
 
+    // Load backups when folder URI changes
+    LaunchedEffect(backupFolderUri) {
+        if (backupFolderUri != null) {
+            viewModel.loadBackups()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

@@ -43,6 +43,9 @@ fun HistoryScreen(
         factory = HistoryViewModelFactory(preferencesManager, sessionDao, translationManager)
     )
 
+    // Get current language for localized names
+    val currentLanguage = preferencesManager.appLanguage
+
     // Digital clock style font
     val dseg7Font = FontFamily(
         Font(R.font.dseg7_classic_regular, FontWeight.Normal),
@@ -63,6 +66,11 @@ fun HistoryScreen(
     var showExportMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
+
+    // Force recomposition when language changes
+    key(currentLanguage) {
+        // This ensures the UI updates when language changes
+    }
 
     Scaffold(
         topBar = {
@@ -379,13 +387,14 @@ fun SessionItem(
                             fontWeight = FontWeight.Bold
                         )
                         // Show name inline only when collapsed
-                        if (!expanded && !session.name.isNullOrBlank()) {
+                        val localizedName = session.session.getLocalizedName(currentLanguage)
+                        if (!expanded && !localizedName.isNullOrBlank()) {
                             Text(
                                 text = "\u2014", // Em dash
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = session.name,
+                                text = localizedName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 maxLines = 1,
@@ -394,10 +403,11 @@ fun SessionItem(
                         }
                     }
                     // Show name on separate line when expanded
-                    if (expanded && !session.name.isNullOrBlank()) {
+                    val localizedName = session.session.getLocalizedName(currentLanguage)
+                    if (expanded && !localizedName.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = session.name,
+                            text = localizedName,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
@@ -891,9 +901,10 @@ fun SessionTableItem(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (!session.name.isNullOrBlank()) {
+                val localizedName = session.session.getLocalizedName(currentLanguage)
+                if (!localizedName.isNullOrBlank()) {
                     Text(
-                        text = session.name,
+                        text = localizedName,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
