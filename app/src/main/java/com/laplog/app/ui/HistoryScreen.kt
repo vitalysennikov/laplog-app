@@ -360,6 +360,9 @@ fun SessionItem(
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm:ss", Locale.getDefault()) }
     val dateStr = dateFormat.format(Date(session.startTime))
 
+    // Get localized name once
+    val localizedName = session.getLocalizedName(currentLanguage)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -387,7 +390,6 @@ fun SessionItem(
                             fontWeight = FontWeight.Bold
                         )
                         // Show name inline only when collapsed
-                        val localizedName = session.session.getLocalizedName(currentLanguage)
                         if (!expanded && !localizedName.isNullOrBlank()) {
                             Text(
                                 text = "\u2014", // Em dash
@@ -403,7 +405,6 @@ fun SessionItem(
                         }
                     }
                     // Show name on separate line when expanded
-                    val localizedName = session.session.getLocalizedName(currentLanguage)
                     if (expanded && !localizedName.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
