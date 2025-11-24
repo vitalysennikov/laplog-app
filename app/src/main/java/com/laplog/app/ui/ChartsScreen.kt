@@ -50,13 +50,12 @@ fun ChartsScreen(
     val currentLanguage = preferencesManager.appLanguage
 
     // Get all sessions for name localization
-    val allSessions by sessionDao.getAllSessionsWithLaps().collectAsState(initial = emptyList())
+    val allSessions by sessionDao.getAllSessions().collectAsState(initial = emptyList())
 
     // Map original names to localized names
     val nameMapping = remember(availableNames, allSessions, currentLanguage) {
         availableNames.associateWith { originalName ->
-            allSessions.find { it.session.name == originalName }
-                ?.session
+            allSessions.find { it.name == originalName }
                 ?.getLocalizedName(currentLanguage)
                 ?: originalName
         }
