@@ -47,6 +47,25 @@ fun ChartsScreen(
     val selectedName by viewModel.selectedName.collectAsState()
     val chartData by viewModel.chartData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val currentLanguage = preferencesManager.appLanguage
+
+    // Get all sessions for name localization
+    val allSessions by sessionDao.getAllSessionsWithLaps().collectAsState(initial = emptyList())
+
+    // Map original names to localized names
+    val nameMapping = remember(availableNames, allSessions, currentLanguage) {
+        availableNames.associateWith { originalName ->
+            allSessions.find { it.session.name == originalName }
+                ?.session
+                ?.getLocalizedName(currentLanguage)
+                ?: originalName
+        }
+    }
+
+    // Get localized name for selected name
+    val localizedSelectedName = remember(selectedName, nameMapping) {
+        selectedName?.let { nameMapping[it] }
+    }
 
     var showNameSelector by remember { mutableStateOf(false) }
 
@@ -62,7 +81,7 @@ fun ChartsScreen(
                             modifier = Modifier.padding(horizontal = 8.dp)
                         ) {
                             Text(
-                                text = selectedName ?: stringResource(R.string.select_name),
+                                text = localizedSelectedName ?: stringResource(R.string.select_name),
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1
                             )
@@ -119,18 +138,19 @@ fun ChartsScreen(
                 title = { Text(stringResource(R.string.select_session_name)) },
                 text = {
                     LazyColumn {
-                        items(availableNames) { name ->
+                        items(availableNames) { originalName ->
+                            val localizedName = nameMapping[originalName] ?: originalName
                             TextButton(
                                 onClick = {
-                                    viewModel.selectName(name)
+                                    viewModel.selectName(originalName)
                                     showNameSelector = false
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    text = name,
+                                    text = localizedName,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (name == selectedName) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (originalName == selectedName) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
                         }
@@ -166,6 +186,37 @@ fun ChartContent(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+        }
+
+        // Total duration chart
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.duration),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    if (chartData.statistics.isNotEmpty()) {
+                        TotalDurationChart(
+                            statistics = chartData.statistics,
+                            dateFormat = dateFormat,
+                            formatTime = formatTime
+                        )
+                    }
+                }
+            }
         }
 
         // Average chart
@@ -303,6 +354,63 @@ fun ChartContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TotalDurationChart(
+    statistics: List<com.laplog.app.model.SessionStatistics>,
+    dateFormat: SimpleDateFormat,
+    formatTime: (Long) -> String
+) {
+    val entries = remember(statistics) {
+        statistics.mapIndexed { index, stat ->
+            FloatEntry(
+                x = index.toFloat(),
+                y = (stat.totalDuration / 1000f) // Convert to seconds for better readability
+            )
+        }
+    }
+
+    val chartEntryModelProducer = remember(entries) {
+        ChartEntryModelProducer(entries)
+    }
+
+    val xAxisValueFormatter = remember(statistics) {
+        AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+            val index = value.toInt()
+            if (index in statistics.indices) {
+                dateFormat.format(Date(statistics[index].startTime))
+            } else {
+                ""
+            }
+        }
+    }
+
+    val yAxisValueFormatter = remember {
+        AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+            val millis = (value * 1000).toLong()
+            formatTime(millis)
+        }
+    }
+
+    val model = chartEntryModelProducer.getModel()
+    if (model != null) {
+        ProvideChartStyle {
+            Chart(
+                chart = lineChart(),
+                model = model,
+                startAxis = rememberStartAxis(
+                    valueFormatter = yAxisValueFormatter
+                ),
+                bottomAxis = rememberBottomAxis(
+                    valueFormatter = xAxisValueFormatter
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            )
         }
     }
 }

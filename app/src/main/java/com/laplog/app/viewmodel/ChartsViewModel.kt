@@ -99,6 +99,7 @@ class ChartsViewModel(
                                 sessionId = session.id,
                                 sessionName = name,
                                 startTime = session.startTime,
+                                totalDuration = session.totalDuration,
                                 averageLapTime = avgDuration,
                                 medianLapTime = medianDuration
                             )

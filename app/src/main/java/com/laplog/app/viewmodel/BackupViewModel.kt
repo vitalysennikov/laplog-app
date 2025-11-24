@@ -216,6 +216,10 @@ class BackupViewModel(
         }
     }
 
+    fun refreshLogContent() {
+        loadLogContent()
+    }
+
     fun exportLogs(onExport: (String, String) -> Unit) {
         viewModelScope.launch {
             val logContent = AppLogger.getLogFileContent()

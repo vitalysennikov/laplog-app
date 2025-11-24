@@ -154,6 +154,14 @@ fun HistoryScreen(
         ) {
             // Filter indicator chip
             if (filterName != null) {
+                // Get localized name for the filter
+                val localizedFilterName = remember(filterName, currentLanguage, sessions) {
+                    sessions.find { it.session.name == filterName }
+                        ?.session
+                        ?.getLocalizedName(currentLanguage)
+                        ?: filterName
+                }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -165,7 +173,7 @@ fun HistoryScreen(
                         onClick = { showFilterDialog = true },
                         label = {
                             Text(
-                                text = "${stringResource(R.string.filter_by_name)}: $filterName",
+                                text = "${stringResource(R.string.filter_by_name)}: $localizedFilterName",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
@@ -315,8 +323,9 @@ fun HistoryScreen(
         // Filter dialog
         if (showFilterDialog) {
             FilterDialog(
-                namesFromHistory = namesFromHistory,
+                sessions = sessions,
                 currentFilter = filterName,
+                currentLanguage = currentLanguage,
                 onDismiss = { showFilterDialog = false },
                 onFilterSelected = { name ->
                     viewModel.setFilterName(name)
@@ -418,10 +427,11 @@ fun SessionItem(
                         )
                     }
                     // Show notes on separate line when expanded (always expanded, not collapsed)
-                    if (!session.notes.isNullOrBlank()) {
+                    val localizedNotes = session.getLocalizedNotes(currentLanguage)
+                    if (!localizedNotes.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = session.notes,
+                            text = localizedNotes,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
@@ -956,11 +966,27 @@ fun SessionTableItem(
 
 @Composable
 fun FilterDialog(
-    namesFromHistory: List<String>,
+    sessions: List<SessionWithLaps>,
     currentFilter: String?,
+    currentLanguage: String?,
     onDismiss: () -> Unit,
     onFilterSelected: (String?) -> Unit
 ) {
+    // Get unique names with their translations
+    val uniqueNames = remember(sessions, currentLanguage) {
+        sessions
+            .mapNotNull { it.session.name }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sortedBy { name ->
+                // Sort by localized name
+                sessions.find { it.session.name == name }
+                    ?.session
+                    ?.getLocalizedName(currentLanguage)
+                    ?: name
+            }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.filter_by_name)) },
@@ -988,22 +1014,27 @@ fun FilterDialog(
                 }
 
                 // List of names
-                items(namesFromHistory.size) { index ->
-                    val name = namesFromHistory[index]
+                items(uniqueNames.size) { index ->
+                    val originalName = uniqueNames[index]
+                    val localizedName = sessions.find { it.session.name == originalName }
+                        ?.session
+                        ?.getLocalizedName(currentLanguage)
+                        ?: originalName
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onFilterSelected(name) }
+                            .clickable { onFilterSelected(originalName) }
                             .padding(vertical = 12.dp, horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = currentFilter == name,
-                            onClick = { onFilterSelected(name) }
+                            selected = currentFilter == originalName,
+                            onClick = { onFilterSelected(originalName) }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = name,
+                            text = localizedName,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }

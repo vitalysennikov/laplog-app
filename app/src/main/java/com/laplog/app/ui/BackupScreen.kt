@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -86,6 +88,7 @@ fun BackupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             // Settings card
@@ -232,7 +235,10 @@ fun BackupScreen(
 
                     // View Logs button
                     OutlinedButton(
-                        onClick = { showLogsDialog = true },
+                        onClick = {
+                            viewModel.refreshLogContent()
+                            showLogsDialog = true
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.Article, contentDescription = null)
@@ -304,7 +310,7 @@ fun BackupScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .height(400.dp)
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
@@ -525,7 +531,7 @@ fun BackupScreen(
                         state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 400.dp)
+                            .height(300.dp)
                     ) {
                         item {
                             Text(
