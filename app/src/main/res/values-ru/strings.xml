@@ -156,6 +156,7 @@
     <string name="view_logs">Просмотр логов</string>
     <string name="export_logs">Экспорт логов</string>
     <string name="clear_logs">Очистить логи</string>
+    <string name="clear_logs_confirm">Вы уверены, что хотите очистить все логи? Это действие нельзя отменить.</string>
     <string name="logs_cleared">Логи успешно очищены</string>
     <string name="no_logs">Нет доступных логов</string>
     <string name="log_file_exported">Файл логов успешно экспортирован</string>

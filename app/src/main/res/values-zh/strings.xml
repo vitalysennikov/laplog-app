@@ -156,6 +156,7 @@
     <string name="view_logs">查看日志</string>
     <string name="export_logs">导出日志</string>
     <string name="clear_logs">清除日志</string>
+    <string name="clear_logs_confirm">您确定要清除所有日志吗？此操作无法撤消。</string>
     <string name="logs_cleared">日志已成功清除</string>
     <string name="no_logs">无可用日志</string>
     <string name="log_file_exported">日志文件已成功导出</string>

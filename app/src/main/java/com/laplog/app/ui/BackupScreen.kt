@@ -3,6 +3,7 @@ package com.laplog.app.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -58,6 +59,7 @@ fun BackupScreen(
     var showDeleteBeforeDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     var showLogsDialog by remember { mutableStateOf(false) }
+    var showClearLogsDialog by remember { mutableStateOf(false) }
 
     // Load backups when folder URI changes
     LaunchedEffect(backupFolderUri) {
@@ -259,7 +261,7 @@ fun BackupScreen(
                     // Clear Logs button
                     OutlinedButton(
                         onClick = {
-                            viewModel.clearLogs()
+                            showClearLogsDialog = true
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -503,6 +505,16 @@ fun BackupScreen(
     // View logs dialog
     if (showLogsDialog) {
         val logContent by viewModel.logContent.collectAsState()
+        val listState = rememberLazyListState()
+
+        // Auto-scroll to bottom when dialog opens
+        LaunchedEffect(logContent) {
+            if (logContent.isNotEmpty()) {
+                listState.animateScrollToItem(0)
+                // Calculate scroll position to show end of text
+                listState.scrollToItem(0, Int.MAX_VALUE)
+            }
+        }
 
         AlertDialog(
             onDismissRequest = { showLogsDialog = false },
@@ -510,6 +522,7 @@ fun BackupScreen(
             text = {
                 if (logContent.isNotEmpty()) {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 400.dp)
@@ -529,6 +542,30 @@ fun BackupScreen(
             confirmButton = {
                 TextButton(onClick = { showLogsDialog = false }) {
                     Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
+
+    // Clear logs confirmation dialog
+    if (showClearLogsDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearLogsDialog = false },
+            title = { Text(stringResource(R.string.clear_logs)) },
+            text = { Text(stringResource(R.string.clear_logs_confirm)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearLogs()
+                        showClearLogsDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearLogsDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

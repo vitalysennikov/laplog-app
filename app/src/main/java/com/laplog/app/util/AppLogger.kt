@@ -70,7 +70,7 @@ object AppLogger {
                 val tagStr = tag.padEnd(20)
 
                 val logEntry = StringBuilder()
-                logEntry.append("$timestamp [$versionInfo] $levelStr $tagStr $message\n")
+                logEntry.append("• $timestamp [$versionInfo] $levelStr $tagStr $message\n")
 
                 if (throwable != null) {
                     logEntry.append("  Exception: ${throwable.javaClass.simpleName}: ${throwable.message}\n")
