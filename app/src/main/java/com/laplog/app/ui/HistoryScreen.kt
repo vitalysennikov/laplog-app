@@ -210,7 +210,8 @@ fun HistoryScreen(
                         SessionTableItem(
                             sessionWithLaps = sessionWithLaps,
                             formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
-                            fontFamily = dseg7Font
+                            fontFamily = dseg7Font,
+                            currentLanguage = currentLanguage
                         )
                     } else {
                         SessionItem(
@@ -230,7 +231,8 @@ fun HistoryScreen(
                             totalSessionCount = sessions.size,
                             sessionIndex = sessions.indexOf(sessionWithLaps),
                             expandAll = expandAll,
-                            invertLapColors = invertLapColors
+                            invertLapColors = invertLapColors,
+                            currentLanguage = currentLanguage
                         )
                     }
                     Divider()
@@ -340,7 +342,8 @@ fun SessionItem(
     totalSessionCount: Int,
     sessionIndex: Int,
     expandAll: Boolean,
-    invertLapColors: Boolean
+    invertLapColors: Boolean,
+    currentLanguage: String?
 ) {
     var expanded by remember { mutableStateOf(expandAll) }
 
@@ -866,7 +869,8 @@ fun NotesDialog(
 fun SessionTableItem(
     sessionWithLaps: SessionWithLaps,
     formatTime: (Long) -> String,
-    fontFamily: FontFamily
+    fontFamily: FontFamily,
+    currentLanguage: String?
 ) {
     val session = sessionWithLaps.session
     val laps = sessionWithLaps.laps
@@ -902,7 +906,7 @@ fun SessionTableItem(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
-                val localizedName = session.session.getLocalizedName(currentLanguage)
+                val localizedName = session.getLocalizedName(currentLanguage)
                 if (!localizedName.isNullOrBlank()) {
                     Text(
                         text = localizedName,
