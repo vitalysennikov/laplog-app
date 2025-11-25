@@ -263,7 +263,8 @@ class BackupManager(
             lockOrientation = preferencesManager.lockOrientation,
             showMillisecondsInHistory = preferencesManager.showMillisecondsInHistory,
             invertLapColors = preferencesManager.invertLapColors,
-            appLanguage = preferencesManager.appLanguage
+            appLanguage = preferencesManager.appLanguage,
+            autoBackupEnabled = preferencesManager.autoBackupEnabled
         )
 
         return BackupData(
@@ -401,6 +402,7 @@ class BackupManager(
         preferencesManager.showMillisecondsInHistory = settings.showMillisecondsInHistory
         preferencesManager.invertLapColors = settings.invertLapColors
         settings.appLanguage?.let { preferencesManager.appLanguage = it }
+        preferencesManager.autoBackupEnabled = settings.autoBackupEnabled
     }
 
     /**
@@ -511,6 +513,7 @@ class BackupManager(
             settingsObj.put("showMillisecondsInHistory", settings.showMillisecondsInHistory)
             settingsObj.put("invertLapColors", settings.invertLapColors)
             settingsObj.put("appLanguage", settings.appLanguage ?: JSONObject.NULL)
+            settingsObj.put("autoBackupEnabled", settings.autoBackupEnabled)
             json.put("settings", settingsObj)
         }
 
@@ -562,7 +565,8 @@ class BackupManager(
                 lockOrientation = settingsObj.getBoolean("lockOrientation"),
                 showMillisecondsInHistory = settingsObj.getBoolean("showMillisecondsInHistory"),
                 invertLapColors = settingsObj.getBoolean("invertLapColors"),
-                appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage")
+                appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage"),
+                autoBackupEnabled = if (settingsObj.has("autoBackupEnabled")) settingsObj.getBoolean("autoBackupEnabled") else false
             )
         } else {
             null

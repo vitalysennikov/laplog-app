@@ -80,31 +80,35 @@ class ChartsViewModel(
                 for (session in sessions) {
                     val laps = sessionDao.getLapsForSession(session.id).first()
 
-                    // Only include sessions with at least 2 laps
-                    if (laps.size >= 2) {
+                    // Calculate lap statistics if available
+                    val (avgDuration, medianDuration) = if (laps.size >= 2) {
                         val lapDurations = laps.map { it.lapDuration }
-                        val avgDuration = lapDurations.average().toLong()
+                        val avg = lapDurations.average().toLong()
 
                         // Calculate median
                         val sortedDurations = lapDurations.sorted()
-                        val medianDuration = if (sortedDurations.size % 2 == 0) {
+                        val median = if (sortedDurations.size % 2 == 0) {
                             (sortedDurations[sortedDurations.size / 2 - 1] +
                              sortedDurations[sortedDurations.size / 2]) / 2
                         } else {
                             sortedDurations[sortedDurations.size / 2]
                         }
-
-                        statistics.add(
-                            SessionStatistics(
-                                sessionId = session.id,
-                                sessionName = name,
-                                startTime = session.startTime,
-                                totalDuration = session.totalDuration,
-                                averageLapTime = avgDuration,
-                                medianLapTime = medianDuration
-                            )
-                        )
+                        Pair(avg, median)
+                    } else {
+                        // No laps or only 1 lap - use 0 for lap statistics
+                        Pair(0L, 0L)
                     }
+
+                    statistics.add(
+                        SessionStatistics(
+                            sessionId = session.id,
+                            sessionName = name,
+                            startTime = session.startTime,
+                            totalDuration = session.totalDuration,
+                            averageLapTime = avgDuration,
+                            medianLapTime = medianDuration
+                        )
+                    )
                 }
 
                 _chartData.value = ChartData(

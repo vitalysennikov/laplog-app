@@ -124,6 +124,7 @@ fun ChartsScreen(
                 else -> {
                     ChartContent(
                         chartData = chartData!!,
+                        localizedName = localizedSelectedName ?: chartData!!.sessionName,
                         formatTime = { viewModel.formatTime(it) }
                     )
                 }
@@ -168,9 +169,10 @@ fun ChartsScreen(
 @Composable
 fun ChartContent(
     chartData: com.laplog.app.model.ChartData,
+    localizedName: String,
     formatTime: (Long) -> String
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -180,7 +182,7 @@ fun ChartContent(
         // Title
         item {
             Text(
-                text = chartData.sessionName,
+                text = localizedName,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -398,7 +400,13 @@ fun TotalDurationChart(
     if (model != null) {
         ProvideChartStyle {
             Chart(
-                chart = lineChart(),
+                chart = lineChart(
+                    lines = listOf(
+                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
+                            lineColor = androidx.compose.ui.graphics.Color.Blue.hashCode()
+                        )
+                    )
+                ),
                 model = model,
                 startAxis = rememberStartAxis(
                     valueFormatter = yAxisValueFormatter
@@ -420,8 +428,13 @@ fun AverageLapChart(
     dateFormat: SimpleDateFormat,
     formatTime: (Long) -> String
 ) {
-    val entries = remember(statistics) {
-        statistics.mapIndexed { index, stat ->
+    // Filter out sessions with no laps (averageLapTime = 0)
+    val filteredStats = remember(statistics) {
+        statistics.filter { it.averageLapTime > 0 }
+    }
+
+    val entries = remember(filteredStats) {
+        filteredStats.mapIndexed { index, stat ->
             FloatEntry(
                 x = index.toFloat(),
                 y = (stat.averageLapTime / 1000f) // Convert to seconds for better readability
@@ -433,11 +446,11 @@ fun AverageLapChart(
         ChartEntryModelProducer(entries)
     }
 
-    val xAxisValueFormatter = remember(statistics) {
+    val xAxisValueFormatter = remember(filteredStats) {
         AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
             val index = value.toInt()
-            if (index in statistics.indices) {
-                dateFormat.format(Date(statistics[index].startTime))
+            if (index in filteredStats.indices) {
+                dateFormat.format(Date(filteredStats[index].startTime))
             } else {
                 ""
             }
@@ -455,7 +468,13 @@ fun AverageLapChart(
     if (model != null) {
         ProvideChartStyle {
             Chart(
-                chart = lineChart(),
+                chart = lineChart(
+                    lines = listOf(
+                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
+                            lineColor = androidx.compose.ui.graphics.Color.Green.hashCode()
+                        )
+                    )
+                ),
                 model = model,
                 startAxis = rememberStartAxis(
                     valueFormatter = yAxisValueFormatter
@@ -477,8 +496,13 @@ fun MedianLapChart(
     dateFormat: SimpleDateFormat,
     formatTime: (Long) -> String
 ) {
-    val entries = remember(statistics) {
-        statistics.mapIndexed { index, stat ->
+    // Filter out sessions with no laps (medianLapTime = 0)
+    val filteredStats = remember(statistics) {
+        statistics.filter { it.medianLapTime > 0 }
+    }
+
+    val entries = remember(filteredStats) {
+        filteredStats.mapIndexed { index, stat ->
             FloatEntry(
                 x = index.toFloat(),
                 y = (stat.medianLapTime / 1000f) // Convert to seconds for better readability
@@ -490,11 +514,11 @@ fun MedianLapChart(
         ChartEntryModelProducer(entries)
     }
 
-    val xAxisValueFormatter = remember(statistics) {
+    val xAxisValueFormatter = remember(filteredStats) {
         AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
             val index = value.toInt()
-            if (index in statistics.indices) {
-                dateFormat.format(Date(statistics[index].startTime))
+            if (index in filteredStats.indices) {
+                dateFormat.format(Date(filteredStats[index].startTime))
             } else {
                 ""
             }
@@ -512,7 +536,13 @@ fun MedianLapChart(
     if (model != null) {
         ProvideChartStyle {
             Chart(
-                chart = lineChart(),
+                chart = lineChart(
+                    lines = listOf(
+                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
+                            lineColor = androidx.compose.ui.graphics.Color.Red.hashCode()
+                        )
+                    )
+                ),
                 model = model,
                 startAxis = rememberStartAxis(
                     valueFormatter = yAxisValueFormatter

@@ -1,5 +1,6 @@
 package com.laplog.app.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -511,14 +512,12 @@ fun BackupScreen(
     // View logs dialog
     if (showLogsDialog) {
         val logContent by viewModel.logContent.collectAsState()
-        val listState = rememberLazyListState()
+        val scrollState = rememberScrollState()
 
         // Auto-scroll to bottom when dialog opens
         LaunchedEffect(logContent) {
             if (logContent.isNotEmpty()) {
-                listState.animateScrollToItem(0)
-                // Calculate scroll position to show end of text
-                listState.scrollToItem(0, Int.MAX_VALUE)
+                scrollState.animateScrollTo(scrollState.maxValue)
             }
         }
 
@@ -527,18 +526,51 @@ fun BackupScreen(
             title = { Text(stringResource(R.string.app_logs)) },
             text = {
                 if (logContent.isNotEmpty()) {
-                    LazyColumn(
-                        state = listState,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(300.dp)
                     ) {
-                        item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(scrollState)
+                                .padding(end = 12.dp) // Space for scrollbar
+                        ) {
                             Text(
                                 text = logContent,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                             )
+                        }
+
+                        // Vertical scrollbar indicator
+                        if (scrollState.maxValue > 0) {
+                            val scrollbarHeight = 300.dp
+                            val scrollbarThickness = 6.dp
+                            val scrollProgress = scrollState.value.toFloat() / scrollState.maxValue.toFloat()
+                            val thumbHeight = (scrollbarHeight.value * (300f / (scrollState.maxValue + 300f))).coerceAtLeast(30f)
+                            val thumbOffset = scrollProgress * (scrollbarHeight.value - thumbHeight)
+
+                            androidx.compose.foundation.Canvas(
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .fillMaxHeight()
+                                    .width(scrollbarThickness)
+                            ) {
+                                // Draw scrollbar thumb
+                                drawRoundRect(
+                                    color = androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.5f),
+                                    topLeft = androidx.compose.ui.geometry.Offset(0f, thumbOffset * density),
+                                    size = androidx.compose.ui.geometry.Size(
+                                        size.width,
+                                        thumbHeight * density
+                                    ),
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                                        scrollbarThickness.toPx() / 2
+                                    )
+                                )
+                            }
                         }
                     }
                 } else {
