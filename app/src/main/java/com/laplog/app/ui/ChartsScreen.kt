@@ -403,7 +403,15 @@ fun TotalDurationChart(
                 chart = lineChart(
                     lines = listOf(
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Blue.hashCode()
+                            lineColor = androidx.compose.ui.graphics.Color.Blue.hashCode(),
+                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
+                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    listOf(
+                                        androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.5f),
+                                        androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.0f)
+                                    )
+                                )
+                            )
                         )
                     )
                 ),
@@ -471,7 +479,15 @@ fun AverageLapChart(
                 chart = lineChart(
                     lines = listOf(
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Green.hashCode()
+                            lineColor = androidx.compose.ui.graphics.Color.Green.hashCode(),
+                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
+                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    listOf(
+                                        androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.5f),
+                                        androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.0f)
+                                    )
+                                )
+                            )
                         )
                     )
                 ),
@@ -539,7 +555,15 @@ fun MedianLapChart(
                 chart = lineChart(
                     lines = listOf(
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Red.hashCode()
+                            lineColor = androidx.compose.ui.graphics.Color.Red.hashCode(),
+                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
+                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    listOf(
+                                        androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.5f),
+                                        androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.0f)
+                                    )
+                                )
+                            )
                         )
                     )
                 ),

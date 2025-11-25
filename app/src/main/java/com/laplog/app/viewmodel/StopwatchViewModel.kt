@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class StopwatchViewModel(
@@ -140,7 +141,20 @@ class StopwatchViewModel(
 
     private fun loadNamesFromHistory() {
         viewModelScope.launch {
-            _namesFromHistory.value = sessionDao.getDistinctNames()
+            val currentLang = preferencesManager.appLanguage
+            val allSessions = sessionDao.getAllSessions().first()
+
+            // Get unique original names
+            val originalNames = sessionDao.getDistinctNames()
+
+            // Map to localized names
+            val localizedNames = originalNames.map { originalName ->
+                allSessions.find { it.name == originalName }
+                    ?.getLocalizedName(currentLang)
+                    ?: originalName
+            }.distinct().sorted()
+
+            _namesFromHistory.value = localizedNames
         }
     }
 
