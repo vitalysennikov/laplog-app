@@ -32,6 +32,7 @@
     <string name="clear_filter">Очистить фильтр</string>
     <string name="all_sessions">Все сессии</string>
     <string name="close">Закрыть</string>
+    <string name="copy">Копировать</string>
     <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
 
@@ -49,8 +50,15 @@
     <string name="export_history">Экспорт истории</string>
     <string name="export_csv">Экспорт в CSV</string>
     <string name="export_json">Экспорт в JSON</string>
+    <string name="export_session_json">Просмотр/Экспорт JSON</string>
     <string name="export_success">История успешно экспортирована</string>
     <string name="export_error">Ошибка экспорта истории</string>
+    <string name="session_json_data">JSON данные сессии</string>
+
+    <!-- Translation -->
+    <string name="force_translate">Принудительный перевод</string>
+    <string name="translation_started">Перевод начат</string>
+    <string name="translation_complete">Перевод завершен</string>
 
     <!-- About dialog -->
     <string name="about">О программе</string>

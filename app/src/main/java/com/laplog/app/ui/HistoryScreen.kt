@@ -233,6 +233,8 @@ fun HistoryScreen(
                             },
                             onDelete = { viewModel.deleteSession(sessionWithLaps.session) },
                             onDeleteBefore = { viewModel.deleteSessionsBefore(sessionWithLaps.session.startTime) },
+                            onExportJson = { sessionId -> viewModel.getSessionDataAsJson(sessionId) },
+                            onForceTranslate = { sessionId -> viewModel.forceTranslateSession(sessionId) },
                             formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
                             formatDifference = { diff -> viewModel.formatDifference(diff, showMillisecondsInHistory) },
                             fontFamily = dseg7Font,
@@ -345,6 +347,8 @@ fun SessionItem(
     onUpdateNotes: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteBefore: () -> Unit,
+    onExportJson: suspend (Long) -> String,
+    onForceTranslate: (Long) -> Unit,
     formatTime: (Long) -> String,
     formatDifference: (Long) -> String,
     fontFamily: FontFamily,
@@ -364,6 +368,9 @@ fun SessionItem(
     var showNotesDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showDeleteBeforeDialog by remember { mutableStateOf(false) }
+    var showJsonDialog by remember { mutableStateOf(false) }
+    var jsonData by remember { mutableStateOf("") }
+    var showTranslateConfirmDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
 
     val session = sessionWithLaps.session
@@ -532,6 +539,20 @@ fun SessionItem(
                         onClick = {
                             showMenu = false
                             showNotesDialog = true
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.export_session_json)) },
+                        onClick = {
+                            showMenu = false
+                            showJsonDialog = true
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.force_translate)) },
+                        onClick = {
+                            showMenu = false
+                            showTranslateConfirmDialog = true
                         }
                     )
                     DropdownMenuItem(
@@ -755,6 +776,85 @@ fun SessionItem(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteBeforeDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // JSON Export Dialog
+    if (showJsonDialog) {
+        val coroutineScope = rememberCoroutineScope()
+        val context = LocalContext.current
+        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+
+        LaunchedEffect(Unit) {
+            jsonData = onExportJson(session.id)
+        }
+
+        AlertDialog(
+            onDismissRequest = { showJsonDialog = false },
+            title = { Text(stringResource(R.string.session_json_data)) },
+            text = {
+                Column {
+                    SelectionContainer {
+                        Text(
+                            text = jsonData,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val clip = android.content.ClipData.newPlainText("Session JSON", jsonData)
+                        clipboardManager.setPrimaryClip(clip)
+                        android.widget.Toast.makeText(
+                            context,
+                            context.getString(R.string.export_success),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        showJsonDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.copy))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showJsonDialog = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
+
+    // Force Translation Confirmation Dialog
+    if (showTranslateConfirmDialog) {
+        val context = LocalContext.current
+        AlertDialog(
+            onDismissRequest = { showTranslateConfirmDialog = false },
+            title = { Text(stringResource(R.string.force_translate)) },
+            text = { Text(stringResource(R.string.translation_started)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onForceTranslate(session.id)
+                        android.widget.Toast.makeText(
+                            context,
+                            context.getString(R.string.translation_complete),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        showTranslateConfirmDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTranslateConfirmDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }

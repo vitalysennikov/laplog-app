@@ -32,6 +32,7 @@
     <string name="clear_filter">Clear filter</string>
     <string name="all_sessions">All sessions</string>
     <string name="close">Close</string>
+    <string name="copy">Copy</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
 
@@ -49,8 +50,15 @@
     <string name="export_history">Export history</string>
     <string name="export_csv">Export as CSV</string>
     <string name="export_json">Export as JSON</string>
+    <string name="export_session_json">View/Export JSON</string>
     <string name="export_success">History exported successfully</string>
     <string name="export_error">Error exporting history</string>
+    <string name="session_json_data">Session JSON Data</string>
+
+    <!-- Translation -->
+    <string name="force_translate">Force translate</string>
+    <string name="translation_started">Translation started</string>
+    <string name="translation_complete">Translation complete</string>
 
     <!-- About dialog -->
     <string name="about">About</string>
