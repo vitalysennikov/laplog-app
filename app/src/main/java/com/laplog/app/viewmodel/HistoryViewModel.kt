@@ -334,26 +334,26 @@ class HistoryViewModel(
      * Get session data as JSON string including all translations
      */
     suspend fun getSessionDataAsJson(sessionId: Long): String {
-        val session = sessionDao.getSessionWithLaps(sessionId).first()
+        val roomSession = sessionDao.getSessionWithLapsInternal(sessionId)
         val json = org.json.JSONObject()
 
-        json.put("id", session.session.id)
-        json.put("startTime", session.session.startTime)
-        json.put("endTime", session.session.endTime)
-        json.put("totalDuration", session.session.totalDuration)
+        json.put("id", roomSession.session.id)
+        json.put("startTime", roomSession.session.startTime)
+        json.put("endTime", roomSession.session.endTime)
+        json.put("totalDuration", roomSession.session.totalDuration)
 
-        json.put("name", session.session.name ?: "")
-        json.put("name_en", session.session.name_en ?: "")
-        json.put("name_ru", session.session.name_ru ?: "")
-        json.put("name_zh", session.session.name_zh ?: "")
+        json.put("name", roomSession.session.name ?: "")
+        json.put("name_en", roomSession.session.name_en ?: "")
+        json.put("name_ru", roomSession.session.name_ru ?: "")
+        json.put("name_zh", roomSession.session.name_zh ?: "")
 
-        json.put("notes", session.session.notes ?: "")
-        json.put("notes_en", session.session.notes_en ?: "")
-        json.put("notes_ru", session.session.notes_ru ?: "")
-        json.put("notes_zh", session.session.notes_zh ?: "")
+        json.put("notes", roomSession.session.notes ?: "")
+        json.put("notes_en", roomSession.session.notes_en ?: "")
+        json.put("notes_ru", roomSession.session.notes_ru ?: "")
+        json.put("notes_zh", roomSession.session.notes_zh ?: "")
 
         val lapsArray = org.json.JSONArray()
-        session.laps.forEach { lap ->
+        roomSession.laps.forEach { lap ->
             val lapObj = org.json.JSONObject()
             lapObj.put("lapNumber", lap.lapNumber)
             lapObj.put("totalTime", lap.totalTime)

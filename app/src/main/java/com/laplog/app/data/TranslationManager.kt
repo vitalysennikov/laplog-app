@@ -27,6 +27,33 @@ class TranslationManager(
     }
 
     /**
+     * Translate session name to all languages and save to database
+     * Called when a new session is saved with a name
+     */
+    suspend fun translateAndSaveSessionName(sessionId: Long, name: String) = withContext(Dispatchers.IO) {
+        AppLogger.i(TAG, "Auto-translating session $sessionId name: '$name'")
+
+        // Get current language from PreferencesManager
+        // For now, we'll assume the name is in the source language and translate to all others
+        // We'll try from EN first, then RU, then ZH
+
+        val nameEn = translate(name, "en", "en") ?: name
+        val nameRu = translate(name, "en", "ru")
+        val nameZh = translate(name, "en", "zh")
+
+        AppLogger.d(TAG, "Session $sessionId translations - EN: '$nameEn', RU: '$nameRu', ZH: '$nameZh'")
+
+        sessionDao.updateSessionNameTranslations(
+            sessionId = sessionId,
+            nameEn = nameEn,
+            nameRu = nameRu,
+            nameZh = nameZh
+        )
+
+        AppLogger.i(TAG, "Session $sessionId: Name translations saved")
+    }
+
+    /**
      * Translate session name and notes to target language
      * Returns null if no translation needed or available
      */

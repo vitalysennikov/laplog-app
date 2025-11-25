@@ -3,6 +3,7 @@ package com.laplog.app.data.database.dao
 import androidx.room.*
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
+import com.laplog.app.model.SessionWithLaps
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -66,4 +67,23 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE (name IS NOT NULL AND name != '') ORDER BY startTime DESC")
     suspend fun getSessionsNeedingTranslation(): List<SessionEntity>
+
+    @Query("SELECT * FROM sessions WHERE id = :sessionId")
+    fun getSessionById(sessionId: Long): Flow<SessionEntity>
+
+    @Transaction
+    @Query("SELECT * FROM sessions WHERE id = :sessionId")
+    suspend fun getSessionWithLapsInternal(sessionId: Long): RoomSessionWithLaps
 }
+
+/**
+ * Internal Room data class for @Transaction query
+ */
+data class RoomSessionWithLaps(
+    @Embedded val session: SessionEntity,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "sessionId"
+    )
+    val laps: List<LapEntity>
+)
