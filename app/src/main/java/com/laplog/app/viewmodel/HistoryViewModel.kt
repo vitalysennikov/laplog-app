@@ -329,4 +329,81 @@ class HistoryViewModel(
             String.format("%s%d", sign, seconds)
         }
     }
+
+    /**
+     * Get session data as JSON string including all translations
+     */
+    suspend fun getSessionDataAsJson(sessionId: Long): String {
+        val session = sessionDao.getSessionWithLaps(sessionId).first()
+        val json = org.json.JSONObject()
+
+        json.put("id", session.session.id)
+        json.put("startTime", session.session.startTime)
+        json.put("endTime", session.session.endTime)
+        json.put("totalDuration", session.session.totalDuration)
+
+        json.put("name", session.session.name ?: "")
+        json.put("name_en", session.session.name_en ?: "")
+        json.put("name_ru", session.session.name_ru ?: "")
+        json.put("name_zh", session.session.name_zh ?: "")
+
+        json.put("notes", session.session.notes ?: "")
+        json.put("notes_en", session.session.notes_en ?: "")
+        json.put("notes_ru", session.session.notes_ru ?: "")
+        json.put("notes_zh", session.session.notes_zh ?: "")
+
+        val lapsArray = org.json.JSONArray()
+        session.laps.forEach { lap ->
+            val lapObj = org.json.JSONObject()
+            lapObj.put("lapNumber", lap.lapNumber)
+            lapObj.put("totalTime", lap.totalTime)
+            lapObj.put("lapDuration", lap.lapDuration)
+            lapsArray.put(lapObj)
+        }
+        json.put("laps", lapsArray)
+
+        return json.toString(2) // Pretty print with 2 spaces indent
+    }
+
+    /**
+     * Force translation for a session
+     */
+    fun forceTranslateSession(sessionId: Long) {
+        viewModelScope.launch {
+            try {
+                AppLogger.i("HistoryViewModel", "Force translating session $sessionId")
+                val session = sessionDao.getSessionById(sessionId).first()
+                val currentLang = preferencesManager.getCurrentLanguage()
+
+                // Translate name if exists
+                session.name?.takeIf { it.isNotBlank() }?.let { name ->
+                    AppLogger.i("HistoryViewModel", "Translating name: $name")
+                    val (nameEn, nameRu, nameZh) = translateToAllLanguages(name, currentLang)
+                    sessionDao.updateSessionNameTranslations(
+                        sessionId = sessionId,
+                        nameEn = nameEn,
+                        nameRu = nameRu,
+                        nameZh = nameZh
+                    )
+                }
+
+                // Translate notes if exists
+                session.notes?.takeIf { it.isNotBlank() }?.let { notes ->
+                    AppLogger.i("HistoryViewModel", "Translating notes: $notes")
+                    val (notesEn, notesRu, notesZh) = translateToAllLanguages(notes, currentLang)
+                    sessionDao.updateSessionNotesTranslations(
+                        sessionId = sessionId,
+                        notesEn = notesEn,
+                        notesRu = notesRu,
+                        notesZh = notesZh
+                    )
+                }
+
+                AppLogger.i("HistoryViewModel", "Force translation completed for session $sessionId")
+                loadSessions()
+            } catch (e: Exception) {
+                AppLogger.e("HistoryViewModel", "Error force translating session $sessionId", e)
+            }
+        }
+    }
 }

@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.laplog.app.R
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
@@ -39,8 +40,9 @@ fun StopwatchScreen(
     isVisible: Boolean = true
 ) {
     val context = LocalContext.current
+    val translationManager = remember { TranslationManager(sessionDao) }
     val viewModel: StopwatchViewModel = viewModel(
-        factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao)
+        factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao, translationManager)
     )
 
     // Refresh names from history when screen becomes visible

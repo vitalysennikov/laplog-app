@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
+import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
@@ -26,7 +27,8 @@ import kotlinx.coroutines.launch
 class StopwatchViewModel(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
-    private val sessionDao: SessionDao
+    private val sessionDao: SessionDao,
+    private val translationManager: TranslationManager
 ) : ViewModel() {
     // Use shared StopwatchState instead of local state
     val elapsedTime: StateFlow<Long> = StopwatchState.elapsedTime
@@ -445,6 +447,14 @@ class StopwatchViewModel(
             }
             sessionDao.insertLaps(lapEntities)
             Log.d("StopwatchViewModel", "Inserted ${lapEntities.size} laps")
+        }
+
+        // Auto-translate name if provided
+        session.name?.let { name ->
+            if (name.isNotBlank()) {
+                Log.d("StopwatchViewModel", "Auto-translating name: $name")
+                translationManager.translateAndSaveSessionName(sessionId, name)
+            }
         }
     }
 
