@@ -189,6 +189,69 @@ fun ChartContent(
             )
         }
 
+        // Average chart (only show if there are sessions with laps)
+        val hasLaps = chartData.statistics.any { it.averageLapTime > 0 }
+        if (hasLaps) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.average_lap_time),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        AverageLapChart(
+                            statistics = chartData.statistics,
+                            dateFormat = dateFormat,
+                            formatTime = formatTime
+                        )
+                    }
+                }
+            }
+        }
+
+        // Median chart (only show if there are sessions with laps)
+        if (hasLaps) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.median_lap_time),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        MedianLapChart(
+                            statistics = chartData.statistics,
+                            dateFormat = dateFormat,
+                            formatTime = formatTime
+                        )
+                    }
+                }
+            }
+        }
+
         // Total duration chart
         item {
             Card(
@@ -211,68 +274,6 @@ fun ChartContent(
 
                     if (chartData.statistics.isNotEmpty()) {
                         TotalDurationChart(
-                            statistics = chartData.statistics,
-                            dateFormat = dateFormat,
-                            formatTime = formatTime
-                        )
-                    }
-                }
-            }
-        }
-
-        // Average chart
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.average_lap_time),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    if (chartData.statistics.isNotEmpty()) {
-                        AverageLapChart(
-                            statistics = chartData.statistics,
-                            dateFormat = dateFormat,
-                            formatTime = formatTime
-                        )
-                    }
-                }
-            }
-        }
-
-        // Median chart
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.median_lap_time),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    if (chartData.statistics.isNotEmpty()) {
-                        MedianLapChart(
                             statistics = chartData.statistics,
                             dateFormat = dateFormat,
                             formatTime = formatTime
@@ -555,12 +556,12 @@ fun MedianLapChart(
                 chart = lineChart(
                     lines = listOf(
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Red.hashCode(),
+                            lineColor = androidx.compose.ui.graphics.Color.Yellow.hashCode(),
                             lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
                                 brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                                     listOf(
-                                        androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.5f),
-                                        androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.0f)
+                                        androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.5f),
+                                        androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.0f)
                                     )
                                 )
                             )
