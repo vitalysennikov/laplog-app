@@ -87,6 +87,11 @@
     <string name="no_sessions_with_names">No sessions with names found. Add names to your sessions in the History tab to view charts.</string>
     <string name="no_data_for_chart">Not enough data to display chart. At least 2 laps are required per session.</string>
     <string name="average_lap_time">Average Lap Time</string>
+
+    <!-- Time periods -->
+    <string name="period_all_time">All time</string>
+    <string name="period_last_7_days">Last 7 days</string>
+    <string name="period_last_30_days">Last 30 days</string>
     <string name="median_lap_time">Median Lap Time</string>
     <string name="statistics_summary">Statistics Summary</string>
     <string name="total_sessions">Total Sessions</string>

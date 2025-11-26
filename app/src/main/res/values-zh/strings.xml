@@ -87,6 +87,11 @@
     <string name="no_sessions_with_names">未找到带有名称的记录。请在历史记录标签页中为您的记录添加名称以查看图表。</string>
     <string name="no_data_for_chart">数据不足，无法显示图表。每条记录至少需要 2 次计次。</string>
     <string name="average_lap_time">平均计次时间</string>
+
+    <!-- Time periods -->
+    <string name="period_all_time">所有时间</string>
+    <string name="period_last_7_days">最近 7 天</string>
+    <string name="period_last_30_days">最近 30 天</string>
     <string name="median_lap_time">中位数计次时间</string>
     <string name="statistics_summary">统计摘要</string>
     <string name="total_sessions">总记录数</string>

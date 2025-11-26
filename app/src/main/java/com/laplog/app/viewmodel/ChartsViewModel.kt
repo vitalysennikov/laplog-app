@@ -8,6 +8,7 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionStatistics
 import com.laplog.app.model.ChartData
+import com.laplog.app.model.TimePeriod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,9 @@ class ChartsViewModel(
 
     private val _selectedName = MutableStateFlow<String?>(null)
     val selectedName: StateFlow<String?> = _selectedName.asStateFlow()
+
+    private val _selectedPeriod = MutableStateFlow(TimePeriod.ALL_TIME)
+    val selectedPeriod: StateFlow<TimePeriod> = _selectedPeriod.asStateFlow()
 
     private val _chartData = MutableStateFlow<ChartData?>(null)
     val chartData: StateFlow<ChartData?> = _chartData.asStateFlow()
@@ -66,14 +70,28 @@ class ChartsViewModel(
         loadChartData(name)
     }
 
+    fun selectPeriod(period: TimePeriod) {
+        _selectedPeriod.value = period
+        _selectedName.value?.let { loadChartData(it) }
+    }
+
     private fun loadChartData(name: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                Log.d("ChartsViewModel", "Loading chart data for: $name")
+                Log.d("ChartsViewModel", "Loading chart data for: $name, period: ${_selectedPeriod.value}")
 
-                val sessions = sessionDao.getSessionsByName(name)
-                Log.d("ChartsViewModel", "Found ${sessions.size} sessions for name: $name")
+                val allSessions = sessionDao.getSessionsByName(name)
+
+                // Filter by time period
+                val periodStartTime = _selectedPeriod.value.getStartTimeMillis()
+                val sessions = if (periodStartTime != null) {
+                    allSessions.filter { it.startTime >= periodStartTime }
+                } else {
+                    allSessions
+                }
+
+                Log.d("ChartsViewModel", "Found ${sessions.size} sessions for name: $name (filtered from ${allSessions.size})")
 
                 val statistics = mutableListOf<SessionStatistics>()
 

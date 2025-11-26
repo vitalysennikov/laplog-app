@@ -87,6 +87,11 @@
     <string name="no_sessions_with_names">Не найдено сессий с названиями. Добавьте названия к сессиям во вкладке История, чтобы просмотреть графики.</string>
     <string name="no_data_for_chart">Недостаточно данных для отображения графика. Требуется минимум 2 круга на сессию.</string>
     <string name="average_lap_time">Среднее время круга</string>
+
+    <!-- Time periods -->
+    <string name="period_all_time">Все время</string>
+    <string name="period_last_7_days">Последние 7 дней</string>
+    <string name="period_last_30_days">Последние 30 дней</string>
     <string name="median_lap_time">Медиана времени круга</string>
     <string name="statistics_summary">Сводная статистика</string>
     <string name="total_sessions">Всего сессий</string>

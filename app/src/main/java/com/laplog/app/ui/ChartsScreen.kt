@@ -45,6 +45,7 @@ fun ChartsScreen(
 
     val availableNames by viewModel.availableNames.collectAsState()
     val selectedName by viewModel.selectedName.collectAsState()
+    val selectedPeriod by viewModel.selectedPeriod.collectAsState()
     val chartData by viewModel.chartData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val currentLanguage = preferencesManager.appLanguage
@@ -67,17 +68,38 @@ fun ChartsScreen(
     }
 
     var showNameSelector by remember { mutableStateOf(false) }
+    var showPeriodSelector by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.charts)) },
                 actions = {
+                    // Period selector dropdown
+                    TextButton(
+                        onClick = { showPeriodSelector = true },
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
+                        Text(
+                            text = when (selectedPeriod) {
+                                com.laplog.app.model.TimePeriod.ALL_TIME -> stringResource(R.string.period_all_time)
+                                com.laplog.app.model.TimePeriod.LAST_7_DAYS -> stringResource(R.string.period_last_7_days)
+                                com.laplog.app.model.TimePeriod.LAST_30_DAYS -> stringResource(R.string.period_last_30_days)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
+                    }
+
                     // Name selector dropdown
                     if (availableNames.isNotEmpty()) {
                         TextButton(
                             onClick = { showNameSelector = true },
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            modifier = Modifier.padding(horizontal = 4.dp)
                         ) {
                             Text(
                                 text = localizedSelectedName ?: stringResource(R.string.select_name),
@@ -129,6 +151,42 @@ fun ChartsScreen(
                     )
                 }
             }
+        }
+
+        // Period selector dialog
+        if (showPeriodSelector) {
+            AlertDialog(
+                onDismissRequest = { showPeriodSelector = false },
+                title = { Text(stringResource(R.string.select_name)) },
+                text = {
+                    Column {
+                        com.laplog.app.model.TimePeriod.values().forEach { period ->
+                            TextButton(
+                                onClick = {
+                                    viewModel.selectPeriod(period)
+                                    showPeriodSelector = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = when (period) {
+                                        com.laplog.app.model.TimePeriod.ALL_TIME -> stringResource(R.string.period_all_time)
+                                        com.laplog.app.model.TimePeriod.LAST_7_DAYS -> stringResource(R.string.period_last_7_days)
+                                        com.laplog.app.model.TimePeriod.LAST_30_DAYS -> stringResource(R.string.period_last_30_days)
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (period == selectedPeriod) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showPeriodSelector = false }) {
+                        Text(stringResource(R.string.close))
+                    }
+                }
+            )
         }
 
         // Name selector dialog
