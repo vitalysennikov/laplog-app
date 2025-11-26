@@ -272,7 +272,8 @@ fun ChartContent(
                         AverageLapChart(
                             statistics = chartData.statistics,
                             dateFormat = dateFormat,
-                            formatTime = formatTime
+                            formatTime = formatTime,
+                            overallAverage = chartData.overallAverageLapTime
                         )
                     }
                 }
@@ -303,7 +304,8 @@ fun ChartContent(
                         MedianLapChart(
                             statistics = chartData.statistics,
                             dateFormat = dateFormat,
-                            formatTime = formatTime
+                            formatTime = formatTime,
+                            overallMedian = chartData.overallMedianLapTime
                         )
                     }
                 }
@@ -334,7 +336,8 @@ fun ChartContent(
                         TotalDurationChart(
                             statistics = chartData.statistics,
                             dateFormat = dateFormat,
-                            formatTime = formatTime
+                            formatTime = formatTime,
+                            overallAverage = chartData.overallAverageDuration
                         )
                     }
                 }
@@ -422,7 +425,8 @@ fun ChartContent(
 fun TotalDurationChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
-    formatTime: (Long) -> String
+    formatTime: (Long) -> String,
+    overallAverage: Long
 ) {
     val entries = remember(statistics) {
         statistics.mapIndexed { index, stat ->
@@ -458,6 +462,18 @@ fun TotalDurationChart(
     val model = chartEntryModelProducer.getModel()
     if (model != null) {
         ProvideChartStyle {
+            val horizontalLine = com.patrykandpatrick.vico.compose.chart.decoration.rememberHorizontalLine(
+                y = { overallAverage / 1000f }, // Convert to seconds
+                line = com.patrykandpatrick.vico.core.component.shape.ShapeComponent(
+                    shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
+                        shape = com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
+                        dashLengthDp = 8f,
+                        gapLengthDp = 4f
+                    ),
+                    color = androidx.compose.ui.graphics.Color.Gray.hashCode()
+                )
+            )
+
             Chart(
                 chart = lineChart(
                     lines = listOf(
@@ -472,7 +488,8 @@ fun TotalDurationChart(
                                 )
                             )
                         )
-                    )
+                    ),
+                    decorations = listOf(horizontalLine)
                 ),
                 model = model,
                 startAxis = rememberStartAxis(
@@ -493,7 +510,8 @@ fun TotalDurationChart(
 fun AverageLapChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
-    formatTime: (Long) -> String
+    formatTime: (Long) -> String,
+    overallAverage: Long
 ) {
     // Filter out sessions with no laps (averageLapTime = 0)
     val filteredStats = remember(statistics) {
@@ -534,6 +552,18 @@ fun AverageLapChart(
     val model = chartEntryModelProducer.getModel()
     if (model != null) {
         ProvideChartStyle {
+            val horizontalLine = com.patrykandpatrick.vico.compose.chart.decoration.rememberHorizontalLine(
+                y = { overallAverage / 1000f }, // Convert to seconds
+                line = com.patrykandpatrick.vico.core.component.shape.ShapeComponent(
+                    shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
+                        shape = com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
+                        dashLengthDp = 8f,
+                        gapLengthDp = 4f
+                    ),
+                    color = androidx.compose.ui.graphics.Color.Gray.hashCode()
+                )
+            )
+
             Chart(
                 chart = lineChart(
                     lines = listOf(
@@ -548,7 +578,8 @@ fun AverageLapChart(
                                 )
                             )
                         )
-                    )
+                    ),
+                    decorations = listOf(horizontalLine)
                 ),
                 model = model,
                 startAxis = rememberStartAxis(
@@ -569,7 +600,8 @@ fun AverageLapChart(
 fun MedianLapChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
-    formatTime: (Long) -> String
+    formatTime: (Long) -> String,
+    overallMedian: Long
 ) {
     // Filter out sessions with no laps (medianLapTime = 0)
     val filteredStats = remember(statistics) {
@@ -610,6 +642,18 @@ fun MedianLapChart(
     val model = chartEntryModelProducer.getModel()
     if (model != null) {
         ProvideChartStyle {
+            val horizontalLine = com.patrykandpatrick.vico.compose.chart.decoration.rememberHorizontalLine(
+                y = { overallMedian / 1000f }, // Convert to seconds
+                line = com.patrykandpatrick.vico.core.component.shape.ShapeComponent(
+                    shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
+                        shape = com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
+                        dashLengthDp = 8f,
+                        gapLengthDp = 4f
+                    ),
+                    color = androidx.compose.ui.graphics.Color.Gray.hashCode()
+                )
+            )
+
             Chart(
                 chart = lineChart(
                     lines = listOf(
@@ -624,7 +668,8 @@ fun MedianLapChart(
                                 )
                             )
                         )
-                    )
+                    ),
+                    decorations = listOf(horizontalLine)
                 ),
                 model = model,
                 startAxis = rememberStartAxis(

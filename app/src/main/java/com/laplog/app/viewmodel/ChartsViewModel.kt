@@ -129,9 +129,45 @@ class ChartsViewModel(
                     )
                 }
 
+                // Calculate overall statistics
+                val overallAverageDuration = if (statistics.isNotEmpty()) {
+                    statistics.map { it.totalDuration }.average().toLong()
+                } else {
+                    0L
+                }
+
+                val overallAverageLapTime = if (statistics.isNotEmpty()) {
+                    val lapsWithData = statistics.filter { it.averageLapTime > 0 }
+                    if (lapsWithData.isNotEmpty()) {
+                        lapsWithData.map { it.averageLapTime }.average().toLong()
+                    } else {
+                        0L
+                    }
+                } else {
+                    0L
+                }
+
+                val overallMedianLapTime = if (statistics.isNotEmpty()) {
+                    val mediansWithData = statistics.filter { it.medianLapTime > 0 }
+                        .map { it.medianLapTime }
+                        .sorted()
+                    if (mediansWithData.isEmpty()) {
+                        0L
+                    } else if (mediansWithData.size % 2 == 0) {
+                        (mediansWithData[mediansWithData.size / 2 - 1] + mediansWithData[mediansWithData.size / 2]) / 2
+                    } else {
+                        mediansWithData[mediansWithData.size / 2]
+                    }
+                } else {
+                    0L
+                }
+
                 _chartData.value = ChartData(
                     sessionName = name,
-                    statistics = statistics
+                    statistics = statistics,
+                    overallAverageDuration = overallAverageDuration,
+                    overallAverageLapTime = overallAverageLapTime,
+                    overallMedianLapTime = overallMedianLapTime
                 )
 
                 Log.d("ChartsViewModel", "Loaded chart data with ${statistics.size} data points")

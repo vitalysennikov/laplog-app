@@ -18,5 +18,8 @@ data class SessionStatistics(
  */
 data class ChartData(
     val sessionName: String,
-    val statistics: List<SessionStatistics>
+    val statistics: List<SessionStatistics>,
+    val overallAverageDuration: Long = 0,  // Average of all totalDurations
+    val overallAverageLapTime: Long = 0,   // Average of all averageLapTimes
+    val overallMedianLapTime: Long = 0     // Median of all medianLapTimes
 )
