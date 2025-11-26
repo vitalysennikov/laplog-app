@@ -459,21 +459,23 @@ fun TotalDurationChart(
         }
     }
 
-    val model = chartEntryModelProducer.getModel()
+    // Add average line entries
+    val averageLineEntries = remember(statistics, overallAverage) {
+        statistics.mapIndexed { index, _ ->
+            FloatEntry(
+                x = index.toFloat(),
+                y = overallAverage / 1000f // Convert to seconds
+            )
+        }
+    }
+
+    val chartEntryModelProducerWithAverage = remember(entries, averageLineEntries) {
+        ChartEntryModelProducer(entries, averageLineEntries)
+    }
+
+    val model = chartEntryModelProducerWithAverage.getModel()
     if (model != null) {
         ProvideChartStyle {
-            val horizontalLine = com.patrykandpatrick.vico.compose.chart.decoration.rememberHorizontalLine(
-                y = { overallAverage / 1000f }, // Convert to seconds
-                line = com.patrykandpatrick.vico.core.component.shape.ShapeComponent(
-                    shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
-                        shape = com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
-                        dashLengthDp = 8f,
-                        gapLengthDp = 4f
-                    ),
-                    color = androidx.compose.ui.graphics.Color.Gray.hashCode()
-                )
-            )
-
             Chart(
                 chart = lineChart(
                     lines = listOf(
@@ -487,9 +489,14 @@ fun TotalDurationChart(
                                     )
                                 )
                             )
+                        ),
+                        // Average line (dashed)
+                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
+                            lineColor = androidx.compose.ui.graphics.Color.Gray.hashCode(),
+                            lineThicknessDp = 2f,
+                            lineBackgroundShader = null
                         )
-                    ),
-                    decorations = listOf(horizontalLine)
+                    )
                 ),
                 model = model,
                 startAxis = rememberStartAxis(
@@ -549,21 +556,23 @@ fun AverageLapChart(
         }
     }
 
-    val model = chartEntryModelProducer.getModel()
+    // Add average line entries
+    val averageLineEntries = remember(filteredStats, overallAverage) {
+        filteredStats.mapIndexed { index, _ ->
+            FloatEntry(
+                x = index.toFloat(),
+                y = overallAverage / 1000f // Convert to seconds
+            )
+        }
+    }
+
+    val chartEntryModelProducerWithAverage = remember(entries, averageLineEntries) {
+        ChartEntryModelProducer(entries, averageLineEntries)
+    }
+
+    val model = chartEntryModelProducerWithAverage.getModel()
     if (model != null) {
         ProvideChartStyle {
-            val horizontalLine = com.patrykandpatrick.vico.compose.chart.decoration.rememberHorizontalLine(
-                y = { overallAverage / 1000f }, // Convert to seconds
-                line = com.patrykandpatrick.vico.core.component.shape.ShapeComponent(
-                    shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
-                        shape = com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
-                        dashLengthDp = 8f,
-                        gapLengthDp = 4f
-                    ),
-                    color = androidx.compose.ui.graphics.Color.Gray.hashCode()
-                )
-            )
-
             Chart(
                 chart = lineChart(
                     lines = listOf(
@@ -577,9 +586,14 @@ fun AverageLapChart(
                                     )
                                 )
                             )
+                        ),
+                        // Average line
+                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
+                            lineColor = androidx.compose.ui.graphics.Color.Gray.hashCode(),
+                            lineThicknessDp = 2f,
+                            lineBackgroundShader = null
                         )
-                    ),
-                    decorations = listOf(horizontalLine)
+                    )
                 ),
                 model = model,
                 startAxis = rememberStartAxis(
@@ -639,21 +653,23 @@ fun MedianLapChart(
         }
     }
 
-    val model = chartEntryModelProducer.getModel()
+    // Add median line entries
+    val medianLineEntries = remember(filteredStats, overallMedian) {
+        filteredStats.mapIndexed { index, _ ->
+            FloatEntry(
+                x = index.toFloat(),
+                y = overallMedian / 1000f // Convert to seconds
+            )
+        }
+    }
+
+    val chartEntryModelProducerWithMedian = remember(entries, medianLineEntries) {
+        ChartEntryModelProducer(entries, medianLineEntries)
+    }
+
+    val model = chartEntryModelProducerWithMedian.getModel()
     if (model != null) {
         ProvideChartStyle {
-            val horizontalLine = com.patrykandpatrick.vico.compose.chart.decoration.rememberHorizontalLine(
-                y = { overallMedian / 1000f }, // Convert to seconds
-                line = com.patrykandpatrick.vico.core.component.shape.ShapeComponent(
-                    shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
-                        shape = com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
-                        dashLengthDp = 8f,
-                        gapLengthDp = 4f
-                    ),
-                    color = androidx.compose.ui.graphics.Color.Gray.hashCode()
-                )
-            )
-
             Chart(
                 chart = lineChart(
                     lines = listOf(
@@ -667,9 +683,14 @@ fun MedianLapChart(
                                     )
                                 )
                             )
+                        ),
+                        // Median line
+                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
+                            lineColor = androidx.compose.ui.graphics.Color.Gray.hashCode(),
+                            lineThicknessDp = 2f,
+                            lineBackgroundShader = null
                         )
-                    ),
-                    decorations = listOf(horizontalLine)
+                    )
                 ),
                 model = model,
                 startAxis = rememberStartAxis(
