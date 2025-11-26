@@ -28,8 +28,10 @@ import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
 import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
 import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
+import com.patrykandpatrick.vico.core.component.shape.LineComponent
 import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
 import com.patrykandpatrick.vico.core.entry.FloatEntry
+import android.graphics.DashPathEffect
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -490,11 +492,19 @@ fun TotalDurationChart(
                                 )
                             )
                         ),
-                        // Average line (dashed)
+                        // Average line (dashed, darker blue)
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Gray.hashCode(),
-                            lineThicknessDp = 2f,
-                            lineBackgroundShader = null
+                            lineColor = androidx.compose.ui.graphics.Color(0xFF0000CC).hashCode(), // Darker blue
+                            lineBackgroundShader = null,
+                            line = LineComponent(
+                                color = androidx.compose.ui.graphics.Color(0xFF0000CC).hashCode(),
+                                thicknessDp = 2f,
+                                shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
+                                    com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
+                                    dashLengthDp = 8f,
+                                    gapLengthDp = 4f
+                                )
+                            )
                         )
                     )
                 ),
@@ -587,11 +597,19 @@ fun AverageLapChart(
                                 )
                             )
                         ),
-                        // Average line
+                        // Average line (dashed, darker green)
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Gray.hashCode(),
-                            lineThicknessDp = 2f,
-                            lineBackgroundShader = null
+                            lineColor = androidx.compose.ui.graphics.Color(0xFF006600).hashCode(), // Darker green
+                            lineBackgroundShader = null,
+                            line = LineComponent(
+                                color = androidx.compose.ui.graphics.Color(0xFF006600).hashCode(),
+                                thicknessDp = 2f,
+                                shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
+                                    com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
+                                    dashLengthDp = 8f,
+                                    gapLengthDp = 4f
+                                )
+                            )
                         )
                     )
                 ),
@@ -684,11 +702,19 @@ fun MedianLapChart(
                                 )
                             )
                         ),
-                        // Median line
+                        // Median line (dashed, darker yellow/orange)
                         com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Gray.hashCode(),
-                            lineThicknessDp = 2f,
-                            lineBackgroundShader = null
+                            lineColor = androidx.compose.ui.graphics.Color(0xFFCC8800).hashCode(), // Darker yellow/orange
+                            lineBackgroundShader = null,
+                            line = LineComponent(
+                                color = androidx.compose.ui.graphics.Color(0xFFCC8800).hashCode(),
+                                thicknessDp = 2f,
+                                shape = com.patrykandpatrick.vico.core.component.shape.Shapes.dashedShape(
+                                    com.patrykandpatrick.vico.core.component.shape.Shapes.rectShape,
+                                    dashLengthDp = 8f,
+                                    gapLengthDp = 4f
+                                )
+                            )
                         )
                     )
                 ),
