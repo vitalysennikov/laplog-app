@@ -95,6 +95,7 @@
     <string name="median_lap_time">Median Lap Time</string>
     <string name="statistics_summary">Statistics Summary</string>
     <string name="total_sessions">Total Sessions</string>
+    <string name="average_duration">Average Duration</string>
     <string name="overall_average">Overall Average</string>
     <string name="overall_median">Overall Median</string>
 

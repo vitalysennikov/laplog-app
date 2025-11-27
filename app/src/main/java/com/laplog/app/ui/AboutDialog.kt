@@ -1,5 +1,6 @@
 package com.laplog.app.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -256,15 +257,18 @@ fun AboutDialog(
 
                     languages.forEach { (code, name) ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onLanguageChange(code)
+                                    showLanguageDialog = false
+                                }
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
                                 selected = currentLanguage == code,
-                                onClick = {
-                                    onLanguageChange(code)
-                                    showLanguageDialog = false
-                                }
+                                onClick = null // Handled by Row's clickable
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(

@@ -95,6 +95,7 @@
     <string name="median_lap_time">Медиана времени круга</string>
     <string name="statistics_summary">Сводная статистика</string>
     <string name="total_sessions">Всего сессий</string>
+    <string name="average_duration">Средняя длительность</string>
     <string name="overall_average">Общее среднее</string>
     <string name="overall_median">Общая медиана</string>
 

@@ -361,6 +361,7 @@ fun ChartContent(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
+                    // Total sessions
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -378,42 +379,60 @@ fun ChartContent(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    val averages = chartData.statistics.map { it.averageLapTime }
-                    val overallAvg = averages.average().toLong()
-
+                    // Average duration
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = stringResource(R.string.overall_average),
+                            text = stringResource(R.string.average_duration),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = formatTime(overallAvg),
+                            text = formatTime(chartData.overallAverageDuration),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    // Overall average (only if there are laps)
+                    if (chartData.overallAverageLapTime > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                    val medians = chartData.statistics.map { it.medianLapTime }
-                    val overallMedian = medians.sorted()[medians.size / 2]
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.overall_average),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatTime(chartData.overallAverageLapTime),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.overall_median),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = formatTime(overallMedian),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                    // Overall median (only if there are laps)
+                    if (chartData.overallMedianLapTime > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.overall_median),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatTime(chartData.overallMedianLapTime),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

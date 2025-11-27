@@ -95,6 +95,7 @@
     <string name="median_lap_time">中位数计次时间</string>
     <string name="statistics_summary">统计摘要</string>
     <string name="total_sessions">总记录数</string>
+    <string name="average_duration">平均时长</string>
     <string name="overall_average">总平均值</string>
     <string name="overall_median">总中位数</string>
 
