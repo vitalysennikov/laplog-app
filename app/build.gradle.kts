@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.laplog.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.laplog.app"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 49
         versionName = "0.13.3"
 
