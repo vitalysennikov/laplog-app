@@ -91,9 +91,9 @@ dependencies {
     implementation("androidx.media:media:1.7.0")
 
     // Vico - Charts library for Compose
-    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
-    implementation("com.patrykandpatrick.vico:core:1.13.1")
-    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:2.1.3")
+    implementation("com.patrykandpatrick.vico:core:2.1.3")
+    implementation("com.patrykandpatrick.vico:compose:2.1.3")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")

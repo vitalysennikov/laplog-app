@@ -19,17 +19,19 @@ import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.ChartsViewModel
 import com.laplog.app.viewmodel.ChartsViewModelFactory
-import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
-import com.patrykandpatrick.vico.compose.chart.Chart
-import com.patrykandpatrick.vico.compose.chart.line.lineChart
-import com.patrykandpatrick.vico.compose.component.shape.shader.fromBrush
-import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
-import com.patrykandpatrick.vico.core.axis.AxisPosition
-import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
-import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
-import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
-import com.patrykandpatrick.vico.core.entry.FloatEntry
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.common.component.LineComponent
+import com.patrykandpatrick.vico.core.common.shape.Shape
+import android.graphics.PathEffect
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -447,89 +449,84 @@ fun TotalDurationChart(
     formatTime: (Long) -> String,
     overallAverage: Long
 ) {
-    val entries = remember(statistics) {
-        statistics.mapIndexed { index, stat ->
-            FloatEntry(
-                x = index.toFloat(),
-                y = (stat.totalDuration / 1000f) // Convert to seconds for better readability
-            )
-        }
-    }
+    val modelProducer = remember { CartesianChartModelProducer() }
 
-    val chartEntryModelProducer = remember(entries) {
-        ChartEntryModelProducer(entries)
-    }
-
-    val xAxisValueFormatter = remember(statistics) {
-        AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-            val index = value.toInt()
-            if (index in statistics.indices) {
-                dateFormat.format(Date(statistics[index].startTime))
-            } else {
-                ""
+    LaunchedEffect(statistics, overallAverage) {
+        modelProducer.runTransaction {
+            // Data series
+            lineSeries {
+                series(
+                    x = statistics.indices.map { it },
+                    y = statistics.map { it.totalDuration / 1000.0 }
+                )
+            }
+            // Average line series
+            lineSeries {
+                series(
+                    x = statistics.indices.map { it },
+                    y = List(statistics.size) { overallAverage / 1000.0 }
+                )
             }
         }
     }
 
-    val yAxisValueFormatter = remember {
-        AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
-            val millis = (value * 1000).toLong()
-            formatTime(millis)
-        }
-    }
-
-    // Add average line entries
-    val averageLineEntries = remember(statistics, overallAverage) {
-        statistics.mapIndexed { index, _ ->
-            FloatEntry(
-                x = index.toFloat(),
-                y = overallAverage / 1000f // Convert to seconds
-            )
-        }
-    }
-
-    val chartEntryModelProducerWithAverage = remember(entries, averageLineEntries) {
-        ChartEntryModelProducer(entries, averageLineEntries)
-    }
-
-    val model = chartEntryModelProducerWithAverage.getModel()
-    if (model != null) {
-        ProvideChartStyle {
-            Chart(
-                chart = lineChart(
-                    lines = listOf(
-                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Blue.hashCode(),
-                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
-                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    listOf(
-                                        androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.5f),
-                                        androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.0f)
-                                    )
-                                )
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            rememberLineCartesianLayer(
+                lines = listOf(
+                    // Main data line (blue with gradient)
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.5f).toArgb()
                             )
                         ),
-                        // Average line (darker blue)
-                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color(0xFF0000CC).hashCode(), // Darker blue
-                            lineThicknessDp = 1.5f,
-                            lineBackgroundShader = null
+                        areaFill = LineCartesianLayer.AreaFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.3f).toArgb()
+                            )
+                        )
+                    ),
+                    // Average line (darker blue, dashed)
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color(0xFF0000CC).toArgb()
+                            )
+                        ),
+                        line = LineComponent(
+                            color = androidx.compose.ui.graphics.Color(0xFF0000CC).toArgb(),
+                            thicknessDp = 2f,
+                            shape = Shape.dashed(
+                                shape = Shape.Rectangle,
+                                dashLengthDp = 8f,
+                                gapLengthDp = 4f
+                            )
                         )
                     )
-                ),
-                model = model,
-                startAxis = rememberStartAxis(
-                    valueFormatter = yAxisValueFormatter
-                ),
-                bottomAxis = rememberBottomAxis(
-                    valueFormatter = xAxisValueFormatter
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
-        }
-    }
+                )
+            ),
+            startAxis = VerticalAxis.rememberStart(
+                valueFormatter = { value, _, _ ->
+                    formatTime((value * 1000).toLong())
+                }
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                valueFormatter = { value, _, _ ->
+                    val index = value.toInt()
+                    if (index in statistics.indices) {
+                        dateFormat.format(Date(statistics[index].startTime))
+                    } else {
+                        ""
+                    }
+                }
+            ),
+        ),
+        modelProducer = modelProducer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    )
 }
 
 @Composable
@@ -544,89 +541,84 @@ fun AverageLapChart(
         statistics.filter { it.averageLapTime > 0 }
     }
 
-    val entries = remember(filteredStats) {
-        filteredStats.mapIndexed { index, stat ->
-            FloatEntry(
-                x = index.toFloat(),
-                y = (stat.averageLapTime / 1000f) // Convert to seconds for better readability
-            )
-        }
-    }
+    val modelProducer = remember { CartesianChartModelProducer() }
 
-    val chartEntryModelProducer = remember(entries) {
-        ChartEntryModelProducer(entries)
-    }
-
-    val xAxisValueFormatter = remember(filteredStats) {
-        AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-            val index = value.toInt()
-            if (index in filteredStats.indices) {
-                dateFormat.format(Date(filteredStats[index].startTime))
-            } else {
-                ""
+    LaunchedEffect(filteredStats, overallAverage) {
+        modelProducer.runTransaction {
+            // Data series
+            lineSeries {
+                series(
+                    x = filteredStats.indices.map { it },
+                    y = filteredStats.map { it.averageLapTime / 1000.0 }
+                )
+            }
+            // Average line series
+            lineSeries {
+                series(
+                    x = filteredStats.indices.map { it },
+                    y = List(filteredStats.size) { overallAverage / 1000.0 }
+                )
             }
         }
     }
 
-    val yAxisValueFormatter = remember {
-        AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
-            val millis = (value * 1000).toLong()
-            formatTime(millis)
-        }
-    }
-
-    // Add average line entries
-    val averageLineEntries = remember(filteredStats, overallAverage) {
-        filteredStats.mapIndexed { index, _ ->
-            FloatEntry(
-                x = index.toFloat(),
-                y = overallAverage / 1000f // Convert to seconds
-            )
-        }
-    }
-
-    val chartEntryModelProducerWithAverage = remember(entries, averageLineEntries) {
-        ChartEntryModelProducer(entries, averageLineEntries)
-    }
-
-    val model = chartEntryModelProducerWithAverage.getModel()
-    if (model != null) {
-        ProvideChartStyle {
-            Chart(
-                chart = lineChart(
-                    lines = listOf(
-                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Green.hashCode(),
-                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
-                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    listOf(
-                                        androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.5f),
-                                        androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.0f)
-                                    )
-                                )
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            rememberLineCartesianLayer(
+                lines = listOf(
+                    // Main data line (green with gradient)
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.5f).toArgb()
                             )
                         ),
-                        // Average line (darker green)
-                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color(0xFF006600).hashCode(), // Darker green
-                            lineThicknessDp = 1.5f,
-                            lineBackgroundShader = null
+                        areaFill = LineCartesianLayer.AreaFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.3f).toArgb()
+                            )
+                        )
+                    ),
+                    // Average line (darker green, dashed)
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color(0xFF006600).toArgb()
+                            )
+                        ),
+                        line = LineComponent(
+                            color = androidx.compose.ui.graphics.Color(0xFF006600).toArgb(),
+                            thicknessDp = 2f,
+                            shape = Shape.dashed(
+                                shape = Shape.Rectangle,
+                                dashLengthDp = 8f,
+                                gapLengthDp = 4f
+                            )
                         )
                     )
-                ),
-                model = model,
-                startAxis = rememberStartAxis(
-                    valueFormatter = yAxisValueFormatter
-                ),
-                bottomAxis = rememberBottomAxis(
-                    valueFormatter = xAxisValueFormatter
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
-        }
-    }
+                )
+            ),
+            startAxis = VerticalAxis.rememberStart(
+                valueFormatter = { value, _, _ ->
+                    formatTime((value * 1000).toLong())
+                }
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                valueFormatter = { value, _, _ ->
+                    val index = value.toInt()
+                    if (index in filteredStats.indices) {
+                        dateFormat.format(Date(filteredStats[index].startTime))
+                    } else {
+                        ""
+                    }
+                }
+            ),
+        ),
+        modelProducer = modelProducer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    )
 }
 
 @Composable
@@ -641,87 +633,82 @@ fun MedianLapChart(
         statistics.filter { it.medianLapTime > 0 }
     }
 
-    val entries = remember(filteredStats) {
-        filteredStats.mapIndexed { index, stat ->
-            FloatEntry(
-                x = index.toFloat(),
-                y = (stat.medianLapTime / 1000f) // Convert to seconds for better readability
-            )
-        }
-    }
+    val modelProducer = remember { CartesianChartModelProducer() }
 
-    val chartEntryModelProducer = remember(entries) {
-        ChartEntryModelProducer(entries)
-    }
-
-    val xAxisValueFormatter = remember(filteredStats) {
-        AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-            val index = value.toInt()
-            if (index in filteredStats.indices) {
-                dateFormat.format(Date(filteredStats[index].startTime))
-            } else {
-                ""
+    LaunchedEffect(filteredStats, overallMedian) {
+        modelProducer.runTransaction {
+            // Data series
+            lineSeries {
+                series(
+                    x = filteredStats.indices.map { it },
+                    y = filteredStats.map { it.medianLapTime / 1000.0 }
+                )
+            }
+            // Median line series
+            lineSeries {
+                series(
+                    x = filteredStats.indices.map { it },
+                    y = List(filteredStats.size) { overallMedian / 1000.0 }
+                )
             }
         }
     }
 
-    val yAxisValueFormatter = remember {
-        AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
-            val millis = (value * 1000).toLong()
-            formatTime(millis)
-        }
-    }
-
-    // Add median line entries
-    val medianLineEntries = remember(filteredStats, overallMedian) {
-        filteredStats.mapIndexed { index, _ ->
-            FloatEntry(
-                x = index.toFloat(),
-                y = overallMedian / 1000f // Convert to seconds
-            )
-        }
-    }
-
-    val chartEntryModelProducerWithMedian = remember(entries, medianLineEntries) {
-        ChartEntryModelProducer(entries, medianLineEntries)
-    }
-
-    val model = chartEntryModelProducerWithMedian.getModel()
-    if (model != null) {
-        ProvideChartStyle {
-            Chart(
-                chart = lineChart(
-                    lines = listOf(
-                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color.Yellow.hashCode(),
-                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
-                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    listOf(
-                                        androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.5f),
-                                        androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.0f)
-                                    )
-                                )
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            rememberLineCartesianLayer(
+                lines = listOf(
+                    // Main data line (yellow with gradient)
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.5f).toArgb()
                             )
                         ),
-                        // Median line (darker yellow/orange)
-                        com.patrykandpatrick.vico.core.chart.line.LineChart.LineSpec(
-                            lineColor = androidx.compose.ui.graphics.Color(0xFFCC8800).hashCode(), // Darker yellow/orange
-                            lineThicknessDp = 1.5f,
-                            lineBackgroundShader = null
+                        areaFill = LineCartesianLayer.AreaFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.3f).toArgb()
+                            )
+                        )
+                    ),
+                    // Median line (darker yellow/orange, dashed)
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(
+                            fill = com.patrykandpatrick.vico.core.common.Fill(
+                                androidx.compose.ui.graphics.Color(0xFFCC8800).toArgb()
+                            )
+                        ),
+                        line = LineComponent(
+                            color = androidx.compose.ui.graphics.Color(0xFFCC8800).toArgb(),
+                            thicknessDp = 2f,
+                            shape = Shape.dashed(
+                                shape = Shape.Rectangle,
+                                dashLengthDp = 8f,
+                                gapLengthDp = 4f
+                            )
                         )
                     )
-                ),
-                model = model,
-                startAxis = rememberStartAxis(
-                    valueFormatter = yAxisValueFormatter
-                ),
-                bottomAxis = rememberBottomAxis(
-                    valueFormatter = xAxisValueFormatter
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
-        }
-    }
+                )
+            ),
+            startAxis = VerticalAxis.rememberStart(
+                valueFormatter = { value, _, _ ->
+                    formatTime((value * 1000).toLong())
+                }
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                valueFormatter = { value, _, _ ->
+                    val index = value.toInt()
+                    if (index in filteredStats.indices) {
+                        dateFormat.format(Date(filteredStats[index].startTime))
+                    } else {
+                        ""
+                    }
+                }
+            ),
+        ),
+        modelProducer = modelProducer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    )
 }
