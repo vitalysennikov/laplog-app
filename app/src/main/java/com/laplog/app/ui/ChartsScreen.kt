@@ -420,21 +420,22 @@ fun TotalDurationChart(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (blue with gradient)
                     LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Blue.copy(alpha = 0.5f).toArgb())),
-                        LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
-                    ),
+                        LineCartesianLayer.LineFill.single(Fill(Color.Blue.copy(alpha = 0.5f).toArgb()))
+                    ).apply {
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
+                    },
                     // Average line (darker blue, dashed)
                     DashedLine(LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())))
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value * 1000).toLong())
+                    formatTime((value.toDouble() * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { value, _, _ ->
-                    val index = value.toInt()
+                    val index = value.toDouble().toInt()
                     if (index in statistics.indices) {
                         dateFormat.format(Date(statistics[index].startTime))
                     } else {
@@ -491,21 +492,22 @@ fun AverageLapChart(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (green with gradient)
                     LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Green.copy(alpha = 0.5f).toArgb())),
-                        LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
-                    ),
+                        LineCartesianLayer.LineFill.single(Fill(Color.Green.copy(alpha = 0.5f).toArgb()))
+                    ).apply {
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
+                    },
                     // Average line (darker green, dashed)
                     DashedLine(LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())))
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value * 1000).toLong())
+                    formatTime((value.toDouble() * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { value, _, _ ->
-                    val index = value.toInt()
+                    val index = value.toDouble().toInt()
                     if (index in filteredStats.indices) {
                         dateFormat.format(Date(filteredStats[index].startTime))
                     } else {
@@ -562,21 +564,22 @@ fun MedianLapChart(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (yellow/orange with gradient)
                     LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Yellow.copy(alpha = 0.5f).toArgb())),
-                        LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
-                    ),
+                        LineCartesianLayer.LineFill.single(Fill(Color.Yellow.copy(alpha = 0.5f).toArgb()))
+                    ).apply {
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
+                    },
                     // Median line (darker orange, dashed)
                     DashedLine(LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())))
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value * 1000).toLong())
+                    formatTime((value.toDouble() * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { value, _, _ ->
-                    val index = value.toInt()
+                    val index = value.toDouble().toInt()
                     if (index in filteredStats.indices) {
                         dateFormat.format(Date(filteredStats[index].startTime))
                     } else {
