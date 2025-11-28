@@ -428,12 +428,12 @@ fun TotalDurationChart(
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value.toDouble() * 1000.0).toLong())
+                    formatTime((value.toLong() * 1000L))
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { value, _, _ ->
-                    val index = value.toDouble().toInt()
+                    val index = value.toInt()
                     if (index >= 0 && index < statistics.size) {
                         dateFormat.format(Date(statistics[index].startTime))
                     } else {
@@ -498,12 +498,12 @@ fun AverageLapChart(
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value.toDouble() * 1000.0).toLong())
+                    formatTime((value.toLong() * 1000L))
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { value, _, _ ->
-                    val index = value.toDouble().toInt()
+                    val index = value.toInt()
                     if (index >= 0 && index < filteredStats.size) {
                         dateFormat.format(Date(filteredStats[index].startTime))
                     } else {
@@ -568,12 +568,12 @@ fun MedianLapChart(
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value.toDouble() * 1000.0).toLong())
+                    formatTime((value.toLong() * 1000L))
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { value, _, _ ->
-                    val index = value.toDouble().toInt()
+                    val index = value.toInt()
                     if (index >= 0 && index < filteredStats.size) {
                         dateFormat.format(Date(filteredStats[index].startTime))
                     } else {
