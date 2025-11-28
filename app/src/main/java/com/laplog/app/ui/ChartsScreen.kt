@@ -27,6 +27,7 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.Fill
@@ -427,12 +428,12 @@ fun TotalDurationChart(
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
-                valueFormatter = { value, _, _ ->
-                    formatTime((value.toLong() * 1000L))
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    formatTime((value * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = { value, _, _ ->
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
                     val index = value.toInt()
                     if (index >= 0 && index < statistics.size) {
                         dateFormat.format(Date(statistics[index].startTime))
@@ -497,12 +498,12 @@ fun AverageLapChart(
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
-                valueFormatter = { value, _, _ ->
-                    formatTime((value.toLong() * 1000L))
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    formatTime((value * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = { value, _, _ ->
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
                     val index = value.toInt()
                     if (index >= 0 && index < filteredStats.size) {
                         dateFormat.format(Date(filteredStats[index].startTime))
@@ -567,12 +568,12 @@ fun MedianLapChart(
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
-                valueFormatter = { value, _, _ ->
-                    formatTime((value.toLong() * 1000L))
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    formatTime((value * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = { value, _, _ ->
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
                     val index = value.toInt()
                     if (index >= 0 && index < filteredStats.size) {
                         dateFormat.format(Date(filteredStats[index].startTime))
