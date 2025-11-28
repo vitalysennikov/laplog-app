@@ -65,9 +65,9 @@ class ChartsViewModel(
         }
     }
 
-    fun selectName(name: String) {
+    fun selectName(name: String?) {
         _selectedName.value = name
-        loadChartData(name)
+        name?.let { loadChartData(it) }
     }
 
     fun selectPeriod(period: TimePeriod) {

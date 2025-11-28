@@ -22,7 +22,6 @@ import com.laplog.app.viewmodel.ChartsViewModelFactory
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
@@ -31,24 +30,15 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.Fill
-import com.patrykandpatrick.vico.core.common.shader.DynamicShader
 import android.graphics.DashPathEffect
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Composable function for creating dashed lines
-@Composable
-fun rememberDashedLine(color: Color): LineCartesianLayer.Line {
-    val dashedLine = rememberLine(
-        fill = LineCartesianLayer.LineFill.single(Fill(color.toArgb()))
-    )
-    LaunchedEffect(dashedLine) {
-        dashedLine.linePaint.apply {
-            strokeWidth = 2f
-            pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
-        }
+// Dashed line class for average/median lines
+class DashedLine(fill: LineCartesianLayer.LineFill) : LineCartesianLayer.Line(fill) {
+    init {
+        linePaint.pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
     }
-    return dashedLine
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -429,23 +419,17 @@ fun TotalDurationChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (blue with gradient)
-                    rememberLine(
-                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.copy(alpha = 0.5f).toArgb())),
-                        areaFill = LineCartesianLayer.AreaFill.single(
-                            fill = Fill(
-                                DynamicShader.verticalGradient(
-                                    arrayOf(Color.Blue.copy(alpha = 0.3f).toArgb(), Color.Transparent.toArgb())
-                                )
-                            )
-                        )
+                    LineCartesianLayer.Line(
+                        LineCartesianLayer.LineFill.single(Fill(Color.Blue.copy(alpha = 0.5f).toArgb())),
+                        LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
                     ),
                     // Average line (darker blue, dashed)
-                    rememberDashedLine(darkBlue)
+                    DashedLine(LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())))
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value.toDouble() * 1000).toLong())
+                    formatTime((value * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
@@ -506,23 +490,17 @@ fun AverageLapChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (green with gradient)
-                    rememberLine(
-                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.copy(alpha = 0.5f).toArgb())),
-                        areaFill = LineCartesianLayer.AreaFill.single(
-                            fill = Fill(
-                                DynamicShader.verticalGradient(
-                                    arrayOf(Color.Green.copy(alpha = 0.3f).toArgb(), Color.Transparent.toArgb())
-                                )
-                            )
-                        )
+                    LineCartesianLayer.Line(
+                        LineCartesianLayer.LineFill.single(Fill(Color.Green.copy(alpha = 0.5f).toArgb())),
+                        LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
                     ),
                     // Average line (darker green, dashed)
-                    rememberDashedLine(darkGreen)
+                    DashedLine(LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())))
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value.toDouble() * 1000).toLong())
+                    formatTime((value * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
@@ -583,23 +561,17 @@ fun MedianLapChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (yellow/orange with gradient)
-                    rememberLine(
-                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Yellow.copy(alpha = 0.5f).toArgb())),
-                        areaFill = LineCartesianLayer.AreaFill.single(
-                            fill = Fill(
-                                DynamicShader.verticalGradient(
-                                    arrayOf(Color.Yellow.copy(alpha = 0.3f).toArgb(), Color.Transparent.toArgb())
-                                )
-                            )
-                        )
+                    LineCartesianLayer.Line(
+                        LineCartesianLayer.LineFill.single(Fill(Color.Yellow.copy(alpha = 0.5f).toArgb())),
+                        LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
                     ),
                     // Median line (darker orange, dashed)
-                    rememberDashedLine(darkOrange)
+                    DashedLine(LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())))
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value.toDouble() * 1000).toLong())
+                    formatTime((value * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
