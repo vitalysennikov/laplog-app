@@ -98,6 +98,12 @@
     <string name="average_duration">平均时长</string>
     <string name="overall_average">总平均值</string>
     <string name="overall_median">总中位数</string>
+    <string name="total_duration">总时长</string>
+    <string name="average_lap">平均计次</string>
+    <string name="median_lap">中位数计次</string>
+    <string name="all_names">所有名称</string>
+    <string name="no_data">无数据</string>
+    <string name="summary_statistics">统计摘要</string>
 
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">切换按钮</string>

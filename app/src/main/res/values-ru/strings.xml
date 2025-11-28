@@ -98,6 +98,12 @@
     <string name="average_duration">Средняя длительность</string>
     <string name="overall_average">Общее среднее</string>
     <string name="overall_median">Общая медиана</string>
+    <string name="total_duration">Общая длительность</string>
+    <string name="average_lap">Средний круг</string>
+    <string name="median_lap">Медиана круга</string>
+    <string name="all_names">Все названия</string>
+    <string name="no_data">Нет данных</string>
+    <string name="summary_statistics">Сводная статистика</string>
 
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Кнопки переключения</string>

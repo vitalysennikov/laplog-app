@@ -2,7 +2,6 @@ package com.laplog.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
@@ -23,6 +22,7 @@ import com.laplog.app.viewmodel.ChartsViewModelFactory
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
@@ -31,19 +31,24 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.Fill
+import com.patrykandpatrick.vico.core.common.shader.DynamicShader
 import android.graphics.DashPathEffect
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Custom dashed line class for average/median lines
-class DashedLine(fill: LineCartesianLayer.LineFill, color: Int) : LineCartesianLayer.Line(fill) {
-    init {
-        linePaint.apply {
+// Composable function for creating dashed lines
+@Composable
+fun rememberDashedLine(color: Color): LineCartesianLayer.Line {
+    val dashedLine = rememberLine(
+        fill = LineCartesianLayer.LineFill.single(Fill(color.toArgb()))
+    )
+    LaunchedEffect(dashedLine) {
+        dashedLine.linePaint.apply {
             strokeWidth = 2f
-            this.color = color
             pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
         }
     }
+    return dashedLine
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -143,7 +148,7 @@ fun ChartsScreen(
                         CircularProgressIndicator()
                     }
                 }
-            } else if (chartData.statistics.isEmpty()) {
+            } else if (chartData?.statistics?.isEmpty() != false) {
                 item {
                     Text(
                         text = stringResource(R.string.no_data),
@@ -182,7 +187,7 @@ fun ChartsScreen(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    text = chartData.statistics.size.toString(),
+                                    text = chartData?.statistics?.size.toString(),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -200,14 +205,14 @@ fun ChartsScreen(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    text = formatTime(chartData.overallAverageDuration),
+                                    text = formatTime(chartData?.overallAverageDuration ?: 0),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
 
                             // Overall average (only if there are laps)
-                            if (chartData.overallAverageLapTime > 0) {
+                            if ((chartData?.overallAverageLapTime ?: 0) > 0) {
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Row(
@@ -219,7 +224,7 @@ fun ChartsScreen(
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = formatTime(chartData.overallAverageLapTime),
+                                        text = formatTime(chartData?.overallAverageLapTime ?: 0),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -227,7 +232,7 @@ fun ChartsScreen(
                             }
 
                             // Overall median (only if there are laps)
-                            if (chartData.overallMedianLapTime > 0) {
+                            if ((chartData?.overallMedianLapTime ?: 0) > 0) {
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Row(
@@ -239,7 +244,7 @@ fun ChartsScreen(
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = formatTime(chartData.overallMedianLapTime),
+                                        text = formatTime(chartData?.overallMedianLapTime ?: 0),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -266,17 +271,17 @@ fun ChartsScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             TotalDurationChart(
-                                statistics = chartData.statistics,
+                                statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                 formatTime = ::formatTime,
-                                overallAverage = chartData.overallAverageDuration
+                                overallAverage = chartData?.overallAverageDuration ?: 0
                             )
                         }
                     }
                 }
 
                 // Average Lap Chart (only if there are sessions with laps)
-                if (chartData.statistics.any { it.averageLapTime > 0 }) {
+                if (chartData?.statistics?.any { it.averageLapTime > 0 } == true) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth()
@@ -293,10 +298,10 @@ fun ChartsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 AverageLapChart(
-                                    statistics = chartData.statistics,
+                                    statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                     formatTime = ::formatTime,
-                                    overallAverage = chartData.overallAverageLapTime
+                                    overallAverage = chartData?.overallAverageLapTime ?: 0
                                 )
                             }
                         }
@@ -304,7 +309,7 @@ fun ChartsScreen(
                 }
 
                 // Median Lap Chart (only if there are sessions with laps)
-                if (chartData.statistics.any { it.medianLapTime > 0 }) {
+                if (chartData?.statistics?.any { it.medianLapTime > 0 } == true) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth()
@@ -321,10 +326,10 @@ fun ChartsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 MedianLapChart(
-                                    statistics = chartData.statistics,
+                                    statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                     formatTime = ::formatTime,
-                                    overallMedian = chartData.overallMedianLapTime
+                                    overallMedian = chartData?.overallMedianLapTime ?: 0
                                 )
                             }
                         }
@@ -376,7 +381,7 @@ fun ChartsScreen(
             )
             HorizontalDivider()
             // Individual names
-            items(availableNames.toList()) { name ->
+            availableNames.toList().forEach { name ->
                 DropdownMenuItem(
                     text = { Text(nameMapping[name] ?: name) },
                     onClick = {
@@ -422,22 +427,25 @@ fun TotalDurationChart(
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
-                listOf(
+                lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (blue with gradient)
-                    LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Blue.copy(alpha = 0.5f).toArgb())),
-                        LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
+                    rememberLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.copy(alpha = 0.5f).toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(
+                            fill = Fill(
+                                DynamicShader.verticalGradient(
+                                    arrayOf(Color.Blue.copy(alpha = 0.3f).toArgb(), Color.Transparent.toArgb())
+                                )
+                            )
+                        )
                     ),
                     // Average line (darker blue, dashed)
-                    DashedLine(
-                        LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())),
-                        darkBlue.toArgb()
-                    )
+                    rememberDashedLine(darkBlue)
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value * 1000).toLong())
+                    formatTime((value.toDouble() * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
@@ -496,22 +504,25 @@ fun AverageLapChart(
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
-                listOf(
+                lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (green with gradient)
-                    LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Green.copy(alpha = 0.5f).toArgb())),
-                        LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
+                    rememberLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.copy(alpha = 0.5f).toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(
+                            fill = Fill(
+                                DynamicShader.verticalGradient(
+                                    arrayOf(Color.Green.copy(alpha = 0.3f).toArgb(), Color.Transparent.toArgb())
+                                )
+                            )
+                        )
                     ),
                     // Average line (darker green, dashed)
-                    DashedLine(
-                        LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())),
-                        darkGreen.toArgb()
-                    )
+                    rememberDashedLine(darkGreen)
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value * 1000).toLong())
+                    formatTime((value.toDouble() * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
@@ -570,22 +581,25 @@ fun MedianLapChart(
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
-                listOf(
+                lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (yellow/orange with gradient)
-                    LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Yellow.copy(alpha = 0.5f).toArgb())),
-                        LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
+                    rememberLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Yellow.copy(alpha = 0.5f).toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(
+                            fill = Fill(
+                                DynamicShader.verticalGradient(
+                                    arrayOf(Color.Yellow.copy(alpha = 0.3f).toArgb(), Color.Transparent.toArgb())
+                                )
+                            )
+                        )
                     ),
                     // Median line (darker orange, dashed)
-                    DashedLine(
-                        LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())),
-                        darkOrange.toArgb()
-                    )
+                    rememberDashedLine(darkOrange)
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
                 valueFormatter = { value, _, _ ->
-                    formatTime((value * 1000).toLong())
+                    formatTime((value.toDouble() * 1000).toLong())
                 }
             ),
             bottomAxis = HorizontalAxis.rememberBottom(

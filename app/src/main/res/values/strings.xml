@@ -98,6 +98,12 @@
     <string name="average_duration">Average Duration</string>
     <string name="overall_average">Overall Average</string>
     <string name="overall_median">Overall Median</string>
+    <string name="total_duration">Total Duration</string>
+    <string name="average_lap">Average Lap</string>
+    <string name="median_lap">Median Lap</string>
+    <string name="all_names">All names</string>
+    <string name="no_data">No data</string>
+    <string name="summary_statistics">Summary Statistics</string>
 
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Toggle buttons</string>
