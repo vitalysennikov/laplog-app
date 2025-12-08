@@ -245,13 +245,30 @@ class BackupViewModel(
     }
 
     private fun schedulePeriodicBackup() {
+        // Calculate initial delay to next 3 AM
+        val calendar = java.util.Calendar.getInstance()
+        val now = calendar.timeInMillis
+
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 3)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+
+        // If 3 AM has passed today, schedule for tomorrow
+        if (calendar.timeInMillis <= now) {
+            calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+
+        val initialDelay = calendar.timeInMillis - now
+
         val workRequest = PeriodicWorkRequestBuilder<BackupWorker>(
             1, TimeUnit.DAYS
-        ).build()
+        ).setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+         .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "backup_work",
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.REPLACE,
             workRequest
         )
     }

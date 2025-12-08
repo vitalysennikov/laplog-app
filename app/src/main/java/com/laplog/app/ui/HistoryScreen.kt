@@ -1000,7 +1000,11 @@ fun SessionTableItem(
     } else null
     val medianDuration = if (laps.size >= 2) {
         val sorted = laps.map { it.lapDuration }.sorted()
-        sorted[sorted.size / 2]
+        if (sorted.size % 2 == 0) {
+            (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2
+        } else {
+            sorted[sorted.size / 2]
+        }
     } else null
 
     Card(

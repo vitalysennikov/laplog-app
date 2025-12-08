@@ -24,6 +24,8 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.core.cartesian.Zoom
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
@@ -38,7 +40,10 @@ import java.util.*
 // Dashed line class for average/median lines
 class DashedLine(fill: LineCartesianLayer.LineFill) : LineCartesianLayer.Line(fill) {
     init {
-        linePaint.pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+        linePaint.apply {
+            strokeWidth = 3f
+            pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+        }
     }
 }
 
@@ -149,6 +154,88 @@ fun ChartsScreen(
                     )
                 }
             } else {
+                // Average Lap Chart (only if there are sessions with laps)
+                if (chartData?.statistics?.any { it.averageLapTime > 0 } == true) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.average_lap),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                AverageLapChart(
+                                    statistics = chartData?.statistics ?: emptyList(),
+                                    dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
+                                    formatTime = ::formatTime,
+                                    overallAverage = chartData?.overallAverageLapTime ?: 0
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Median Lap Chart (only if there are sessions with laps)
+                if (chartData?.statistics?.any { it.medianLapTime > 0 } == true) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.median_lap),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                MedianLapChart(
+                                    statistics = chartData?.statistics ?: emptyList(),
+                                    dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
+                                    formatTime = ::formatTime,
+                                    overallMedian = chartData?.overallMedianLapTime ?: 0
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Total Duration Chart
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.total_duration),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TotalDurationChart(
+                                statistics = chartData?.statistics ?: emptyList(),
+                                dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
+                                formatTime = ::formatTime,
+                                overallAverage = chartData?.overallAverageDuration ?: 0
+                            )
+                        }
+                    }
+                }
+
                 // Summary statistics card
                 item {
                     Card(
@@ -244,88 +331,6 @@ fun ChartsScreen(
                         }
                     }
                 }
-
-                // Total Duration Chart
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.total_duration),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TotalDurationChart(
-                                statistics = chartData?.statistics ?: emptyList(),
-                                dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                formatTime = ::formatTime,
-                                overallAverage = chartData?.overallAverageDuration ?: 0
-                            )
-                        }
-                    }
-                }
-
-                // Average Lap Chart (only if there are sessions with laps)
-                if (chartData?.statistics?.any { it.averageLapTime > 0 } == true) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.average_lap),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                AverageLapChart(
-                                    statistics = chartData?.statistics ?: emptyList(),
-                                    dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                    formatTime = ::formatTime,
-                                    overallAverage = chartData?.overallAverageLapTime ?: 0
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Median Lap Chart (only if there are sessions with laps)
-                if (chartData?.statistics?.any { it.medianLapTime > 0 } == true) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.median_lap),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                MedianLapChart(
-                                    statistics = chartData?.statistics ?: emptyList(),
-                                    dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                    formatTime = ::formatTime,
-                                    overallMedian = chartData?.overallMedianLapTime ?: 0
-                                )
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -415,16 +420,25 @@ fun TotalDurationChart(
 
     val darkBlue = Color(0xFF0000CC)
 
+    val mainLine = remember {
+        LineCartesianLayer.Line(
+            fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
+            areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
+        )
+    }
+
+    val dashedLine = remember(darkBlue) {
+        DashedLine(LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())))
+    }
+
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (blue)
-                    LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb()))
-                    ),
+                    mainLine,
                     // Average line (darker blue, dashed)
-                    DashedLine(LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())))
+                    dashedLine
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
@@ -444,6 +458,10 @@ fun TotalDurationChart(
             ),
         ),
         modelProducer = modelProducer,
+        zoomState = rememberVicoZoomState(
+            zoomEnabled = false,
+            initialZoom = Zoom.Content
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
@@ -485,16 +503,25 @@ fun AverageLapChart(
 
     val darkGreen = Color(0xFF006600)
 
+    val mainLine = remember {
+        LineCartesianLayer.Line(
+            fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.toArgb())),
+            areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
+        )
+    }
+
+    val dashedLine = remember(darkGreen) {
+        DashedLine(LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())))
+    }
+
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (green)
-                    LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Green.toArgb()))
-                    ),
+                    mainLine,
                     // Average line (darker green, dashed)
-                    DashedLine(LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())))
+                    dashedLine
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
@@ -514,6 +541,10 @@ fun AverageLapChart(
             ),
         ),
         modelProducer = modelProducer,
+        zoomState = rememberVicoZoomState(
+            zoomEnabled = false,
+            initialZoom = Zoom.Content
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
@@ -555,16 +586,25 @@ fun MedianLapChart(
 
     val darkOrange = Color(0xFFCC8800)
 
+    val mainLine = remember {
+        LineCartesianLayer.Line(
+            fill = LineCartesianLayer.LineFill.single(Fill(Color.Yellow.toArgb())),
+            areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
+        )
+    }
+
+    val dashedLine = remember(darkOrange) {
+        DashedLine(LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())))
+    }
+
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     // Main data line (yellow/orange)
-                    LineCartesianLayer.Line(
-                        LineCartesianLayer.LineFill.single(Fill(Color.Yellow.toArgb()))
-                    ),
+                    mainLine,
                     // Median line (darker orange, dashed)
-                    DashedLine(LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())))
+                    dashedLine
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
@@ -584,6 +624,10 @@ fun MedianLapChart(
             ),
         ),
         modelProducer = modelProducer,
+        zoomState = rememberVicoZoomState(
+            zoomEnabled = false,
+            initialZoom = Zoom.Content
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)

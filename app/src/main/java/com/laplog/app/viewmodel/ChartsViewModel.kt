@@ -12,6 +12,7 @@ import com.laplog.app.model.TimePeriod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -37,6 +38,25 @@ class ChartsViewModel(
 
     init {
         loadAvailableNames()
+        observeSessionChanges()
+    }
+
+    private fun observeSessionChanges() {
+        viewModelScope.launch {
+            sessionDao.getAllSessions().collectLatest { sessions ->
+                // Update available names
+                val names = sessions.mapNotNull { it.name }.distinct().sorted()
+                _availableNames.value = names
+
+                // Auto-select first name if needed
+                if (names.isNotEmpty() && _selectedName.value == null) {
+                    selectName(names.first())
+                } else if (_selectedName.value != null) {
+                    // Refresh data for currently selected name
+                    _selectedName.value?.let { loadChartData(it) }
+                }
+            }
+        }
     }
 
     fun refresh() {
