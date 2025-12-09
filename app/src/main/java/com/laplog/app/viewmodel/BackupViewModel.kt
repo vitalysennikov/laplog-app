@@ -59,6 +59,11 @@ class BackupViewModel(
     init {
         loadBackups()
         loadLogContent()
+
+        // Schedule backup if auto-backup is enabled
+        if (preferencesManager.autoBackupEnabled) {
+            schedulePeriodicBackup()
+        }
     }
 
     fun setBackupFolder(uri: Uri) {
