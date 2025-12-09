@@ -15,6 +15,8 @@ class BackupWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        android.util.Log.d("BackupWorker", "BackupWorker started at ${java.util.Date()}")
+
         val preferencesManager = PreferencesManager(applicationContext)
         val database = AppDatabase.getDatabase(applicationContext)
         val translationManager = TranslationManager(database.sessionDao())
@@ -22,12 +24,14 @@ class BackupWorker(
 
         // Check if auto backup is enabled
         if (!preferencesManager.autoBackupEnabled) {
+            android.util.Log.d("BackupWorker", "Auto backup is disabled")
             return Result.success()
         }
 
         // Check if backup folder is configured
         val folderUriString = preferencesManager.backupFolderUri
         if (folderUriString == null) {
+            android.util.Log.e("BackupWorker", "Backup folder not configured")
             return Result.failure()
         }
 
@@ -35,6 +39,7 @@ class BackupWorker(
 
         return try {
             // Create backup
+            android.util.Log.d("BackupWorker", "Creating backup to $folderUri")
             val result = backupManager.createBackup(folderUri)
             if (result.isSuccess) {
                 // Update last backup time
@@ -44,11 +49,14 @@ class BackupWorker(
                 val retentionDays = preferencesManager.backupRetentionDays
                 backupManager.deleteOldBackups(folderUri, retentionDays)
 
+                android.util.Log.d("BackupWorker", "Backup completed successfully")
                 Result.success()
             } else {
+                android.util.Log.e("BackupWorker", "Backup failed: ${result.exceptionOrNull()?.message}")
                 Result.retry()
             }
         } catch (e: Exception) {
+            android.util.Log.e("BackupWorker", "Backup exception", e)
             Result.retry()
         }
     }

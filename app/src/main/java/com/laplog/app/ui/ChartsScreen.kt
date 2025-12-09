@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,12 +39,16 @@ import android.graphics.DashPathEffect
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Dashed line class for average/median lines
-class DashedLine(fill: LineCartesianLayer.LineFill) : LineCartesianLayer.Line(fill) {
-    init {
-        linePaint.apply {
-            strokeWidth = 3f
-            pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+// Function to create dashed line for average/median lines
+fun createDashedLine(color: Color): LineCartesianLayer.Line {
+    return object : LineCartesianLayer.Line(
+        LineCartesianLayer.LineFill.single(Fill(color.toArgb()))
+    ) {
+        init {
+            linePaint.apply {
+                strokeWidth = 3f
+                pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+            }
         }
     }
 }
@@ -83,12 +89,21 @@ fun ChartsScreen(
 
     var showNameSelector by remember { mutableStateOf(false) }
     var showPeriodSelector by remember { mutableStateOf(false) }
+    var zoomEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.charts)) },
                 actions = {
+                    // Zoom toggle button
+                    IconButton(onClick = { zoomEnabled = !zoomEnabled }) {
+                        Icon(
+                            imageVector = if (zoomEnabled) Icons.Default.ZoomOut else Icons.Default.ZoomIn,
+                            contentDescription = if (zoomEnabled) "Disable Zoom" else "Enable Zoom"
+                        )
+                    }
+
                     // Period selector dropdown
                     TextButton(
                         onClick = { showPeriodSelector = true },
@@ -175,7 +190,8 @@ fun ChartsScreen(
                                     statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                     formatTime = ::formatTime,
-                                    overallAverage = chartData?.overallAverageLapTime ?: 0
+                                    overallAverage = chartData?.overallAverageLapTime ?: 0,
+                                    zoomEnabled = zoomEnabled
                                 )
                             }
                         }
@@ -203,7 +219,8 @@ fun ChartsScreen(
                                     statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                     formatTime = ::formatTime,
-                                    overallMedian = chartData?.overallMedianLapTime ?: 0
+                                    overallMedian = chartData?.overallMedianLapTime ?: 0,
+                                    zoomEnabled = zoomEnabled
                                 )
                             }
                         }
@@ -230,7 +247,8 @@ fun ChartsScreen(
                                 statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                 formatTime = ::formatTime,
-                                overallAverage = chartData?.overallAverageDuration ?: 0
+                                overallAverage = chartData?.overallAverageDuration ?: 0,
+                                zoomEnabled = zoomEnabled
                             )
                         }
                     }
@@ -395,7 +413,8 @@ fun TotalDurationChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
     formatTime: (Long) -> String,
-    overallAverage: Long
+    overallAverage: Long,
+    zoomEnabled: Boolean = false
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
@@ -428,7 +447,7 @@ fun TotalDurationChart(
     }
 
     val dashedLine = remember(darkBlue) {
-        DashedLine(LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())))
+        createDashedLine(darkBlue)
     }
 
     CartesianChartHost(
@@ -459,8 +478,8 @@ fun TotalDurationChart(
         ),
         modelProducer = modelProducer,
         zoomState = rememberVicoZoomState(
-            zoomEnabled = false,
-            initialZoom = Zoom.Content
+            zoomEnabled = zoomEnabled,
+            initialZoom = if (zoomEnabled) Zoom.x(4.0) else Zoom.Content
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -473,7 +492,8 @@ fun AverageLapChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
     formatTime: (Long) -> String,
-    overallAverage: Long
+    overallAverage: Long,
+    zoomEnabled: Boolean = false
 ) {
     // Filter out sessions with no laps (averageLapTime = 0)
     val filteredStats = remember(statistics) {
@@ -511,7 +531,7 @@ fun AverageLapChart(
     }
 
     val dashedLine = remember(darkGreen) {
-        DashedLine(LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())))
+        createDashedLine(darkGreen)
     }
 
     CartesianChartHost(
@@ -542,8 +562,8 @@ fun AverageLapChart(
         ),
         modelProducer = modelProducer,
         zoomState = rememberVicoZoomState(
-            zoomEnabled = false,
-            initialZoom = Zoom.Content
+            zoomEnabled = zoomEnabled,
+            initialZoom = if (zoomEnabled) Zoom.x(4.0) else Zoom.Content
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -556,7 +576,8 @@ fun MedianLapChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
     formatTime: (Long) -> String,
-    overallMedian: Long
+    overallMedian: Long,
+    zoomEnabled: Boolean = false
 ) {
     // Filter out sessions with no laps (medianLapTime = 0)
     val filteredStats = remember(statistics) {
@@ -594,7 +615,7 @@ fun MedianLapChart(
     }
 
     val dashedLine = remember(darkOrange) {
-        DashedLine(LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())))
+        createDashedLine(darkOrange)
     }
 
     CartesianChartHost(
@@ -625,8 +646,8 @@ fun MedianLapChart(
         ),
         modelProducer = modelProducer,
         zoomState = rememberVicoZoomState(
-            zoomEnabled = false,
-            initialZoom = Zoom.Content
+            zoomEnabled = zoomEnabled,
+            initialZoom = if (zoomEnabled) Zoom.x(4.0) else Zoom.Content
         ),
         modifier = Modifier
             .fillMaxWidth()
