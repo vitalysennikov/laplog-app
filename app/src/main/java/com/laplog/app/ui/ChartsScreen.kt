@@ -39,14 +39,16 @@ import android.graphics.DashPathEffect
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Function to create dashed line for average/median lines
-fun createDashedLine(color: Color): LineCartesianLayer.Line {
-    android.util.Log.d("ChartsScreen", "Creating dashed line with color: $color")
-    // Create line without area fill for dashed line appearance
-    return LineCartesianLayer.Line(
-        fill = LineCartesianLayer.LineFill.single(Fill(color.toArgb())),
-        areaFill = null // No area fill for dashed line
-    )
+// Class for creating dashed lines on charts
+class DashedLine(
+    fill: LineCartesianLayer.LineFill
+) : LineCartesianLayer.Line(fill, areaFill = null) {
+    init {
+        linePaint.apply {
+            strokeWidth = 3f
+            pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -439,7 +441,7 @@ fun TotalDurationChart(
         }
     }
 
-    val darkBlue = Color(0xFFFF0000) // Red for better visibility during testing
+    val darkBlue = Color(0xFF0000AA) // Dark blue for average line
 
     val mainLine = remember {
         android.util.Log.d("TotalDurationChart", "Creating main line (blue)")
@@ -451,7 +453,10 @@ fun TotalDurationChart(
 
     val dashedLine = remember(darkBlue) {
         android.util.Log.d("TotalDurationChart", "Creating dashed line (dark blue)")
-        createDashedLine(darkBlue)
+        DashedLine(
+            fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())),
+            color = darkBlue.toArgb()
+        )
     }
 
     CartesianChartHost(
@@ -531,7 +536,7 @@ fun AverageLapChart(
         }
     }
 
-    val darkGreen = Color(0xFFFF0000) // Red for better visibility during testing
+    val darkGreen = Color(0xFF006600) // Dark green for average line
 
     val mainLine = remember {
         android.util.Log.d("AverageLapChart", "Creating main line (green)")
@@ -543,7 +548,10 @@ fun AverageLapChart(
 
     val dashedLine = remember(darkGreen) {
         android.util.Log.d("AverageLapChart", "Creating dashed line (dark green)")
-        createDashedLine(darkGreen)
+        DashedLine(
+            fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())),
+            color = darkGreen.toArgb()
+        )
     }
 
     CartesianChartHost(
@@ -623,7 +631,7 @@ fun MedianLapChart(
         }
     }
 
-    val darkOrange = Color(0xFFFF0000) // Red for better visibility during testing
+    val darkOrange = Color(0xFFCC6600) // Dark orange for median line
 
     val mainLine = remember {
         android.util.Log.d("MedianLapChart", "Creating main line (yellow)")
@@ -635,7 +643,10 @@ fun MedianLapChart(
 
     val dashedLine = remember(darkOrange) {
         android.util.Log.d("MedianLapChart", "Creating dashed line (dark orange)")
-        createDashedLine(darkOrange)
+        DashedLine(
+            fill = LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())),
+            color = darkOrange.toArgb()
+        )
     }
 
     CartesianChartHost(
