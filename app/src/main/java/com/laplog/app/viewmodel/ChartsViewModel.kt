@@ -1,6 +1,5 @@
 package com.laplog.app.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
@@ -9,6 +8,7 @@ import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionStatistics
 import com.laplog.app.model.ChartData
 import com.laplog.app.model.TimePeriod
+import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,7 +69,7 @@ class ChartsViewModel(
             try {
                 val names = sessionDao.getDistinctNames()
                 _availableNames.value = names
-                Log.d("ChartsViewModel", "Loaded ${names.size} distinct names")
+                AppLogger.d("ChartsViewModel", "Loaded ${names.size} distinct names")
 
                 // Auto-select first name if available
                 if (names.isNotEmpty() && _selectedName.value == null) {
@@ -80,7 +80,7 @@ class ChartsViewModel(
                     _chartData.value = null
                 }
             } catch (e: Exception) {
-                Log.e("ChartsViewModel", "Error loading names", e)
+                AppLogger.e("ChartsViewModel", "Error loading names", e)
             }
         }
     }
@@ -99,7 +99,7 @@ class ChartsViewModel(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                Log.d("ChartsViewModel", "Loading chart data for: $name, period: ${_selectedPeriod.value}")
+                AppLogger.d("ChartsViewModel", "Loading chart data for: $name, period: ${_selectedPeriod.value}")
 
                 val allSessions = sessionDao.getSessionsByName(name)
 
@@ -111,7 +111,7 @@ class ChartsViewModel(
                     allSessions
                 }
 
-                Log.d("ChartsViewModel", "Found ${sessions.size} sessions for name: $name (filtered from ${allSessions.size})")
+                AppLogger.d("ChartsViewModel", "Found ${sessions.size} sessions for name: $name (filtered from ${allSessions.size})")
 
                 val statistics = mutableListOf<SessionStatistics>()
 
@@ -190,9 +190,9 @@ class ChartsViewModel(
                     overallMedianLapTime = overallMedianLapTime
                 )
 
-                Log.d("ChartsViewModel", "Loaded chart data with ${statistics.size} data points")
+                AppLogger.i("ChartsViewModel", "Loaded chart data with ${statistics.size} data points, overall avg duration: $overallAverageDuration ms, overall avg lap: $overallAverageLapTime ms, overall median lap: $overallMedianLapTime ms")
             } catch (e: Exception) {
-                Log.e("ChartsViewModel", "Error loading chart data", e)
+                AppLogger.e("ChartsViewModel", "Error loading chart data", e)
             } finally {
                 _isLoading.value = false
             }

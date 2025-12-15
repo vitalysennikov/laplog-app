@@ -35,6 +35,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.Fill
+import com.laplog.app.util.AppLogger
 import android.graphics.DashPathEffect
 import java.text.SimpleDateFormat
 import java.util.*
