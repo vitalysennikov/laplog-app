@@ -42,19 +42,11 @@ import java.util.*
 // Function to create dashed line for average/median lines
 fun createDashedLine(color: Color): LineCartesianLayer.Line {
     android.util.Log.d("ChartsScreen", "Creating dashed line with color: $color")
-    // Create line with LineSpec for styling
-    val line = object : LineCartesianLayer.Line(
+    // Create line without area fill for dashed line appearance
+    return LineCartesianLayer.Line(
         fill = LineCartesianLayer.LineFill.single(Fill(color.toArgb())),
         areaFill = null // No area fill for dashed line
-    ) {
-        override val strokeWidth: Float = 4f
-        override val cap: android.graphics.Paint.Cap = android.graphics.Paint.Cap.ROUND
-
-        init {
-            android.util.Log.d("ChartsScreen", "Dashed line configured: strokeWidth=4f, color=$color")
-        }
-    }
-    return line
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
