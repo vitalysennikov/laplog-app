@@ -77,7 +77,7 @@
 
     <!-- Statistics -->
     <string name="avg">AVG</string>
-    <string name="median">MEDIAN</string>
+    <string name="median">MIDDLE</string>
     <string name="duration">Duration</string>
 
     <!-- Charts screen -->
@@ -92,18 +92,21 @@
     <string name="period_all_time">All time</string>
     <string name="period_last_7_days">Last 7 days</string>
     <string name="period_last_30_days">Last 30 days</string>
-    <string name="median_lap_time">Median Lap Time</string>
+    <string name="median_lap_time">Middle Lap Time</string>
     <string name="statistics_summary">Statistics Summary</string>
     <string name="total_sessions">Total Sessions</string>
     <string name="average_duration">Average Duration</string>
     <string name="overall_average">Overall Average</string>
-    <string name="overall_median">Overall Median</string>
+    <string name="overall_median">Overall Middle</string>
     <string name="total_duration">Total Duration</string>
     <string name="average_lap">Average Lap</string>
-    <string name="median_lap">Median Lap</string>
+    <string name="median_lap">Middle Lap</string>
     <string name="all_names">All names</string>
     <string name="no_data">No data</string>
     <string name="summary_statistics">Summary Statistics</string>
+    <string name="statistics_info">Statistics</string>
+    <string name="average_description">Arithmetic mean of all lap times</string>
+    <string name="middle_description">Middle value between minimum and maximum lap time</string>
 
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Toggle buttons</string>
