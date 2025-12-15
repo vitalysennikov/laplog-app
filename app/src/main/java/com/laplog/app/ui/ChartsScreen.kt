@@ -42,17 +42,17 @@ import java.util.*
 // Function to create dashed line for average/median lines
 fun createDashedLine(color: Color): LineCartesianLayer.Line {
     android.util.Log.d("ChartsScreen", "Creating dashed line with color: $color")
-    return object : LineCartesianLayer.Line(
-        LineCartesianLayer.LineFill.single(Fill(color.toArgb()))
-    ) {
-        init {
-            android.util.Log.d("ChartsScreen", "Configuring dashed line paint: strokeWidth=3f, dashPattern=[10f, 10f]")
-            linePaint.apply {
-                strokeWidth = 3f
-                pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
-            }
-        }
+    val line = LineCartesianLayer.Line(
+        fill = LineCartesianLayer.LineFill.single(Fill(color.toArgb())),
+        areaFill = null // No area fill for dashed line
+    )
+    android.util.Log.d("ChartsScreen", "Configuring dashed line paint: strokeWidth=4f, dashPattern=[15f, 10f]")
+    line.linePaint.apply {
+        strokeWidth = 4f
+        pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f)
+        style = android.graphics.Paint.Style.STROKE
     }
+    return line
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -445,7 +445,7 @@ fun TotalDurationChart(
         }
     }
 
-    val darkBlue = Color(0xFF0000CC)
+    val darkBlue = Color(0xFFFF0000) // Red for better visibility during testing
 
     val mainLine = remember {
         android.util.Log.d("TotalDurationChart", "Creating main line (blue)")
@@ -537,7 +537,7 @@ fun AverageLapChart(
         }
     }
 
-    val darkGreen = Color(0xFF006600)
+    val darkGreen = Color(0xFFFF0000) // Red for better visibility during testing
 
     val mainLine = remember {
         android.util.Log.d("AverageLapChart", "Creating main line (green)")
@@ -629,7 +629,7 @@ fun MedianLapChart(
         }
     }
 
-    val darkOrange = Color(0xFFCC8800)
+    val darkOrange = Color(0xFFFF0000) // Red for better visibility during testing
 
     val mainLine = remember {
         android.util.Log.d("MedianLapChart", "Creating main line (yellow)")
