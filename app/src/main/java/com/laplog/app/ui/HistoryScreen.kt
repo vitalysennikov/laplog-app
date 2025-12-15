@@ -35,6 +35,25 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Calculate median value from a list of Long values
+ * Returns null if list has less than 2 elements
+ */
+private fun calculateMedian(values: List<Long>): Long? {
+    if (values.size < 2) {
+        android.util.Log.d("HistoryScreen", "calculateMedian: Not enough values (${values.size})")
+        return null
+    }
+    val sorted = values.sorted()
+    val result = if (sorted.size % 2 == 0) {
+        (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2
+    } else {
+        sorted[sorted.size / 2]
+    }
+    android.util.Log.d("HistoryScreen", "calculateMedian: ${values.size} values, sorted=$sorted, median=$result")
+    return result
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
@@ -467,9 +486,7 @@ fun SessionItem(
                         val avgDuration = if (lapDurations.size >= 2) lapDurations.average().toLong() else null
                         val minDuration = lapDurations.minOrNull()
                         val maxDuration = lapDurations.maxOrNull()
-                        val medianDuration = if (minDuration != null && maxDuration != null && lapDurations.size >= 2) {
-                            (minDuration + maxDuration) / 2
-                        } else null
+                        val medianDuration = calculateMedian(lapDurations)
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -592,7 +609,7 @@ fun SessionItem(
                     val avgDuration = lapDurations.average().toLong()
                     val minDuration = lapDurations.minOrNull() ?: 0L
                     val maxDuration = lapDurations.maxOrNull() ?: 0L
-                    val medianDuration = (minDuration + maxDuration) / 2
+                    val medianDuration = calculateMedian(lapDurations) ?: 0L
 
                     Card(
                         modifier = Modifier
@@ -998,14 +1015,7 @@ fun SessionTableItem(
     val avgDuration = if (laps.size >= 2) {
         laps.map { it.lapDuration }.average().toLong()
     } else null
-    val medianDuration = if (laps.size >= 2) {
-        val sorted = laps.map { it.lapDuration }.sorted()
-        if (sorted.size % 2 == 0) {
-            (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2
-        } else {
-            sorted[sorted.size / 2]
-        }
-    } else null
+    val medianDuration = calculateMedian(laps.map { it.lapDuration })
 
     Card(
         modifier = Modifier
