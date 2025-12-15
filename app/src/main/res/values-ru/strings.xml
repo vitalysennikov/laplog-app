@@ -118,6 +118,7 @@
     <string name="toggle_orientation_desc">Блокировать ориентацию экрана</string>
     <string name="toggle_invert_colors_desc">Инвертировать цвета кругов (быстрее/медленнее)</string>
     <string name="toggle_dim_brightness_desc">Сохранять яркость (применяется когда экран удерживается в режимах RUNNING/ALWAYS; включено: сохранять системную яркость, выключено: уменьшать до 10% после таймаута)</string>
+    <string name="toggle_hide_time_desc">Скрывать время во время работы (показывает мигающий плейсхолдер вместо времени для приватности/концентрации)</string>
 
     <!-- Backup screen -->
     <string name="backup">Резервные копии</string>

@@ -118,6 +118,7 @@
     <string name="toggle_orientation_desc">Lock screen orientation</string>
     <string name="toggle_invert_colors_desc">Invert lap colors (faster/slower)</string>
     <string name="toggle_dim_brightness_desc">Keep brightness (applies when screen is kept on in RUNNING/ALWAYS modes; enabled: keep system brightness, disabled: dim to 10% after timeout)</string>
+    <string name="toggle_hide_time_desc">Hide time while running (shows blinking placeholder instead of actual time for privacy/focus)</string>
 
     <!-- Backup screen -->
     <string name="backup">Backup</string>

@@ -84,6 +84,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_DIM_BRIGHTNESS, true)
         set(value) = prefs.edit().putBoolean(KEY_DIM_BRIGHTNESS, value).apply()
 
+    var hideTimeWhileRunning: Boolean
+        get() = prefs.getBoolean(KEY_HIDE_TIME_WHILE_RUNNING, false)
+        set(value) = prefs.edit().putBoolean(KEY_HIDE_TIME_WHILE_RUNNING, value).apply()
+
     // Stopwatch state persistence
     var stopwatchElapsedTime: Long
         get() = prefs.getLong(KEY_STOPWATCH_ELAPSED_TIME, 0L)
@@ -163,5 +167,6 @@ class PreferencesManager(context: Context) {
         private const val KEY_STOPWATCH_LAST_UPDATE_TIME = "stopwatch_last_update_time"
         private const val KEY_STOPWATCH_LAPS_JSON = "stopwatch_laps_json"
         private const val KEY_DIM_BRIGHTNESS = "dim_brightness"
+        private const val KEY_HIDE_TIME_WHILE_RUNNING = "hide_time_while_running"
     }
 }

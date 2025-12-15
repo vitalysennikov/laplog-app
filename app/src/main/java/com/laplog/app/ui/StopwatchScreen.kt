@@ -69,6 +69,7 @@ fun StopwatchScreen(
     val invertLapColors by viewModel.invertLapColors.collectAsState()
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val dimBrightness by viewModel.dimBrightness.collectAsState()
+    val hideTimeWhileRunning by viewModel.hideTimeWhileRunning.collectAsState()
 
     var expandedNameDropdown by remember { mutableStateOf(false) }
 
@@ -230,13 +231,45 @@ fun StopwatchScreen(
                           else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
+            // Hide time while running toggle
+            IconToggleButton(
+                checked = hideTimeWhileRunning,
+                onCheckedChange = { viewModel.toggleHideTimeWhileRunning() }
+            ) {
+                Icon(
+                    imageVector = if (hideTimeWhileRunning) Icons.Filled.VisibilityOff else Icons.Outlined.VisibilityOff,
+                    contentDescription = "Hide time while running",
+                    tint = if (hideTimeWhileRunning) MaterialTheme.colorScheme.primary
+                          else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Time display with digital clock font (show milliseconds only when paused)
+        // If hideTimeWhileRunning is ON and stopwatch is running, show placeholder with blinking colon
+        val shouldHideTime = hideTimeWhileRunning && isRunning
+        var showColon by remember { mutableStateOf(true) }
+
+        // Blink colon every second when time is hidden
+        LaunchedEffect(shouldHideTime, elapsedTime) {
+            if (shouldHideTime) {
+                // Toggle colon based on current second
+                showColon = (elapsedTime / 1000) % 2 == 0L
+            } else {
+                showColon = true
+            }
+        }
+
         Text(
-            text = viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false),
+            text = if (shouldHideTime) {
+                // Show placeholder with blinking colon
+                if (showColon) "••:••:••" else "•• •• ••"
+            } else {
+                viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false)
+            },
             fontSize = 56.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = dseg7Font,

@@ -59,6 +59,9 @@ class StopwatchViewModel(
     private val _dimBrightness = MutableStateFlow(preferencesManager.dimBrightness)
     val dimBrightness: StateFlow<Boolean> = _dimBrightness.asStateFlow()
 
+    private val _hideTimeWhileRunning = MutableStateFlow(preferencesManager.hideTimeWhileRunning)
+    val hideTimeWhileRunning: StateFlow<Boolean> = _hideTimeWhileRunning.asStateFlow()
+
     private val _showPermissionDialog = MutableStateFlow(false)
     val showPermissionDialog: StateFlow<Boolean> = _showPermissionDialog.asStateFlow()
 
@@ -512,6 +515,11 @@ class StopwatchViewModel(
         if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
             updateServiceWakeLock()
         }
+    }
+
+    fun toggleHideTimeWhileRunning() {
+        _hideTimeWhileRunning.value = !_hideTimeWhileRunning.value
+        preferencesManager.hideTimeWhileRunning = _hideTimeWhileRunning.value
     }
 
     fun updateCurrentName(name: String) {
