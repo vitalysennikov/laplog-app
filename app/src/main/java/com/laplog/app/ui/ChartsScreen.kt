@@ -455,8 +455,7 @@ fun TotalDurationChart(
     val dashedLine = remember(darkBlue) {
         android.util.Log.d("TotalDurationChart", "Creating dashed line (dark blue)")
         DashedLine(
-            fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb())),
-            color = darkBlue.toArgb()
+            fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb()))
         )
     }
 
@@ -550,8 +549,7 @@ fun AverageLapChart(
     val dashedLine = remember(darkGreen) {
         android.util.Log.d("AverageLapChart", "Creating dashed line (dark green)")
         DashedLine(
-            fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb())),
-            color = darkGreen.toArgb()
+            fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb()))
         )
     }
 
@@ -645,8 +643,7 @@ fun MedianLapChart(
     val dashedLine = remember(darkOrange) {
         android.util.Log.d("MedianLapChart", "Creating dashed line (dark orange)")
         DashedLine(
-            fill = LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb())),
-            color = darkOrange.toArgb()
+            fill = LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb()))
         )
     }
 
