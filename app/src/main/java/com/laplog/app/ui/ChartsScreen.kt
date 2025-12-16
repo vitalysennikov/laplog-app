@@ -46,8 +46,8 @@ class DashedLine(
 ) : LineCartesianLayer.Line(fill, areaFill = null) {
     init {
         linePaint.apply {
-            strokeWidth = 3f
-            pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f)
+            strokeWidth = 5f // Увеличена толщина для лучшей видимости
+            pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f) // Длиннее штрихи для видимости
         }
     }
 }
@@ -226,7 +226,7 @@ fun ChartsScreen(
                     }
                 }
 
-                // Total Duration Chart
+                // Active Time Chart
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth()
@@ -237,16 +237,43 @@ fun ChartsScreen(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = stringResource(R.string.total_duration),
+                                text = stringResource(R.string.active_time),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            TotalDurationChart(
+                            ActiveTimeChart(
                                 statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
                                 formatTime = ::formatTime,
                                 overallAverage = chartData?.overallAverageDuration ?: 0,
+                                zoomEnabled = zoomEnabled
+                            )
+                        }
+                    }
+                }
+
+                // Elapsed Time Chart
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.elapsed_time),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ElapsedTimeChart(
+                                statistics = chartData?.statistics ?: emptyList(),
+                                dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
+                                formatTime = ::formatTime,
+                                overallAverage = chartData?.overallAverageElapsedTime ?: 0,
                                 zoomEnabled = zoomEnabled
                             )
                         }
@@ -408,7 +435,7 @@ fun ChartsScreen(
 }
 
 @Composable
-fun TotalDurationChart(
+fun ActiveTimeChart(
     statistics: List<com.laplog.app.model.SessionStatistics>,
     dateFormat: SimpleDateFormat,
     formatTime: (Long) -> String,
@@ -418,32 +445,107 @@ fun TotalDurationChart(
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(statistics, overallAverage) {
-        AppLogger.d("TotalDurationChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
-        AppLogger.d("TotalDurationChart", "Using 3 separate layers for better compatibility with Vico 2.1.3")
+        AppLogger.d("ActiveTimeChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
+        AppLogger.d("ActiveTimeChart", "Using 2 separate layers for better compatibility with Vico 2.1.3")
         modelProducer.runTransaction {
             // Layer 1: Active time series (без пауз)
             lineSeries {
                 val dataPoints = statistics.map { it.totalDuration / 1000.0 }
-                AppLogger.d("TotalDurationChart", "Layer 1 - Active time data: $dataPoints")
+                AppLogger.d("ActiveTimeChart", "Layer 1 - Active time data: $dataPoints")
                 series(
                     x = statistics.indices.map { it },
                     y = dataPoints
                 )
             }
-            // Layer 2: Elapsed time series (с паузами)
-            lineSeries {
-                val elapsedPoints = statistics.map { it.elapsedTime / 1000.0 }
-                AppLogger.d("TotalDurationChart", "Layer 2 - Elapsed time data: $elapsedPoints")
-                series(
-                    x = statistics.indices.map { it },
-                    y = elapsedPoints
-                )
-            }
-            // Layer 3: Average line series
+            // Layer 2: Average line series
             lineSeries {
                 val avgValue = overallAverage / 1000.0
                 val avgPoints = List(statistics.size) { avgValue }
-                AppLogger.d("TotalDurationChart", "Layer 3 - Average line data: $avgPoints (value=$avgValue)")
+                AppLogger.d("ActiveTimeChart", "Layer 2 - Average line data: $avgPoints (value=$avgValue)")
+                series(
+                    x = statistics.indices.map { it },
+                    y = avgPoints
+                )
+            }
+        }
+    }
+
+    val darkBlue = Color(0xFF0000AA) // Dark blue for average line
+
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            // Layer 1: Active time (blue with gradient)
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
+                    )
+                )
+            ),
+            // Layer 2: Average line (dark blue, dashed)
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(
+                    DashedLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb()))
+                    )
+                )
+            ),
+            startAxis = VerticalAxis.rememberStart(
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    formatTime((value * 1000).toLong())
+                }
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    val index = value.toInt()
+                    if (index >= 0 && index < statistics.size) {
+                        dateFormat.format(Date(statistics[index].startTime))
+                    } else {
+                        ""
+                    }
+                }
+            ),
+        ),
+        modelProducer = modelProducer,
+        zoomState = rememberVicoZoomState(
+            zoomEnabled = zoomEnabled,
+            initialZoom = if (zoomEnabled) Zoom.x(4.0) else Zoom.Content
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    )
+}
+
+@Composable
+fun ElapsedTimeChart(
+    statistics: List<com.laplog.app.model.SessionStatistics>,
+    dateFormat: SimpleDateFormat,
+    formatTime: (Long) -> String,
+    overallAverage: Long,
+    zoomEnabled: Boolean = false
+) {
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    LaunchedEffect(statistics, overallAverage) {
+        AppLogger.d("ElapsedTimeChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
+        AppLogger.d("ElapsedTimeChart", "Using 2 separate layers for better compatibility with Vico 2.1.3")
+        modelProducer.runTransaction {
+            // Layer 1: Elapsed time series (с паузами)
+            lineSeries {
+                val dataPoints = statistics.map { it.elapsedTime / 1000.0 }
+                AppLogger.d("ElapsedTimeChart", "Layer 1 - Elapsed time data: $dataPoints")
+                series(
+                    x = statistics.indices.map { it },
+                    y = dataPoints
+                )
+            }
+            // Layer 2: Average line series
+            lineSeries {
+                val avgValue = overallAverage / 1000.0
+                val avgPoints = List(statistics.size) { avgValue }
+                AppLogger.d("ElapsedTimeChart", "Layer 2 - Average line data: $avgPoints (value=$avgValue)")
                 series(
                     x = statistics.indices.map { it },
                     y = avgPoints
@@ -457,16 +559,7 @@ fun TotalDurationChart(
 
     CartesianChartHost(
         chart = rememberCartesianChart(
-            // Layer 1: Active time (blue with gradient)
-            rememberLineCartesianLayer(
-                lineProvider = LineCartesianLayer.LineProvider.series(
-                    LineCartesianLayer.Line(
-                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
-                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
-                    )
-                )
-            ),
-            // Layer 2: Elapsed time (light blue, no gradient)
+            // Layer 1: Elapsed time (light blue, no gradient)
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     LineCartesianLayer.Line(
@@ -475,7 +568,7 @@ fun TotalDurationChart(
                     )
                 )
             ),
-            // Layer 3: Average line (dark blue, dashed)
+            // Layer 2: Average line (dark blue, dashed)
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     DashedLine(

@@ -157,6 +157,12 @@ class ChartsViewModel(
                     0L
                 }
 
+                val overallAverageElapsedTime = if (statistics.isNotEmpty()) {
+                    statistics.map { it.elapsedTime }.average().toLong()
+                } else {
+                    0L
+                }
+
                 val overallAverageLapTime = if (statistics.isNotEmpty()) {
                     val lapsWithData = statistics.filter { it.averageLapTime > 0 }
                     if (lapsWithData.isNotEmpty()) {
@@ -187,11 +193,12 @@ class ChartsViewModel(
                     sessionName = name,
                     statistics = statistics,
                     overallAverageDuration = overallAverageDuration,
+                    overallAverageElapsedTime = overallAverageElapsedTime,
                     overallAverageLapTime = overallAverageLapTime,
                     overallMedianLapTime = overallMedianLapTime
                 )
 
-                AppLogger.i("ChartsViewModel", "Loaded chart data with ${statistics.size} data points, overall avg duration: $overallAverageDuration ms, overall avg lap: $overallAverageLapTime ms, overall median lap: $overallMedianLapTime ms")
+                AppLogger.i("ChartsViewModel", "Loaded chart data with ${statistics.size} data points, overall avg duration: $overallAverageDuration ms, overall avg elapsed: $overallAverageElapsedTime ms, overall avg lap: $overallAverageLapTime ms, overall median lap: $overallMedianLapTime ms")
             } catch (e: Exception) {
                 AppLogger.e("ChartsViewModel", "Error loading chart data", e)
             } finally {
