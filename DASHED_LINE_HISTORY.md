@@ -341,3 +341,209 @@ rememberLineCartesianLayer(
 - **НО:** На графике отображается только основная линия, вторая линия полностью отсутствует
 
 **Следующий шаг:** Необходимо выяснить, почему вторая линия не отображается. Возможно, проблема в API Vico 2.1.3 или в способе использования `LineProvider.series`.
+
+---
+
+## ✅ РЕШЕНИЕ НАЙДЕНО! (16 декабря 2025)
+
+### Версия 0.14.1 (коммит 7067fe2)
+**Что делалось:**
+- Добавлено улучшенное логирование в ChartsViewModel и ChartsScreen
+- Все вызовы android.util.Log заменены на AppLogger для сохранения логов в файл
+- Логирование создания линий, обновления данных и значений всех точек
+
+**Результат:** 🔧 **Диагностика**
+- Логи показали, что обе серии данных создаются корректно
+- Все значения точек правильные
+- Но вторая линия всё равно не отображается
+
+**Код логирования:**
+```kotlin
+AppLogger.d("AverageLapChart", "Creating main line (green)")
+AppLogger.d("AverageLapChart", "Creating dashed line (dark green)")
+AppLogger.d("AverageLapChart", "Main line data: $dataPoints")
+AppLogger.d("AverageLapChart", "Average line data: $avgPoints (value=$avgValue)")
+```
+
+---
+
+### Версия 0.15.2 (коммит 99f9654) - 🎯 КРИТИЧЕСКИЙ ПРОРЫВ!
+**Что делалось:**
+- Переделаны все три графика с использованием **отдельных слоёв `LineCartesianLayer`** для каждой линии
+- Вместо одного слоя с `LineProvider.series(line1, line2)` используются два отдельных слоя
+- Каждый слой содержит только одну линию
+
+**Код (было):**
+```kotlin
+rememberLineCartesianLayer(
+    lineProvider = LineCartesianLayer.LineProvider.series(
+        mainLine,        // Основная линия данных
+        dashedLine       // Пунктирная средняя линия
+    )
+)
+```
+
+**Код (стало):**
+```kotlin
+rememberCartesianChart(
+    // Слой 1: Основная линия данных
+    rememberLineCartesianLayer(
+        lineProvider = LineCartesianLayer.LineProvider.series(
+            LineCartesianLayer.Line(
+                fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.toArgb())),
+                areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
+            )
+        )
+    ),
+    // Слой 2: Пунктирная средняя линия
+    rememberLineCartesianLayer(
+        lineProvider = LineCartesianLayer.LineProvider.series(
+            DashedLine(
+                fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb()))
+            )
+        )
+    ),
+    startAxis = ...,
+    bottomAxis = ...
+)
+```
+
+**Результат:** ✅ **ПОЛНОСТЬЮ РАБОТАЕТ!**
+- ✅ Все линии отображаются корректно
+- ✅ Средние/медианные линии видны на графиках
+- ⚠️ Линии отображаются как **сплошные**, а не пунктирные (DashPathEffect не работает)
+
+**Анализ проблемы:**
+Причина, по которой вторая линия не отображалась при использовании `LineProvider.series(line1, line2)`:
+- В Vico 2.1.3 при использовании нескольких линий через `LineProvider.series()` отображается только **первая линия**
+- Это либо баг библиотеки, либо неправильное использование API
+- **Решение:** Использовать отдельные `rememberLineCartesianLayer` для каждой линии
+
+**Изменения:**
+- **AverageLapChart:** 2 отдельных слоя (основная линия + средняя пунктирная)
+- **MedianLapChart:** 2 отдельных слоя (основная линия + медианная пунктирная)
+- **TotalDurationChart:** 3 отдельных слоя (активное время + полное время + средняя линия)
+
+---
+
+### Версия 0.15.3 (коммит e457bbe)
+**Что делалось:**
+- Увеличена толщина пунктирных линий с 3f до 5f для лучшей видимости
+- Увеличена длина штрихов пунктира с 15f до 20f
+- Разделён график TotalDurationChart на два отдельных графика:
+  - **ActiveTimeChart** - активное время без пауз + средняя линия
+  - **ElapsedTimeChart** - полное время с паузами + средняя линия
+- Добавлено поле `overallAverageElapsedTime` в модель ChartData
+- Каждый график отображается отдельно со своей средней линией
+
+**Код DashedLine:**
+```kotlin
+class DashedLine(
+    fill: LineCartesianLayer.LineFill
+) : LineCartesianLayer.Line(fill, areaFill = null) {
+    init {
+        linePaint.apply {
+            strokeWidth = 5f // Увеличена толщина
+            pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f) // Длиннее штрихи
+        }
+    }
+}
+```
+
+**Результат:** ✅ **Графики работают**
+- ✅ Все 4 графика отображаются (Average Lap, Median Lap, Active Time, Elapsed Time)
+- ✅ Каждый график имеет свою среднюю линию
+- ⚠️ Средние линии всё ещё отображаются как **сплошные**, несмотря на DashPathEffect
+
+---
+
+### Версия 0.15.4 (коммиты c14641f, f445a47)
+**Что делалось:**
+- Добавлена заливка (gradient) для графика ElapsedTimeChart
+- Попытка улучшить реализацию DashedLine через `override val strokeWidthDp`
+- **Ошибка компиляции:** `'strokeWidthDp' overrides nothing`
+- Исправлено: убран `override`, вернулись к `linePaint.apply`
+
+**Финальная реализация DashedLine:**
+```kotlin
+class DashedLine(
+    fill: LineCartesianLayer.LineFill,
+    thickness: Float = 5f
+) : LineCartesianLayer.Line(fill, areaFill = null) {
+    init {
+        linePaint.apply {
+            strokeWidth = thickness
+            pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f)
+        }
+    }
+}
+```
+
+**Результат:** ✅ **Компилируется и работает**
+- ✅ Все графики отображаются корректно
+- ✅ ElapsedTimeChart имеет заливку
+- ⚠️ **ПРОБЛЕМА:** Средние линии всё ещё **НЕ ПУНКТИРНЫЕ**
+
+---
+
+## 🔍 ТЕКУЩАЯ НЕРЕШЁННАЯ ПРОБЛЕМА (16 декабря 2025)
+
+### Что работает
+- ✅ Все линии отображаются (основные и средние)
+- ✅ Отдельные слои `LineCartesianLayer` для каждой линии
+- ✅ Класс `DashedLine` реализован правильно
+- ✅ `DashPathEffect` применяется к `linePaint`
+- ✅ Все данные корректны
+
+### Что НЕ работает
+- ❌ **Пунктирный эффект не отображается на экране**
+- Средние линии видны, но они **сплошные**, а не пунктирные
+- `DashPathEffect` применяется в коде, но визуально не виден
+
+### Возможные причины
+
+1. **Проблема с Paint в Vico 2.1.3:**
+   - Возможно, Vico перезаписывает `pathEffect` при отрисовке
+   - Библиотека может использовать свой внутренний Paint объект
+
+2. **Проблема с Canvas:**
+   - Возможно, Canvas не поддерживает DashPathEffect в контексте Compose
+   - Может требоваться hardware acceleration
+
+3. **Проблема с порядком применения:**
+   - Возможно, `pathEffect` нужно устанавливать в другом месте
+   - Может требоваться переопределение метода отрисовки
+
+4. **Баг в Vico 2.1.3:**
+   - Возможно, это известная проблема библиотеки
+   - Может быть исправлено в более новых версиях
+
+### Следующие шаги для решения
+
+1. Проверить официальную документацию Vico 2.1.3 о пунктирных линиях
+2. Изучить issues в GitHub репозитории Vico
+3. Попробовать обновить Vico до последней версии (если есть более новая)
+4. Рассмотреть альтернативные способы создания пунктирных линий
+5. Возможно, создать issue в репозитории Vico с описанием проблемы
+
+---
+
+## 📊 ИТОГОВАЯ СТАТИСТИКА
+
+### Количество попыток: **20+**
+Период: 26 ноября - 16 декабря 2025 (21 день)
+
+### Ключевые достижения
+1. ✅ **Решена проблема отображения нескольких линий** (версия 0.15.2)
+   - Использование отдельных слоёв вместо `LineProvider.series()`
+2. ✅ **Все графики работают корректно** (версия 0.15.3-0.15.4)
+   - 4 графика: Average Lap, Median Lap, Active Time, Elapsed Time
+3. ✅ **Средние линии отображаются** на всех графиках
+
+### Нерешённая проблема
+- ❌ **Пунктирный эффект не работает**
+  - DashPathEffect применяется в коде, но визуально не виден
+  - Линии отображаются как сплошные
+
+### Статус
+**ЧАСТИЧНО РЕШЕНО:** Графики работают, все линии видны, но пунктирный стиль не применяется визуально.
