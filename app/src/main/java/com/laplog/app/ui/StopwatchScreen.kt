@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -251,30 +253,47 @@ fun StopwatchScreen(
         // Time display with digital clock font (show milliseconds only when paused)
         // If hideTimeWhileRunning is ON and stopwatch is running, show placeholder with blinking colon
         val shouldHideTime = hideTimeWhileRunning && isRunning
-        var showColon by remember { mutableStateOf(true) }
+        var colonAlpha by remember { mutableStateOf(1f) }
 
-        // Blink colon every second when time is hidden
+        // Animate colon alpha every second when time is hidden
         LaunchedEffect(shouldHideTime, elapsedTime) {
             if (shouldHideTime) {
-                // Toggle colon based on current second
-                showColon = (elapsedTime / 1000) % 2 == 0L
+                // Toggle colon alpha based on current second
+                colonAlpha = if ((elapsedTime / 1000) % 2 == 0L) 1f else 0.3f
             } else {
-                showColon = true
+                colonAlpha = 1f
             }
         }
 
-        Text(
-            text = if (shouldHideTime) {
-                // Show placeholder with blinking colon
-                if (showColon) "••:••:••" else "•• •• ••"
-            } else {
-                viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false)
-            },
-            fontSize = 56.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = dseg7Font,
-            color = MaterialTheme.colorScheme.primary
-        )
+        if (shouldHideTime) {
+            // Show placeholder with dimming colon
+            val placeholder = buildAnnotatedString {
+                append("••")
+                pushStyle(SpanStyle(alpha = colonAlpha))
+                append(":")
+                pop()
+                append("••")
+                pushStyle(SpanStyle(alpha = colonAlpha))
+                append(":")
+                pop()
+                append("••")
+            }
+            Text(
+                text = placeholder,
+                fontSize = 56.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = dseg7Font,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            Text(
+                text = viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false),
+                fontSize = 56.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = dseg7Font,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
 
         Spacer(modifier = Modifier.height(48.dp))
 
