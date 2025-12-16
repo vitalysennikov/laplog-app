@@ -42,13 +42,15 @@ import java.util.*
 
 // Class for creating dashed lines on charts
 class DashedLine(
-    fill: LineCartesianLayer.LineFill
+    fill: LineCartesianLayer.LineFill,
+    thickness: Float = 5f
 ) : LineCartesianLayer.Line(fill, areaFill = null) {
+
+    override val strokeWidthDp: Float = thickness
+
     init {
-        linePaint.apply {
-            strokeWidth = 5f // Увеличена толщина для лучшей видимости
-            pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f) // Длиннее штрихи для видимости
-        }
+        // Apply dash effect to the line paint
+        this.linePaint.pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f)
     }
 }
 
@@ -559,12 +561,12 @@ fun ElapsedTimeChart(
 
     CartesianChartHost(
         chart = rememberCartesianChart(
-            // Layer 1: Elapsed time (light blue, no gradient)
+            // Layer 1: Elapsed time (light blue with gradient)
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(Fill(lightBlue.toArgb())),
-                        areaFill = null
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(lightBlue.copy(alpha = 0.3f).toArgb()))
                     )
                 )
             ),
