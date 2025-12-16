@@ -265,15 +265,17 @@ fun StopwatchScreen(
             }
         }
 
+        val primaryColor = MaterialTheme.colorScheme.primary
+
         if (shouldHideTime) {
             // Show placeholder with dimming colon
             val placeholder = buildAnnotatedString {
                 append("••")
-                pushStyle(SpanStyle(alpha = colonAlpha))
+                pushStyle(SpanStyle(color = primaryColor.copy(alpha = colonAlpha)))
                 append(":")
                 pop()
                 append("••")
-                pushStyle(SpanStyle(alpha = colonAlpha))
+                pushStyle(SpanStyle(color = primaryColor.copy(alpha = colonAlpha)))
                 append(":")
                 pop()
                 append("••")
@@ -283,7 +285,7 @@ fun StopwatchScreen(
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = dseg7Font,
-                color = MaterialTheme.colorScheme.primary
+                color = primaryColor
             )
         } else {
             Text(
@@ -291,7 +293,7 @@ fun StopwatchScreen(
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = dseg7Font,
-                color = MaterialTheme.colorScheme.primary
+                color = primaryColor
             )
         }
 
