@@ -143,6 +143,7 @@ class ChartsViewModel(
                             sessionName = name,
                             startTime = session.startTime,
                             totalDuration = session.totalDuration,
+                            elapsedTime = session.endTime - session.startTime,
                             averageLapTime = avgDuration,
                             medianLapTime = medianDuration
                         )

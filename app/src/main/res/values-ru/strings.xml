@@ -79,6 +79,9 @@
     <string name="avg">СРЕДН</string>
     <string name="median">СЕРЕДИНА</string>
     <string name="duration">Длительность</string>
+    <string name="active_time">Активное время</string>
+    <string name="elapsed_time">Полное время</string>
+    <string name="pause_time">Паузы</string>
 
     <!-- Charts screen -->
     <string name="charts">Графики</string>
@@ -98,7 +101,7 @@
     <string name="average_duration">Средняя длительность</string>
     <string name="overall_average">Общее среднее</string>
     <string name="overall_median">Общая середина</string>
-    <string name="total_duration">Общая длительность</string>
+    <string name="total_duration">Активное и полное время</string>
     <string name="average_lap">Средний круг</string>
     <string name="median_lap">Середина круга</string>
     <string name="all_names">Все названия</string>

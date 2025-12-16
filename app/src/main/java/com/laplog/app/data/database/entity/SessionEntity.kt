@@ -9,7 +9,7 @@ data class SessionEntity(
     val id: Long = 0,
     val startTime: Long,
     val endTime: Long,
-    val totalDuration: Long,
+    val totalDuration: Long, // Active time (without pauses)
     val name: String? = null,
     val notes: String? = null,
     // Translations cache
@@ -20,6 +20,17 @@ data class SessionEntity(
     val notes_ru: String? = null,
     val notes_zh: String? = null
 ) {
+    /**
+     * Get elapsed time from first start to stop (including pauses)
+     */
+    val elapsedTime: Long
+        get() = endTime - startTime
+
+    /**
+     * Get total pause time
+     */
+    val pauseTime: Long
+        get() = elapsedTime - totalDuration
     /**
      * Get localized name based on language code
      * @param languageCode "en", "ru", "zh", or null for system default

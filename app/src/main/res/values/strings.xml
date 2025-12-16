@@ -79,6 +79,9 @@
     <string name="avg">AVG</string>
     <string name="median">MIDDLE</string>
     <string name="duration">Duration</string>
+    <string name="active_time">Active time</string>
+    <string name="elapsed_time">Elapsed time</string>
+    <string name="pause_time">Pauses</string>
 
     <!-- Charts screen -->
     <string name="charts">Charts</string>
@@ -98,7 +101,7 @@
     <string name="average_duration">Average Duration</string>
     <string name="overall_average">Overall Average</string>
     <string name="overall_median">Overall Middle</string>
-    <string name="total_duration">Total Duration</string>
+    <string name="total_duration">Active &amp; Elapsed Time</string>
     <string name="average_lap">Average Lap</string>
     <string name="median_lap">Middle Lap</string>
     <string name="all_names">All names</string>

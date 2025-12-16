@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import com.laplog.app.BuildConfig
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.TranslationManager
@@ -182,7 +183,7 @@ class MainActivity : ComponentActivity() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = getString(R.string.app_name),
+                                    text = "${getString(R.string.app_name)} ${BuildConfig.VERSION_NAME}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

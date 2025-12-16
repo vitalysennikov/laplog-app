@@ -469,13 +469,32 @@ fun SessionItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "${stringResource(R.string.duration)}:",
+                            text = "${stringResource(R.string.active_time)}:",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
                             text = formatTime(session.totalDuration),
                             style = MaterialTheme.typography.bodyMedium
                         )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "${stringResource(R.string.elapsed_time)}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formatTime(session.elapsedTime),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (session.pauseTime > 0) {
+                            Text(
+                                text = "(${stringResource(R.string.pause_time)}: ${formatTime(session.pauseTime)})",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     if (!expanded && laps.isNotEmpty()) {
                         // Calculate statistics for collapsed view
@@ -1043,9 +1062,9 @@ fun SessionTableItem(
                 }
             }
 
-            // Duration
+            // Elapsed time (with pauses)
             Text(
-                text = formatTime(session.totalDuration),
+                text = formatTime(session.elapsedTime),
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = fontFamily,
                 modifier = Modifier.weight(1f),

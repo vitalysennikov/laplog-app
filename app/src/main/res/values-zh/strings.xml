@@ -79,6 +79,9 @@
     <string name="avg">平均</string>
     <string name="median">中点</string>
     <string name="duration">时长</string>
+    <string name="active_time">活动时间</string>
+    <string name="elapsed_time">总时间</string>
+    <string name="pause_time">暂停</string>
 
     <!-- Charts screen -->
     <string name="charts">图表</string>
@@ -98,7 +101,7 @@
     <string name="average_duration">平均时长</string>
     <string name="overall_average">总平均值</string>
     <string name="overall_median">总中点</string>
-    <string name="total_duration">总时长</string>
+    <string name="total_duration">活动和总时间</string>
     <string name="average_lap">平均计次</string>
     <string name="median_lap">中点计次</string>
     <string name="all_names">所有名称</string>

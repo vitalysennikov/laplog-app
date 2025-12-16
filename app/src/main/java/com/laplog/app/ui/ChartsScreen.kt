@@ -420,13 +420,22 @@ fun TotalDurationChart(
     LaunchedEffect(statistics, overallAverage) {
         AppLogger.d("TotalDurationChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
         modelProducer.runTransaction {
-            // Data series
+            // Active time series (без пауз)
             lineSeries {
                 val dataPoints = statistics.map { it.totalDuration / 1000.0 }
-                AppLogger.d("TotalDurationChart", "Main line data: $dataPoints")
+                AppLogger.d("TotalDurationChart", "Active time line data: $dataPoints")
                 series(
                     x = statistics.indices.map { it },
                     y = dataPoints
+                )
+            }
+            // Elapsed time series (с паузами)
+            lineSeries {
+                val elapsedPoints = statistics.map { it.elapsedTime / 1000.0 }
+                AppLogger.d("TotalDurationChart", "Elapsed time line data: $elapsedPoints")
+                series(
+                    x = statistics.indices.map { it },
+                    y = elapsedPoints
                 )
             }
             // Average line series
@@ -443,17 +452,26 @@ fun TotalDurationChart(
     }
 
     val darkBlue = Color(0xFF0000AA) // Dark blue for average line
+    val lightBlue = Color(0xFF6699FF) // Light blue for elapsed time
 
-    val mainLine = remember {
-        AppLogger.d("TotalDurationChart", "Creating main line (blue)")
+    val activeTimeLine = remember {
+        AppLogger.d("TotalDurationChart", "Creating active time line (blue with gradient)")
         LineCartesianLayer.Line(
             fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
             areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
         )
     }
 
+    val elapsedTimeLine = remember {
+        AppLogger.d("TotalDurationChart", "Creating elapsed time line (light blue, no gradient)")
+        LineCartesianLayer.Line(
+            fill = LineCartesianLayer.LineFill.single(Fill(lightBlue.toArgb())),
+            areaFill = null
+        )
+    }
+
     val dashedLine = remember(darkBlue) {
-        AppLogger.d("TotalDurationChart", "Creating dashed line (dark blue)")
+        AppLogger.d("TotalDurationChart", "Creating average dashed line (dark blue)")
         DashedLine(
             fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb()))
         )
@@ -463,9 +481,11 @@ fun TotalDurationChart(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
-                    // Main data line (blue)
-                    mainLine,
-                    // Average line (darker blue, dashed)
+                    // Active time line (blue with gradient)
+                    activeTimeLine,
+                    // Elapsed time line (light blue, no gradient)
+                    elapsedTimeLine,
+                    // Average line (dark blue, dashed)
                     dashedLine
                 )
             ),

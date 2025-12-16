@@ -8,7 +8,8 @@ data class SessionStatistics(
     val sessionId: Long,
     val sessionName: String,
     val startTime: Long,
-    val totalDuration: Long,   // Total session duration in milliseconds
+    val totalDuration: Long,   // Active time (without pauses) in milliseconds
+    val elapsedTime: Long,     // Total elapsed time (with pauses) in milliseconds
     val averageLapTime: Long,  // Average lap duration in milliseconds
     val medianLapTime: Long    // Median lap duration in milliseconds
 )
