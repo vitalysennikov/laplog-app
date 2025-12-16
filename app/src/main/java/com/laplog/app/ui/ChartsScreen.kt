@@ -45,12 +45,12 @@ class DashedLine(
     fill: LineCartesianLayer.LineFill,
     thickness: Float = 5f
 ) : LineCartesianLayer.Line(fill, areaFill = null) {
-
-    override val strokeWidthDp: Float = thickness
-
     init {
-        // Apply dash effect to the line paint
-        this.linePaint.pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f)
+        // Apply dash effect and thickness to the line paint
+        linePaint.apply {
+            strokeWidth = thickness
+            pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f)
+        }
     }
 }
 
