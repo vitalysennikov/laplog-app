@@ -418,12 +418,12 @@ fun TotalDurationChart(
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(statistics, overallAverage) {
-        android.util.Log.d("TotalDurationChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
+        AppLogger.d("TotalDurationChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
         modelProducer.runTransaction {
             // Data series
             lineSeries {
                 val dataPoints = statistics.map { it.totalDuration / 1000.0 }
-                android.util.Log.d("TotalDurationChart", "Main line data: $dataPoints")
+                AppLogger.d("TotalDurationChart", "Main line data: $dataPoints")
                 series(
                     x = statistics.indices.map { it },
                     y = dataPoints
@@ -433,7 +433,7 @@ fun TotalDurationChart(
             lineSeries {
                 val avgValue = overallAverage / 1000.0
                 val avgPoints = List(statistics.size) { avgValue }
-                android.util.Log.d("TotalDurationChart", "Average line data: $avgPoints (value=$avgValue)")
+                AppLogger.d("TotalDurationChart", "Average line data: $avgPoints (value=$avgValue)")
                 series(
                     x = statistics.indices.map { it },
                     y = avgPoints
@@ -445,7 +445,7 @@ fun TotalDurationChart(
     val darkBlue = Color(0xFF0000AA) // Dark blue for average line
 
     val mainLine = remember {
-        android.util.Log.d("TotalDurationChart", "Creating main line (blue)")
+        AppLogger.d("TotalDurationChart", "Creating main line (blue)")
         LineCartesianLayer.Line(
             fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
             areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
@@ -453,7 +453,7 @@ fun TotalDurationChart(
     }
 
     val dashedLine = remember(darkBlue) {
-        android.util.Log.d("TotalDurationChart", "Creating dashed line (dark blue)")
+        AppLogger.d("TotalDurationChart", "Creating dashed line (dark blue)")
         DashedLine(
             fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb()))
         )
@@ -512,12 +512,12 @@ fun AverageLapChart(
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(filteredStats, overallAverage) {
-        android.util.Log.d("AverageLapChart", "Updating chart data: ${filteredStats.size} points, overallAverage=$overallAverage")
+        AppLogger.d("AverageLapChart", "Updating chart data: ${filteredStats.size} points, overallAverage=$overallAverage")
         modelProducer.runTransaction {
             // Data series
             lineSeries {
                 val dataPoints = filteredStats.map { it.averageLapTime / 1000.0 }
-                android.util.Log.d("AverageLapChart", "Main line data: $dataPoints")
+                AppLogger.d("AverageLapChart", "Main line data: $dataPoints")
                 series(
                     x = filteredStats.indices.map { it },
                     y = dataPoints
@@ -527,7 +527,7 @@ fun AverageLapChart(
             lineSeries {
                 val avgValue = overallAverage / 1000.0
                 val avgPoints = List(filteredStats.size) { avgValue }
-                android.util.Log.d("AverageLapChart", "Average line data: $avgPoints (value=$avgValue)")
+                AppLogger.d("AverageLapChart", "Average line data: $avgPoints (value=$avgValue)")
                 series(
                     x = filteredStats.indices.map { it },
                     y = avgPoints
@@ -539,7 +539,7 @@ fun AverageLapChart(
     val darkGreen = Color(0xFF006600) // Dark green for average line
 
     val mainLine = remember {
-        android.util.Log.d("AverageLapChart", "Creating main line (green)")
+        AppLogger.d("AverageLapChart", "Creating main line (green)")
         LineCartesianLayer.Line(
             fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.toArgb())),
             areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
@@ -547,7 +547,7 @@ fun AverageLapChart(
     }
 
     val dashedLine = remember(darkGreen) {
-        android.util.Log.d("AverageLapChart", "Creating dashed line (dark green)")
+        AppLogger.d("AverageLapChart", "Creating dashed line (dark green)")
         DashedLine(
             fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb()))
         )
@@ -606,12 +606,12 @@ fun MedianLapChart(
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(filteredStats, overallMedian) {
-        android.util.Log.d("MedianLapChart", "Updating chart data: ${filteredStats.size} points, overallMedian=$overallMedian")
+        AppLogger.d("MedianLapChart", "Updating chart data: ${filteredStats.size} points, overallMedian=$overallMedian")
         modelProducer.runTransaction {
             // Data series
             lineSeries {
                 val dataPoints = filteredStats.map { it.medianLapTime / 1000.0 }
-                android.util.Log.d("MedianLapChart", "Main line data: $dataPoints")
+                AppLogger.d("MedianLapChart", "Main line data: $dataPoints")
                 series(
                     x = filteredStats.indices.map { it },
                     y = dataPoints
@@ -621,7 +621,7 @@ fun MedianLapChart(
             lineSeries {
                 val medianValue = overallMedian / 1000.0
                 val medianPoints = List(filteredStats.size) { medianValue }
-                android.util.Log.d("MedianLapChart", "Median line data: $medianPoints (value=$medianValue)")
+                AppLogger.d("MedianLapChart", "Median line data: $medianPoints (value=$medianValue)")
                 series(
                     x = filteredStats.indices.map { it },
                     y = medianPoints
@@ -633,7 +633,7 @@ fun MedianLapChart(
     val darkOrange = Color(0xFFCC6600) // Dark orange for median line
 
     val mainLine = remember {
-        android.util.Log.d("MedianLapChart", "Creating main line (yellow)")
+        AppLogger.d("MedianLapChart", "Creating main line (yellow)")
         LineCartesianLayer.Line(
             fill = LineCartesianLayer.LineFill.single(Fill(Color.Yellow.toArgb())),
             areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
@@ -641,7 +641,7 @@ fun MedianLapChart(
     }
 
     val dashedLine = remember(darkOrange) {
-        android.util.Log.d("MedianLapChart", "Creating dashed line (dark orange)")
+        AppLogger.d("MedianLapChart", "Creating dashed line (dark orange)")
         DashedLine(
             fill = LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb()))
         )
