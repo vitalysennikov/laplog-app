@@ -419,30 +419,31 @@ fun TotalDurationChart(
 
     LaunchedEffect(statistics, overallAverage) {
         AppLogger.d("TotalDurationChart", "Updating chart data: ${statistics.size} points, overallAverage=$overallAverage")
+        AppLogger.d("TotalDurationChart", "Using 3 separate layers for better compatibility with Vico 2.1.3")
         modelProducer.runTransaction {
-            // Active time series (без пауз)
+            // Layer 1: Active time series (без пауз)
             lineSeries {
                 val dataPoints = statistics.map { it.totalDuration / 1000.0 }
-                AppLogger.d("TotalDurationChart", "Active time line data: $dataPoints")
+                AppLogger.d("TotalDurationChart", "Layer 1 - Active time data: $dataPoints")
                 series(
                     x = statistics.indices.map { it },
                     y = dataPoints
                 )
             }
-            // Elapsed time series (с паузами)
+            // Layer 2: Elapsed time series (с паузами)
             lineSeries {
                 val elapsedPoints = statistics.map { it.elapsedTime / 1000.0 }
-                AppLogger.d("TotalDurationChart", "Elapsed time line data: $elapsedPoints")
+                AppLogger.d("TotalDurationChart", "Layer 2 - Elapsed time data: $elapsedPoints")
                 series(
                     x = statistics.indices.map { it },
                     y = elapsedPoints
                 )
             }
-            // Average line series
+            // Layer 3: Average line series
             lineSeries {
                 val avgValue = overallAverage / 1000.0
                 val avgPoints = List(statistics.size) { avgValue }
-                AppLogger.d("TotalDurationChart", "Average line data: $avgPoints (value=$avgValue)")
+                AppLogger.d("TotalDurationChart", "Layer 3 - Average line data: $avgPoints (value=$avgValue)")
                 series(
                     x = statistics.indices.map { it },
                     y = avgPoints
@@ -454,39 +455,32 @@ fun TotalDurationChart(
     val darkBlue = Color(0xFF0000AA) // Dark blue for average line
     val lightBlue = Color(0xFF6699FF) // Light blue for elapsed time
 
-    val activeTimeLine = remember {
-        AppLogger.d("TotalDurationChart", "Creating active time line (blue with gradient)")
-        LineCartesianLayer.Line(
-            fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
-            areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
-        )
-    }
-
-    val elapsedTimeLine = remember {
-        AppLogger.d("TotalDurationChart", "Creating elapsed time line (light blue, no gradient)")
-        LineCartesianLayer.Line(
-            fill = LineCartesianLayer.LineFill.single(Fill(lightBlue.toArgb())),
-            areaFill = null
-        )
-    }
-
-    val dashedLine = remember(darkBlue) {
-        AppLogger.d("TotalDurationChart", "Creating average dashed line (dark blue)")
-        DashedLine(
-            fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb()))
-        )
-    }
-
     CartesianChartHost(
         chart = rememberCartesianChart(
+            // Layer 1: Active time (blue with gradient)
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
-                    // Active time line (blue with gradient)
-                    activeTimeLine,
-                    // Elapsed time line (light blue, no gradient)
-                    elapsedTimeLine,
-                    // Average line (dark blue, dashed)
-                    dashedLine
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Blue.toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Blue.copy(alpha = 0.3f).toArgb()))
+                    )
+                )
+            ),
+            // Layer 2: Elapsed time (light blue, no gradient)
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(Fill(lightBlue.toArgb())),
+                        areaFill = null
+                    )
+                )
+            ),
+            // Layer 3: Average line (dark blue, dashed)
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(
+                    DashedLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(darkBlue.toArgb()))
+                    )
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
@@ -533,21 +527,22 @@ fun AverageLapChart(
 
     LaunchedEffect(filteredStats, overallAverage) {
         AppLogger.d("AverageLapChart", "Updating chart data: ${filteredStats.size} points, overallAverage=$overallAverage")
+        AppLogger.d("AverageLapChart", "Using 2 separate layers for better compatibility with Vico 2.1.3")
         modelProducer.runTransaction {
-            // Data series
+            // Layer 1: Main data series
             lineSeries {
                 val dataPoints = filteredStats.map { it.averageLapTime / 1000.0 }
-                AppLogger.d("AverageLapChart", "Main line data: $dataPoints")
+                AppLogger.d("AverageLapChart", "Layer 1 - Main line data: $dataPoints")
                 series(
                     x = filteredStats.indices.map { it },
                     y = dataPoints
                 )
             }
-            // Average line series
+            // Layer 2: Average line series
             lineSeries {
                 val avgValue = overallAverage / 1000.0
                 val avgPoints = List(filteredStats.size) { avgValue }
-                AppLogger.d("AverageLapChart", "Average line data: $avgPoints (value=$avgValue)")
+                AppLogger.d("AverageLapChart", "Layer 2 - Average line data: $avgPoints (value=$avgValue)")
                 series(
                     x = filteredStats.indices.map { it },
                     y = avgPoints
@@ -558,29 +553,23 @@ fun AverageLapChart(
 
     val darkGreen = Color(0xFF006600) // Dark green for average line
 
-    val mainLine = remember {
-        AppLogger.d("AverageLapChart", "Creating main line (green)")
-        LineCartesianLayer.Line(
-            fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.toArgb())),
-            areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
-        )
-    }
-
-    val dashedLine = remember(darkGreen) {
-        AppLogger.d("AverageLapChart", "Creating dashed line (dark green)")
-        DashedLine(
-            fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb()))
-        )
-    }
-
     CartesianChartHost(
         chart = rememberCartesianChart(
+            // Layer 1: Main data line (green with gradient)
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
-                    // Main data line (green)
-                    mainLine,
-                    // Average line (darker green, dashed)
-                    dashedLine
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Green.toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Green.copy(alpha = 0.3f).toArgb()))
+                    )
+                )
+            ),
+            // Layer 2: Average line (dark green, dashed)
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(
+                    DashedLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(darkGreen.toArgb()))
+                    )
                 )
             ),
             startAxis = VerticalAxis.rememberStart(
@@ -627,21 +616,22 @@ fun MedianLapChart(
 
     LaunchedEffect(filteredStats, overallMedian) {
         AppLogger.d("MedianLapChart", "Updating chart data: ${filteredStats.size} points, overallMedian=$overallMedian")
+        AppLogger.d("MedianLapChart", "Using 2 separate layers for better compatibility with Vico 2.1.3")
         modelProducer.runTransaction {
-            // Data series
+            // Layer 1: Main data series
             lineSeries {
                 val dataPoints = filteredStats.map { it.medianLapTime / 1000.0 }
-                AppLogger.d("MedianLapChart", "Main line data: $dataPoints")
+                AppLogger.d("MedianLapChart", "Layer 1 - Main line data: $dataPoints")
                 series(
                     x = filteredStats.indices.map { it },
                     y = dataPoints
                 )
             }
-            // Median line series
+            // Layer 2: Median line series
             lineSeries {
                 val medianValue = overallMedian / 1000.0
                 val medianPoints = List(filteredStats.size) { medianValue }
-                AppLogger.d("MedianLapChart", "Median line data: $medianPoints (value=$medianValue)")
+                AppLogger.d("MedianLapChart", "Layer 2 - Median line data: $medianPoints (value=$medianValue)")
                 series(
                     x = filteredStats.indices.map { it },
                     y = medianPoints
@@ -652,29 +642,23 @@ fun MedianLapChart(
 
     val darkOrange = Color(0xFFCC6600) // Dark orange for median line
 
-    val mainLine = remember {
-        AppLogger.d("MedianLapChart", "Creating main line (yellow)")
-        LineCartesianLayer.Line(
-            fill = LineCartesianLayer.LineFill.single(Fill(Color.Yellow.toArgb())),
-            areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
-        )
-    }
-
-    val dashedLine = remember(darkOrange) {
-        AppLogger.d("MedianLapChart", "Creating dashed line (dark orange)")
-        DashedLine(
-            fill = LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb()))
-        )
-    }
-
     CartesianChartHost(
         chart = rememberCartesianChart(
+            // Layer 1: Main data line (yellow with gradient)
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
-                    // Main data line (yellow/orange)
-                    mainLine,
-                    // Median line (darker orange, dashed)
-                    dashedLine
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(Fill(Color.Yellow.toArgb())),
+                        areaFill = LineCartesianLayer.AreaFill.single(Fill(Color.Yellow.copy(alpha = 0.3f).toArgb()))
+                    )
+                )
+            ),
+            // Layer 2: Median line (dark orange, dashed)
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(
+                    DashedLine(
+                        fill = LineCartesianLayer.LineFill.single(Fill(darkOrange.toArgb()))
+                    )
                 )
             ),
             startAxis = VerticalAxis.rememberStart(

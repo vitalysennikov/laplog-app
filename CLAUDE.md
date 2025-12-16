@@ -323,3 +323,4 @@ This is proprietary software. A paid version is planned for future release.
 **Vitaly Sennikov**
 - GitHub: [@vitalysennikov](https://github.com/vitalysennikov)
 - Repository: [laplog-app](https://github.com/vitalysennikov/laplog-app)
+- не заменяй коммиты, делай всегда новые
