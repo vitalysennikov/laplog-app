@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -265,6 +266,106 @@ fun AboutDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.toggle_tick_desc),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Control buttons section
+                Text(
+                    text = stringResource(R.string.control_buttons),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Start / Resume
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.control_btn_start),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                // Pause
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Pause,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.control_btn_pause),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                // Lap + Pause (filled flag)
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Flag,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.control_btn_lap_pause),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                // Lap (empty flag)
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Flag,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.control_btn_lap),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                // Stop
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Stop,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.control_btn_stop),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

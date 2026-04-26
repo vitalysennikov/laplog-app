@@ -124,6 +124,14 @@
     <string name="toggle_hide_time_desc">运行时隐藏时间（显示闪烁占位符而不是实际时间，用于隐私/专注）</string>
     <string name="toggle_tick_desc">节拍声：点击启用/禁用，长按配置重音间隔和声音类型</string>
 
+    <!-- Control buttons descriptions -->
+    <string name="control_buttons">控制按钮</string>
+    <string name="control_btn_start">开始/继续 — 启动或继续秒表</string>
+    <string name="control_btn_pause">暂停 — 暂停秒表</string>
+    <string name="control_btn_lap_pause">实心旗帜 — 同时记录计次并暂停</string>
+    <string name="control_btn_lap">空心旗帜 — 记录计次不停止</string>
+    <string name="control_btn_stop">停止 — 停止秒表并将记录保存到历史</string>
+
     <!-- Backup screen -->
     <string name="backup">备份</string>
     <string name="backup_settings">备份设置</string>

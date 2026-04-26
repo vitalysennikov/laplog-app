@@ -124,6 +124,14 @@
     <string name="toggle_hide_time_desc">Hide time while running (shows blinking placeholder instead of actual time for privacy/focus)</string>
     <string name="toggle_tick_desc">Tick sounds: tap to enable/disable, long press to configure accent intervals and sound types</string>
 
+    <!-- Control buttons descriptions -->
+    <string name="control_buttons">Control buttons</string>
+    <string name="control_btn_start">Start / Resume — starts or resumes the stopwatch</string>
+    <string name="control_btn_pause">Pause — pauses the stopwatch</string>
+    <string name="control_btn_lap_pause">Filled flag — marks a lap and pauses simultaneously</string>
+    <string name="control_btn_lap">Empty flag — marks a lap without stopping</string>
+    <string name="control_btn_stop">Stop — stops the stopwatch and saves the session to history</string>
+
     <!-- Backup screen -->
     <string name="backup">Backup</string>
     <string name="backup_settings">Backup Settings</string>

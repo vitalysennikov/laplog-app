@@ -124,6 +124,14 @@
     <string name="toggle_hide_time_desc">Скрывать время во время работы (показывает мигающий плейсхолдер вместо времени для приватности/концентрации)</string>
     <string name="toggle_tick_desc">Тиканье: нажатие — включить/выключить, долгое нажатие — настроить интервалы акцентов и типы звуков</string>
 
+    <!-- Control buttons descriptions -->
+    <string name="control_buttons">Кнопки управления</string>
+    <string name="control_btn_start">Старт / Продолжить — запускает или возобновляет секундомер</string>
+    <string name="control_btn_pause">Пауза — приостанавливает секундомер</string>
+    <string name="control_btn_lap_pause">Флажок закрашенный — отмечает круг и ставит на паузу одновременно</string>
+    <string name="control_btn_lap">Флажок пустой — отмечает круг без остановки</string>
+    <string name="control_btn_stop">Стоп — останавливает секундомер и сохраняет сессию в историю</string>
+
     <!-- Backup screen -->
     <string name="backup">Резервные копии</string>
     <string name="backup_settings">Настройки резервных копий</string>
