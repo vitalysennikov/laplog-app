@@ -66,6 +66,9 @@ class StopwatchViewModel(
     private val _hideTimeWhileRunning = MutableStateFlow(preferencesManager.hideTimeWhileRunning)
     val hideTimeWhileRunning: StateFlow<Boolean> = _hideTimeWhileRunning.asStateFlow()
 
+    private val _showTimeAsSeconds = MutableStateFlow(preferencesManager.showTimeAsSeconds)
+    val showTimeAsSeconds: StateFlow<Boolean> = _showTimeAsSeconds.asStateFlow()
+
     private val _tickEnabled = MutableStateFlow(preferencesManager.tickEnabled)
     val tickEnabled: StateFlow<Boolean> = _tickEnabled.asStateFlow()
 
@@ -608,6 +611,11 @@ class StopwatchViewModel(
         preferencesManager.hideTimeWhileRunning = _hideTimeWhileRunning.value
     }
 
+    fun toggleShowTimeAsSeconds() {
+        _showTimeAsSeconds.value = !_showTimeAsSeconds.value
+        preferencesManager.showTimeAsSeconds = _showTimeAsSeconds.value
+    }
+
     fun updateCurrentName(name: String) {
         // Don't trim during input - allow spaces inside names
         _currentName.value = name
@@ -624,6 +632,13 @@ class StopwatchViewModel(
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = _showMilliseconds.value, roundIfNoMillis: Boolean = true): String {
+        if (_showTimeAsSeconds.value) {
+            val totalSeconds = timeInMillis / 1000
+            val millis = ((timeInMillis % 1000) / 10).toInt()
+            return if (includeMillis) String.format("%d.%02d", totalSeconds, millis)
+                   else totalSeconds.toString()
+        }
+
         // Apply mathematical rounding if milliseconds are not shown and rounding is enabled
         val adjustedTime = if (!includeMillis && roundIfNoMillis && timeInMillis % 1000 >= 500) {
             timeInMillis + 1000 - (timeInMillis % 1000)

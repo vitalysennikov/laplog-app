@@ -122,6 +122,7 @@
     <string name="toggle_invert_colors_desc">Invert lap colors (faster/slower)</string>
     <string name="toggle_dim_brightness_desc">Keep brightness (applies when screen is kept on in RUNNING/ALWAYS modes; enabled: keep system brightness, disabled: dim to 10% after timeout)</string>
     <string name="toggle_hide_time_desc">Hide time while running (shows blinking placeholder instead of actual time for privacy/focus)</string>
+    <string name="toggle_seconds_desc">Show time as total seconds instead of mm:ss</string>
     <string name="toggle_tick_desc">Tick sounds: tap to enable/disable, long press to configure accent intervals and sound types</string>
 
     <!-- Control buttons descriptions -->

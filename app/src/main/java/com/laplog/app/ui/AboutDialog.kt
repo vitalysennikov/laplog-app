@@ -195,6 +195,24 @@ fun AboutDialog(
                     )
                 }
 
+                // Show time as seconds toggle
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Numbers,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.toggle_seconds_desc),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
                 // Tick sounds toggle
                 Row(
                     verticalAlignment = Alignment.Top,

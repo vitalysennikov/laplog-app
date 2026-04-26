@@ -265,8 +265,11 @@ class BackupManager(
             invertLapColors = preferencesManager.invertLapColors,
             appLanguage = preferencesManager.appLanguage,
             autoBackupEnabled = preferencesManager.autoBackupEnabled,
+            dimBrightness = preferencesManager.dimBrightness,
+            hideTimeWhileRunning = preferencesManager.hideTimeWhileRunning,
             tickEnabled = preferencesManager.tickEnabled,
-            tickAccentsJson = preferencesManager.tickAccentsJson
+            tickAccentsJson = preferencesManager.tickAccentsJson,
+            showTimeAsSeconds = preferencesManager.showTimeAsSeconds
         )
 
         return BackupData(
@@ -405,8 +408,11 @@ class BackupManager(
         preferencesManager.invertLapColors = settings.invertLapColors
         settings.appLanguage?.let { preferencesManager.appLanguage = it }
         preferencesManager.autoBackupEnabled = settings.autoBackupEnabled
+        preferencesManager.dimBrightness = settings.dimBrightness
+        preferencesManager.hideTimeWhileRunning = settings.hideTimeWhileRunning
         preferencesManager.tickEnabled = settings.tickEnabled
         settings.tickAccentsJson?.let { preferencesManager.tickAccentsJson = it }
+        preferencesManager.showTimeAsSeconds = settings.showTimeAsSeconds
     }
 
     /**
@@ -518,8 +524,11 @@ class BackupManager(
             settingsObj.put("invertLapColors", settings.invertLapColors)
             settingsObj.put("appLanguage", settings.appLanguage ?: JSONObject.NULL)
             settingsObj.put("autoBackupEnabled", settings.autoBackupEnabled)
+            settingsObj.put("dimBrightness", settings.dimBrightness)
+            settingsObj.put("hideTimeWhileRunning", settings.hideTimeWhileRunning)
             settingsObj.put("tickEnabled", settings.tickEnabled)
             settingsObj.put("tickAccentsJson", settings.tickAccentsJson ?: JSONObject.NULL)
+            settingsObj.put("showTimeAsSeconds", settings.showTimeAsSeconds)
             json.put("settings", settingsObj)
         }
 
@@ -573,8 +582,11 @@ class BackupManager(
                 invertLapColors = settingsObj.getBoolean("invertLapColors"),
                 appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage"),
                 autoBackupEnabled = if (settingsObj.has("autoBackupEnabled")) settingsObj.getBoolean("autoBackupEnabled") else false,
+                dimBrightness = if (settingsObj.has("dimBrightness")) settingsObj.getBoolean("dimBrightness") else false,
+                hideTimeWhileRunning = if (settingsObj.has("hideTimeWhileRunning")) settingsObj.getBoolean("hideTimeWhileRunning") else false,
                 tickEnabled = if (settingsObj.has("tickEnabled")) settingsObj.getBoolean("tickEnabled") else false,
-                tickAccentsJson = if (settingsObj.has("tickAccentsJson") && !settingsObj.isNull("tickAccentsJson")) settingsObj.getString("tickAccentsJson") else null
+                tickAccentsJson = if (settingsObj.has("tickAccentsJson") && !settingsObj.isNull("tickAccentsJson")) settingsObj.getString("tickAccentsJson") else null,
+                showTimeAsSeconds = if (settingsObj.has("showTimeAsSeconds")) settingsObj.getBoolean("showTimeAsSeconds") else false
             )
         } else {
             null

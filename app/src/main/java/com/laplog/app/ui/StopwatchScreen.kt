@@ -76,6 +76,7 @@ fun StopwatchScreen(
     val hideTimeWhileRunning by viewModel.hideTimeWhileRunning.collectAsState()
     val tickEnabled by viewModel.tickEnabled.collectAsState()
     val tickAccents by viewModel.tickAccents.collectAsState()
+    val showTimeAsSeconds by viewModel.showTimeAsSeconds.collectAsState()
 
     var expandedNameDropdown by remember { mutableStateOf(false) }
     var showTickSettingsDialog by remember { mutableStateOf(false) }
@@ -245,6 +246,19 @@ fun StopwatchScreen(
                     imageVector = if (hideTimeWhileRunning) Icons.Filled.VisibilityOff else Icons.Outlined.VisibilityOff,
                     contentDescription = "Hide time while running",
                     tint = if (hideTimeWhileRunning) MaterialTheme.colorScheme.primary
+                          else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Show time as total seconds toggle
+            IconToggleButton(
+                checked = showTimeAsSeconds,
+                onCheckedChange = { viewModel.toggleShowTimeAsSeconds() }
+            ) {
+                Icon(
+                    imageVector = if (showTimeAsSeconds) Icons.Filled.Numbers else Icons.Outlined.Numbers,
+                    contentDescription = stringResource(R.string.toggle_seconds_desc),
+                    tint = if (showTimeAsSeconds) MaterialTheme.colorScheme.primary
                           else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

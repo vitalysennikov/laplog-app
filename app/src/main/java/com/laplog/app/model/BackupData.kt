@@ -17,8 +17,11 @@ data class BackupSettings(
     val invertLapColors: Boolean,
     val appLanguage: String?,
     val autoBackupEnabled: Boolean = false,
+    val dimBrightness: Boolean = false,
+    val hideTimeWhileRunning: Boolean = false,
     val tickEnabled: Boolean = false,
-    val tickAccentsJson: String? = null
+    val tickAccentsJson: String? = null,
+    val showTimeAsSeconds: Boolean = false
 )
 
 data class BackupSession(

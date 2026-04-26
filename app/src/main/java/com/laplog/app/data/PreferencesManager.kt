@@ -88,6 +88,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_HIDE_TIME_WHILE_RUNNING, false)
         set(value) = prefs.edit().putBoolean(KEY_HIDE_TIME_WHILE_RUNNING, value).apply()
 
+    var showTimeAsSeconds: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS, false)
+        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS, value).apply()
+
     var tickEnabled: Boolean
         get() = prefs.getBoolean(KEY_TICK_ENABLED, false)
         set(value) = prefs.edit().putBoolean(KEY_TICK_ENABLED, value).apply()
@@ -176,6 +180,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_STOPWATCH_LAPS_JSON = "stopwatch_laps_json"
         private const val KEY_DIM_BRIGHTNESS = "dim_brightness"
         private const val KEY_HIDE_TIME_WHILE_RUNNING = "hide_time_while_running"
+        private const val KEY_SHOW_TIME_AS_SECONDS = "show_time_as_seconds"
         private const val KEY_TICK_ENABLED = "tick_enabled"
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
         private const val DEFAULT_TICK_ACCENTS_JSON =
