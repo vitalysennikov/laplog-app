@@ -276,12 +276,21 @@ class StopwatchViewModel(
 
     private fun playTickForSecond(second: Long) {
         val applicable = _tickAccents.value
-            .filter { it.intervalSeconds > 0 && second % it.intervalSeconds == 0L }
+            .filter { accent ->
+                val offset = accent.startOffsetSeconds.toLong()
+                accent.intervalSeconds > 0 && second >= offset && (second - offset) % accent.intervalSeconds == 0L
+            }
             .maxByOrNull { it.intervalSeconds }
         applicable?.let { accent ->
             viewModelScope.launch {
                 tickSoundManager.play(accent.soundType)
             }
+        }
+    }
+
+    fun playTestSound(soundType: TickSoundType) {
+        viewModelScope.launch {
+            tickSoundManager.play(soundType)
         }
     }
 
@@ -301,23 +310,24 @@ class StopwatchViewModel(
 
     private fun serializeTickAccents(accents: List<TickAccent>): String =
         accents.joinToString(",", "[", "]") { a ->
-            "{\"i\":${a.intervalSeconds},\"s\":\"${a.soundType.name}\"}"
+            "{\"i\":${a.intervalSeconds},\"s\":\"${a.soundType.name}\",\"o\":${a.startOffsetSeconds}}"
         }
 
     private fun parseTickAccents(json: String): List<TickAccent> {
         if (json.isBlank()) return DEFAULT_TICK_ACCENTS
         return try {
             val result = mutableListOf<TickAccent>()
-            val pattern = Regex("""{"i":(\d+),"s":"([^"]+)"}""")
+            val pattern = Regex("""{"i":(\d+),"s":"([^"]+)"(?:,"o":(\d+))?}""")
             for (match in pattern.findAll(json)) {
                 val interval = match.groupValues[1].toIntOrNull() ?: continue
                 val soundName = match.groupValues[2]
+                val offset = match.groupValues[3].toIntOrNull() ?: 0
                 val soundType = try {
                     TickSoundType.valueOf(soundName)
                 } catch (_: Exception) {
                     TickSoundType.TICK
                 }
-                if (interval > 0) result.add(TickAccent(interval, soundType))
+                if (interval > 0) result.add(TickAccent(interval, soundType, offset))
             }
             result.ifEmpty { DEFAULT_TICK_ACCENTS }
         } catch (_: Exception) {
@@ -562,7 +572,7 @@ class StopwatchViewModel(
     fun cycleScreenOnMode() {
         _screenOnMode.value = when (_screenOnMode.value) {
             ScreenOnMode.OFF -> ScreenOnMode.WHILE_RUNNING
-            ScreenOnMode.WHILE_RUNNING -> ScreenOnMode.ALWAYS
+            ScreenOnMode.WHILE_RUNNING -> ScreenOnMode.OFF
             ScreenOnMode.ALWAYS -> ScreenOnMode.OFF
         }
         preferencesManager.screenOnMode = _screenOnMode.value

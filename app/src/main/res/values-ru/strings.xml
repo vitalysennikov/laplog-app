@@ -114,7 +114,7 @@
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Кнопки переключения</string>
     <string name="toggle_milliseconds_desc">Показать/скрыть миллисекунды</string>
-    <string name="toggle_screen_on_desc">Держать экран включённым (нажмите для смены режима)</string>
+    <string name="toggle_screen_on_desc">Держать экран включённым пока секундомер работает (нажмите для переключения)</string>
     <string name="toggle_screen_on_off">Экран ВЫКЛ: Экран гаснет как обычно</string>
     <string name="toggle_screen_on_running">Экран ВКЛ при работе: Экран не гаснет только когда секундомер работает</string>
     <string name="toggle_screen_on_always">Экран ВСЕГДА ВКЛ: Экран не гаснет при работе секундомера, даже в фоне</string>
@@ -204,6 +204,7 @@
     <string name="tick_sound_bell">Звонок</string>
     <string name="tick_sound_deep">Бас</string>
     <string name="tick_sound_silent">Тишина</string>
+    <string name="tick_start_offset">С сек.</string>
 
     <!-- App Logs -->
     <string name="app_logs">Логи приложения</string>

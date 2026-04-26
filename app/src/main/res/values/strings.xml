@@ -114,7 +114,7 @@
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">Toggle buttons</string>
     <string name="toggle_milliseconds_desc">Show/hide milliseconds</string>
-    <string name="toggle_screen_on_desc">Keep screen on (tap to cycle modes)</string>
+    <string name="toggle_screen_on_desc">Keep screen on while stopwatch is running (tap to toggle)</string>
     <string name="toggle_screen_on_off">Screen OFF: Screen dims normally</string>
     <string name="toggle_screen_on_running">Screen ON while running: Screen stays on only when stopwatch is running</string>
     <string name="toggle_screen_on_always">Screen ALWAYS ON: Screen stays on while stopwatch is running, even in background</string>
@@ -204,6 +204,7 @@
     <string name="tick_sound_bell">Bell</string>
     <string name="tick_sound_deep">Bass</string>
     <string name="tick_sound_silent">Silent</string>
+    <string name="tick_start_offset">Start</string>
 
     <!-- App Logs -->
     <string name="app_logs">App Logs</string>

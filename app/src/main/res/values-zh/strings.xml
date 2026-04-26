@@ -114,7 +114,7 @@
     <!-- Toggle buttons descriptions -->
     <string name="toggle_buttons">切换按钮</string>
     <string name="toggle_milliseconds_desc">显示/隐藏毫秒</string>
-    <string name="toggle_screen_on_desc">保持屏幕常亮（点击切换模式）</string>
+    <string name="toggle_screen_on_desc">秒表运行时保持屏幕常亮（点击切换）</string>
     <string name="toggle_screen_on_off">屏幕关闭：屏幕正常变暗</string>
     <string name="toggle_screen_on_running">运行时屏幕常亮：仅在秒表运行时保持屏幕常亮</string>
     <string name="toggle_screen_on_always">屏幕始终常亮：秒表运行时保持屏幕常亮，即使在后台</string>
@@ -204,6 +204,7 @@
     <string name="tick_sound_bell">铃声</string>
     <string name="tick_sound_deep">低音</string>
     <string name="tick_sound_silent">静音</string>
+    <string name="tick_start_offset">起始秒</string>
 
     <!-- App Logs -->
     <string name="app_logs">应用日志</string>

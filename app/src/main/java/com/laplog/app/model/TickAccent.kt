@@ -6,7 +6,8 @@ enum class TickSoundType {
 
 data class TickAccent(
     val intervalSeconds: Int,
-    val soundType: TickSoundType
+    val soundType: TickSoundType,
+    val startOffsetSeconds: Int = 0
 )
 
 val TICK_PRESET_INTERVALS = listOf(
@@ -15,7 +16,6 @@ val TICK_PRESET_INTERVALS = listOf(
 )
 
 val DEFAULT_TICK_ACCENTS = listOf(
-    TickAccent(1, TickSoundType.TICK),
-    TickAccent(7, TickSoundType.TOCK),
-    TickAccent(8, TickSoundType.BELL)
+    TickAccent(1, TickSoundType.TICK, 0),
+    TickAccent(8, TickSoundType.TOCK, 7)
 )

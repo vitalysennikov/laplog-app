@@ -171,16 +171,13 @@ fun StopwatchScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Keep screen on toggle (3 states)
+            // Keep screen on toggle (2 states: OFF / WHILE_RUNNING)
             IconButton(
                 onClick = { viewModel.cycleScreenOnMode() }
             ) {
                 Icon(
-                    imageVector = when (screenOnMode) {
-                        ScreenOnMode.OFF -> Icons.Outlined.Smartphone
-                        ScreenOnMode.WHILE_RUNNING -> Icons.Default.Smartphone
-                        ScreenOnMode.ALWAYS -> Icons.Default.PhonelinkLock
-                    },
+                    imageVector = if (screenOnMode == ScreenOnMode.OFF) Icons.Outlined.Smartphone
+                                  else Icons.Default.Smartphone,
                     contentDescription = stringResource(R.string.keep_screen_on),
                     tint = if (screenOnMode == ScreenOnMode.OFF) MaterialTheme.colorScheme.onSurfaceVariant
                           else MaterialTheme.colorScheme.primary
@@ -501,6 +498,7 @@ fun StopwatchScreen(
             tickAccents = tickAccents,
             onTickEnabledChange = { viewModel.setTickEnabled(it) },
             onAccentsChange = { viewModel.updateTickAccents(it) },
+            onPlaySound = { viewModel.playTestSound(it) },
             onDismiss = { showTickSettingsDialog = false }
         )
     }

@@ -106,7 +106,7 @@ fun AboutDialog(
                     )
                 }
 
-                // Keep screen on toggle (with 3 states)
+                // Keep screen on toggle (2 states)
                 Row(
                     verticalAlignment = Alignment.Top,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -125,7 +125,6 @@ fun AboutDialog(
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        // Three modes description
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
@@ -145,7 +144,7 @@ fun AboutDialog(
                         }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                            modifier = Modifier.padding(start = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Smartphone,
@@ -156,23 +155,6 @@ fun AboutDialog(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = stringResource(R.string.toggle_screen_on_running),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PhonelinkLock,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = stringResource(R.string.toggle_screen_on_always),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
