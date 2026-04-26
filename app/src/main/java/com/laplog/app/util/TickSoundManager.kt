@@ -15,7 +15,7 @@ class TickSoundManager {
     private val sampleRate = 22050
 
     private val soundBuffers: Map<TickSoundType, ShortArray> =
-        TickSoundType.values()
+        TickSoundType.entries
             .filter { it != TickSoundType.SILENT }
             .associateWith { generateSamples(it) }
 

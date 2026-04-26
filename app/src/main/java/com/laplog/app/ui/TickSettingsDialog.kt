@@ -146,7 +146,7 @@ private fun TickAccentRow(
                 expanded = showSoundMenu,
                 onDismissRequest = { showSoundMenu = false }
             ) {
-                TickSoundType.values().forEach { type ->
+                TickSoundType.entries.forEach { type ->
                     DropdownMenuItem(
                         text = { Text(soundLabel(type)) },
                         onClick = {
@@ -234,7 +234,7 @@ private fun AddTickAccentDialog(
                         expanded = soundExpanded,
                         onDismissRequest = { soundExpanded = false }
                     ) {
-                        TickSoundType.values().forEach { type ->
+                        TickSoundType.entries.forEach { type ->
                             DropdownMenuItem(
                                 text = { Text(soundLabel(type)) },
                                 onClick = {
