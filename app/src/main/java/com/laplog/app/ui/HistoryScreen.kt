@@ -250,7 +250,7 @@ fun HistoryScreen(
                     if (showTableView) {
                         SessionTableItem(
                             sessionWithLaps = sessionWithLaps,
-                            formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
+                            formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory, showTimeAsSecondsHistory) },
                             fontFamily = dseg7Font,
                             currentLanguage = currentLanguage
                         )
@@ -268,7 +268,7 @@ fun HistoryScreen(
                             onDeleteBefore = { viewModel.deleteSessionsBefore(sessionWithLaps.session.startTime) },
                             onExportJson = { sessionId -> viewModel.getSessionDataAsJson(sessionId) },
                             onForceTranslate = { sessionId -> viewModel.forceTranslateSession(sessionId) },
-                            formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory) },
+                            formatTime = { time -> viewModel.formatTime(time, showMillisecondsInHistory, showTimeAsSecondsHistory) },
                             formatDifference = { diff -> viewModel.formatDifference(diff, showMillisecondsInHistory) },
                             fontFamily = dseg7Font,
                             totalSessionCount = sessions.size,

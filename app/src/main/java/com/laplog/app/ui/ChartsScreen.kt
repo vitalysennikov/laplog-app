@@ -202,7 +202,7 @@ fun ChartsScreen(
                                 AverageLapChart(
                                     statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                    formatTime = viewModel::formatTime,
+                                    formatTime = { ms -> viewModel.formatTime(ms, showTimeAsSecondsCharts) },
                                     overallAverage = chartData?.overallAverageLapTime ?: 0,
                                     zoomEnabled = zoomEnabled
                                 )
@@ -231,7 +231,7 @@ fun ChartsScreen(
                                 MedianLapChart(
                                     statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                    formatTime = viewModel::formatTime,
+                                    formatTime = { ms -> viewModel.formatTime(ms, showTimeAsSecondsCharts) },
                                     overallMedian = chartData?.overallMedianLapTime ?: 0,
                                     zoomEnabled = zoomEnabled
                                 )
@@ -259,7 +259,7 @@ fun ChartsScreen(
                             ActiveTimeChart(
                                 statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                formatTime = viewModel::formatTime,
+                                formatTime = { ms -> viewModel.formatTime(ms, showTimeAsSecondsCharts) },
                                 overallAverage = chartData?.overallAverageDuration ?: 0,
                                 zoomEnabled = zoomEnabled
                             )
@@ -286,7 +286,7 @@ fun ChartsScreen(
                             ElapsedTimeChart(
                                 statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                formatTime = viewModel::formatTime,
+                                formatTime = { ms -> viewModel.formatTime(ms, showTimeAsSecondsCharts) },
                                 overallAverage = chartData?.overallAverageElapsedTime ?: 0,
                                 zoomEnabled = zoomEnabled
                             )
@@ -341,7 +341,7 @@ fun ChartsScreen(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    text = viewModel.formatTime(chartData?.overallAverageDuration ?: 0),
+                                    text = viewModel.formatTime(chartData?.overallAverageDuration ?: 0, showTimeAsSecondsCharts),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -360,7 +360,7 @@ fun ChartsScreen(
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = viewModel.formatTime(chartData?.overallAverageLapTime ?: 0),
+                                        text = viewModel.formatTime(chartData?.overallAverageLapTime ?: 0, showTimeAsSecondsCharts),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -380,7 +380,7 @@ fun ChartsScreen(
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = viewModel.formatTime(chartData?.overallMedianLapTime ?: 0),
+                                        text = viewModel.formatTime(chartData?.overallMedianLapTime ?: 0, showTimeAsSecondsCharts),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )

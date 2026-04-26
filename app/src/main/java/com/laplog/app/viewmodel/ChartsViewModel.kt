@@ -232,8 +232,8 @@ class ChartsViewModel(
         } ?: ""
     }
 
-    fun formatTime(timeInMillis: Long): String {
-        if (_showTimeAsSecondsCharts.value) {
+    fun formatTime(timeInMillis: Long, showAsSeconds: Boolean = _showTimeAsSecondsCharts.value): String {
+        if (showAsSeconds) {
             return (timeInMillis / 1000).toString()
         }
 

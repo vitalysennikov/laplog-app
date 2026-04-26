@@ -296,8 +296,8 @@ class HistoryViewModel(
         return result
     }
 
-    fun formatTime(timeInMillis: Long, includeMillis: Boolean = false): String {
-        if (_showTimeAsSecondsHistory.value) {
+    fun formatTime(timeInMillis: Long, includeMillis: Boolean = false, showAsSeconds: Boolean = _showTimeAsSecondsHistory.value): String {
+        if (showAsSeconds) {
             val totalSeconds = timeInMillis / 1000
             val millis = ((timeInMillis % 1000) / 10).toInt()
             return if (includeMillis) String.format("%d.%02d", totalSeconds, millis)
