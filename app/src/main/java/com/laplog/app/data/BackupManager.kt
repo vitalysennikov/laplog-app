@@ -11,6 +11,7 @@ import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.model.BackupLap
 import com.laplog.app.model.BackupSession
 import com.laplog.app.model.BackupSettings
+import com.laplog.app.model.NameToggles
 import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
@@ -271,7 +272,8 @@ class BackupManager(
             tickAccentsJson = preferencesManager.tickAccentsJson,
             showTimeAsSeconds = preferencesManager.showTimeAsSeconds,
             showTimeAsSecondsHistory = preferencesManager.showTimeAsSecondsHistory,
-            showTimeAsSecondsCharts = preferencesManager.showTimeAsSecondsCharts
+            showTimeAsSecondsCharts = preferencesManager.showTimeAsSecondsCharts,
+            nameToggles = preferencesManager.getAllNameToggles().ifEmpty { null }
         )
 
         return BackupData(
@@ -417,6 +419,7 @@ class BackupManager(
         preferencesManager.showTimeAsSeconds = settings.showTimeAsSeconds
         preferencesManager.showTimeAsSecondsHistory = settings.showTimeAsSecondsHistory
         preferencesManager.showTimeAsSecondsCharts = settings.showTimeAsSecondsCharts
+        settings.nameToggles?.let { preferencesManager.setAllNameToggles(it) }
     }
 
     /**
@@ -535,6 +538,21 @@ class BackupManager(
             settingsObj.put("showTimeAsSeconds", settings.showTimeAsSeconds)
             settingsObj.put("showTimeAsSecondsHistory", settings.showTimeAsSecondsHistory)
             settingsObj.put("showTimeAsSecondsCharts", settings.showTimeAsSecondsCharts)
+            val nameTogglesObj = JSONObject()
+            settings.nameToggles?.forEach { (name, toggles) ->
+                val t = JSONObject()
+                t.put("showMilliseconds", toggles.showMilliseconds)
+                t.put("screenOnMode", toggles.screenOnMode)
+                t.put("lockOrientation", toggles.lockOrientation)
+                t.put("invertLapColors", toggles.invertLapColors)
+                t.put("dimBrightness", toggles.dimBrightness)
+                t.put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
+                t.put("showTimeAsSeconds", toggles.showTimeAsSeconds)
+                t.put("tickEnabled", toggles.tickEnabled)
+                if (toggles.tickAccentsJson != null) t.put("tickAccentsJson", toggles.tickAccentsJson) else t.put("tickAccentsJson", JSONObject.NULL)
+                nameTogglesObj.put(name, t)
+            }
+            settingsObj.put("nameToggles", nameTogglesObj)
             json.put("settings", settingsObj)
         }
 
@@ -594,7 +612,28 @@ class BackupManager(
                 tickAccentsJson = if (settingsObj.has("tickAccentsJson") && !settingsObj.isNull("tickAccentsJson")) settingsObj.getString("tickAccentsJson") else null,
                 showTimeAsSeconds = if (settingsObj.has("showTimeAsSeconds")) settingsObj.getBoolean("showTimeAsSeconds") else false,
                 showTimeAsSecondsHistory = if (settingsObj.has("showTimeAsSecondsHistory")) settingsObj.getBoolean("showTimeAsSecondsHistory") else false,
-                showTimeAsSecondsCharts = if (settingsObj.has("showTimeAsSecondsCharts")) settingsObj.getBoolean("showTimeAsSecondsCharts") else false
+                showTimeAsSecondsCharts = if (settingsObj.has("showTimeAsSecondsCharts")) settingsObj.getBoolean("showTimeAsSecondsCharts") else false,
+                nameToggles = if (settingsObj.has("nameToggles")) {
+                    val ntObj = settingsObj.getJSONObject("nameToggles")
+                    val map = mutableMapOf<String, NameToggles>()
+                    ntObj.keys().forEach { key ->
+                        try {
+                            val t = ntObj.getJSONObject(key)
+                            map[key] = NameToggles(
+                                showMilliseconds = t.optBoolean("showMilliseconds", true),
+                                screenOnMode = t.optString("screenOnMode", "WHILE_RUNNING"),
+                                lockOrientation = t.optBoolean("lockOrientation", false),
+                                invertLapColors = t.optBoolean("invertLapColors", false),
+                                dimBrightness = t.optBoolean("dimBrightness", true),
+                                hideTimeWhileRunning = t.optBoolean("hideTimeWhileRunning", false),
+                                showTimeAsSeconds = t.optBoolean("showTimeAsSeconds", false),
+                                tickEnabled = t.optBoolean("tickEnabled", false),
+                                tickAccentsJson = if (t.has("tickAccentsJson") && !t.isNull("tickAccentsJson")) t.getString("tickAccentsJson") else null
+                            )
+                        } catch (_: Exception) {}
+                    }
+                    map.ifEmpty { null }
+                } else null
             )
         } else {
             null

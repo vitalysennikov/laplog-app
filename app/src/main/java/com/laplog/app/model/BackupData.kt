@@ -9,6 +9,18 @@ data class BackupData(
     val settings: BackupSettings? = null
 )
 
+data class NameToggles(
+    val showMilliseconds: Boolean = true,
+    val screenOnMode: String = "WHILE_RUNNING",
+    val lockOrientation: Boolean = false,
+    val invertLapColors: Boolean = false,
+    val dimBrightness: Boolean = true,
+    val hideTimeWhileRunning: Boolean = false,
+    val showTimeAsSeconds: Boolean = false,
+    val tickEnabled: Boolean = false,
+    val tickAccentsJson: String? = null
+)
+
 data class BackupSettings(
     val showMilliseconds: Boolean,
     val screenOnMode: String,
@@ -23,7 +35,8 @@ data class BackupSettings(
     val tickAccentsJson: String? = null,
     val showTimeAsSeconds: Boolean = false,
     val showTimeAsSecondsHistory: Boolean = false,
-    val showTimeAsSecondsCharts: Boolean = false
+    val showTimeAsSecondsCharts: Boolean = false,
+    val nameToggles: Map<String, NameToggles>? = null
 )
 
 data class BackupSession(

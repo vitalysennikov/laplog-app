@@ -13,6 +13,7 @@ import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.DEFAULT_TICK_ACCENTS
 import com.laplog.app.model.LapTime
+import com.laplog.app.model.NameToggles
 import com.laplog.app.model.StopwatchState
 import com.laplog.app.model.StopwatchCommand
 import com.laplog.app.model.StopwatchCommandManager
@@ -303,6 +304,7 @@ class StopwatchViewModel(
     fun setTickEnabled(enabled: Boolean) {
         _tickEnabled.value = enabled
         preferencesManager.tickEnabled = enabled
+        saveCurrentNameToggles()
     }
 
     fun toggleTickEnabled() {
@@ -312,6 +314,7 @@ class StopwatchViewModel(
     fun updateTickAccents(accents: List<TickAccent>) {
         _tickAccents.value = accents
         preferencesManager.tickAccentsJson = serializeTickAccents(accents)
+        saveCurrentNameToggles()
     }
 
     private fun serializeTickAccents(accents: List<TickAccent>): String =
@@ -585,6 +588,7 @@ class StopwatchViewModel(
     fun toggleMillisecondsDisplay() {
         _showMilliseconds.value = !_showMilliseconds.value
         preferencesManager.showMilliseconds = _showMilliseconds.value
+        saveCurrentNameToggles()
     }
 
     fun cycleScreenOnMode() {
@@ -594,6 +598,7 @@ class StopwatchViewModel(
             ScreenOnMode.ALWAYS -> ScreenOnMode.OFF
         }
         preferencesManager.screenOnMode = _screenOnMode.value
+        saveCurrentNameToggles()
 
         // Update service wake lock if stopwatch has activity
         if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
@@ -604,16 +609,19 @@ class StopwatchViewModel(
     fun toggleLockOrientation() {
         _lockOrientation.value = !_lockOrientation.value
         preferencesManager.lockOrientation = _lockOrientation.value
+        saveCurrentNameToggles()
     }
 
     fun toggleInvertLapColors() {
         _invertLapColors.value = !_invertLapColors.value
         preferencesManager.invertLapColors = _invertLapColors.value
+        saveCurrentNameToggles()
     }
 
     fun toggleDimBrightness() {
         _dimBrightness.value = !_dimBrightness.value
         preferencesManager.dimBrightness = _dimBrightness.value
+        saveCurrentNameToggles()
 
         // Update service wake lock if stopwatch has activity
         if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
@@ -624,11 +632,13 @@ class StopwatchViewModel(
     fun toggleHideTimeWhileRunning() {
         _hideTimeWhileRunning.value = !_hideTimeWhileRunning.value
         preferencesManager.hideTimeWhileRunning = _hideTimeWhileRunning.value
+        saveCurrentNameToggles()
     }
 
     fun toggleShowTimeAsSeconds() {
         _showTimeAsSeconds.value = !_showTimeAsSeconds.value
         preferencesManager.showTimeAsSeconds = _showTimeAsSeconds.value
+        saveCurrentNameToggles()
     }
 
     fun updateCurrentName(name: String) {
@@ -644,6 +654,65 @@ class StopwatchViewModel(
             _usedNames.value = updated
             preferencesManager.usedNames = updated
         }
+    }
+
+    fun selectNameFromHistory(name: String) {
+        _currentName.value = name
+        preferencesManager.currentName = name
+        val trimmed = name.trim()
+        if (trimmed.isNotBlank()) {
+            val updated = _usedNames.value.toMutableSet()
+            if (updated.add(trimmed)) {
+                _usedNames.value = updated
+                preferencesManager.usedNames = updated
+            }
+            loadNameToggles(trimmed)
+        }
+    }
+
+    private fun loadNameToggles(name: String) {
+        val toggles = preferencesManager.getNameToggles(name) ?: return
+        _showMilliseconds.value = toggles.showMilliseconds
+        preferencesManager.showMilliseconds = toggles.showMilliseconds
+        val mode = try { ScreenOnMode.valueOf(toggles.screenOnMode) } catch (_: Exception) { ScreenOnMode.WHILE_RUNNING }
+        _screenOnMode.value = mode
+        preferencesManager.screenOnMode = mode
+        _lockOrientation.value = toggles.lockOrientation
+        preferencesManager.lockOrientation = toggles.lockOrientation
+        _invertLapColors.value = toggles.invertLapColors
+        preferencesManager.invertLapColors = toggles.invertLapColors
+        _dimBrightness.value = toggles.dimBrightness
+        preferencesManager.dimBrightness = toggles.dimBrightness
+        _hideTimeWhileRunning.value = toggles.hideTimeWhileRunning
+        preferencesManager.hideTimeWhileRunning = toggles.hideTimeWhileRunning
+        _showTimeAsSeconds.value = toggles.showTimeAsSeconds
+        preferencesManager.showTimeAsSeconds = toggles.showTimeAsSeconds
+        _tickEnabled.value = toggles.tickEnabled
+        preferencesManager.tickEnabled = toggles.tickEnabled
+        toggles.tickAccentsJson?.let {
+            val accents = parseTickAccents(it)
+            _tickAccents.value = accents
+            preferencesManager.tickAccentsJson = it
+        }
+        if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
+            updateServiceWakeLock()
+        }
+    }
+
+    private fun saveCurrentNameToggles() {
+        val name = _currentName.value.trim()
+        if (name.isBlank()) return
+        preferencesManager.saveNameToggles(name, NameToggles(
+            showMilliseconds = _showMilliseconds.value,
+            screenOnMode = _screenOnMode.value.name,
+            lockOrientation = _lockOrientation.value,
+            invertLapColors = _invertLapColors.value,
+            dimBrightness = _dimBrightness.value,
+            hideTimeWhileRunning = _hideTimeWhileRunning.value,
+            showTimeAsSeconds = _showTimeAsSeconds.value,
+            tickEnabled = _tickEnabled.value,
+            tickAccentsJson = preferencesManager.tickAccentsJson
+        ))
     }
 
     fun updateCurrentNotes(notes: String) {

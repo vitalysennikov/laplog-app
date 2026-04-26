@@ -157,7 +157,7 @@ fun StopwatchScreen(
                         DropdownMenuItem(
                             text = { Text(name) },
                             onClick = {
-                                viewModel.updateCurrentName(name)
+                                viewModel.selectNameFromHistory(name)
                                 expandedNameDropdown = false
                             }
                         )

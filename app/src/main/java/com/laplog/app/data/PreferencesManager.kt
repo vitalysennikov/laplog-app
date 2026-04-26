@@ -2,6 +2,8 @@ package com.laplog.app.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.laplog.app.model.NameToggles
+import org.json.JSONObject
 import java.util.Locale
 
 class PreferencesManager(context: Context) {
@@ -138,6 +140,92 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString(KEY_STOPWATCH_LAPS_JSON, null)
         set(value) = prefs.edit().putString(KEY_STOPWATCH_LAPS_JSON, value).apply()
 
+    fun getNameToggles(name: String): NameToggles? {
+        val allJson = prefs.getString(KEY_NAME_TOGGLES_JSON, null) ?: return null
+        return try {
+            val all = JSONObject(allJson)
+            if (!all.has(name)) return null
+            val obj = all.getJSONObject(name)
+            NameToggles(
+                showMilliseconds = obj.optBoolean("showMilliseconds", true),
+                screenOnMode = obj.optString("screenOnMode", "WHILE_RUNNING"),
+                lockOrientation = obj.optBoolean("lockOrientation", false),
+                invertLapColors = obj.optBoolean("invertLapColors", false),
+                dimBrightness = obj.optBoolean("dimBrightness", true),
+                hideTimeWhileRunning = obj.optBoolean("hideTimeWhileRunning", false),
+                showTimeAsSeconds = obj.optBoolean("showTimeAsSeconds", false),
+                tickEnabled = obj.optBoolean("tickEnabled", false),
+                tickAccentsJson = if (obj.has("tickAccentsJson") && !obj.isNull("tickAccentsJson")) obj.getString("tickAccentsJson") else null
+            )
+        } catch (_: Exception) { null }
+    }
+
+    fun saveNameToggles(name: String, toggles: NameToggles) {
+        val allJson = prefs.getString(KEY_NAME_TOGGLES_JSON, null)
+        val all = if (allJson != null) try { JSONObject(allJson) } catch (_: Exception) { JSONObject() } else JSONObject()
+        val obj = JSONObject()
+        obj.put("showMilliseconds", toggles.showMilliseconds)
+        obj.put("screenOnMode", toggles.screenOnMode)
+        obj.put("lockOrientation", toggles.lockOrientation)
+        obj.put("invertLapColors", toggles.invertLapColors)
+        obj.put("dimBrightness", toggles.dimBrightness)
+        obj.put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
+        obj.put("showTimeAsSeconds", toggles.showTimeAsSeconds)
+        obj.put("tickEnabled", toggles.tickEnabled)
+        if (toggles.tickAccentsJson != null) obj.put("tickAccentsJson", toggles.tickAccentsJson) else obj.put("tickAccentsJson", JSONObject.NULL)
+        all.put(name, obj)
+        prefs.edit().putString(KEY_NAME_TOGGLES_JSON, all.toString()).apply()
+    }
+
+    fun getAllNameToggles(): Map<String, NameToggles> {
+        val allJson = prefs.getString(KEY_NAME_TOGGLES_JSON, null) ?: return emptyMap()
+        return try {
+            val all = JSONObject(allJson)
+            val result = mutableMapOf<String, NameToggles>()
+            val keys = all.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                try {
+                    val obj = all.getJSONObject(key)
+                    result[key] = NameToggles(
+                        showMilliseconds = obj.optBoolean("showMilliseconds", true),
+                        screenOnMode = obj.optString("screenOnMode", "WHILE_RUNNING"),
+                        lockOrientation = obj.optBoolean("lockOrientation", false),
+                        invertLapColors = obj.optBoolean("invertLapColors", false),
+                        dimBrightness = obj.optBoolean("dimBrightness", true),
+                        hideTimeWhileRunning = obj.optBoolean("hideTimeWhileRunning", false),
+                        showTimeAsSeconds = obj.optBoolean("showTimeAsSeconds", false),
+                        tickEnabled = obj.optBoolean("tickEnabled", false),
+                        tickAccentsJson = if (obj.has("tickAccentsJson") && !obj.isNull("tickAccentsJson")) obj.getString("tickAccentsJson") else null
+                    )
+                } catch (_: Exception) {}
+            }
+            result
+        } catch (_: Exception) { emptyMap() }
+    }
+
+    fun setAllNameToggles(map: Map<String, NameToggles>) {
+        if (map.isEmpty()) {
+            prefs.edit().remove(KEY_NAME_TOGGLES_JSON).apply()
+            return
+        }
+        val all = JSONObject()
+        map.forEach { (name, toggles) ->
+            val obj = JSONObject()
+            obj.put("showMilliseconds", toggles.showMilliseconds)
+            obj.put("screenOnMode", toggles.screenOnMode)
+            obj.put("lockOrientation", toggles.lockOrientation)
+            obj.put("invertLapColors", toggles.invertLapColors)
+            obj.put("dimBrightness", toggles.dimBrightness)
+            obj.put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
+            obj.put("showTimeAsSeconds", toggles.showTimeAsSeconds)
+            obj.put("tickEnabled", toggles.tickEnabled)
+            if (toggles.tickAccentsJson != null) obj.put("tickAccentsJson", toggles.tickAccentsJson) else obj.put("tickAccentsJson", JSONObject.NULL)
+            all.put(name, obj)
+        }
+        prefs.edit().putString(KEY_NAME_TOGGLES_JSON, all.toString()).apply()
+    }
+
     fun clearStopwatchState() {
         prefs.edit()
             .remove(KEY_STOPWATCH_ELAPSED_TIME)
@@ -198,6 +286,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SHOW_TIME_AS_SECONDS_CHARTS = "show_time_as_seconds_charts"
         private const val KEY_TICK_ENABLED = "tick_enabled"
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
+        private const val KEY_NAME_TOGGLES_JSON = "name_toggles_json"
         private const val DEFAULT_TICK_ACCENTS_JSON =
             "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7},{\"i\":8,\"s\":\"BELL\",\"o\":0}]"
     }
