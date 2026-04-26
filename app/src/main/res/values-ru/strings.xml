@@ -178,6 +178,24 @@
     <string name="no_backup_found_title">Резервная копия не найдена</string>
     <string name="no_backup_found_message">В выбранной папке не найдено файлов резервных копий. Вы можете начать использовать приложение с нуля или создать папку для резервных копий в разделе Backup.</string>
 
+    <!-- Tick sounds -->
+    <string name="tick_sounds">Тиканье</string>
+    <string name="tick_settings">Настройки тиканья</string>
+    <string name="tick_enabled">Тиканье включено</string>
+    <string name="tick_accents">Акценты</string>
+    <string name="tick_add_accent">Добавить акцент</string>
+    <string name="tick_reset_defaults">Сбросить</string>
+    <string name="tick_interval">Интервал</string>
+    <string name="tick_sound">Звук</string>
+    <string name="tick_every_n_sec">Каждые %1$d сек</string>
+    <string name="tick_every_n_min">Каждые %1$d мин</string>
+    <string name="tick_every_n_min_sec">Каждые %1$d мин %2$d сек</string>
+    <string name="tick_sound_tick">Клик</string>
+    <string name="tick_sound_tock">Тонк</string>
+    <string name="tick_sound_bell">Звонок</string>
+    <string name="tick_sound_deep">Бас</string>
+    <string name="tick_sound_silent">Тишина</string>
+
     <!-- App Logs -->
     <string name="app_logs">Логи приложения</string>
     <string name="view_logs">Просмотр логов</string>

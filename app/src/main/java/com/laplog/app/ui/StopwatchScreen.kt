@@ -1,6 +1,8 @@
 package com.laplog.app.ui
 
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,7 +34,7 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
@@ -72,8 +74,11 @@ fun StopwatchScreen(
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val dimBrightness by viewModel.dimBrightness.collectAsState()
     val hideTimeWhileRunning by viewModel.hideTimeWhileRunning.collectAsState()
+    val tickEnabled by viewModel.tickEnabled.collectAsState()
+    val tickAccents by viewModel.tickAccents.collectAsState()
 
     var expandedNameDropdown by remember { mutableStateOf(false) }
+    var showTickSettingsDialog by remember { mutableStateOf(false) }
 
     // Update screen on state based on mode, running state, elapsed time, and dim brightness
     LaunchedEffect(isRunning, screenOnMode, elapsedTime, dimBrightness) {
@@ -243,6 +248,24 @@ fun StopwatchScreen(
                     imageVector = if (hideTimeWhileRunning) Icons.Filled.VisibilityOff else Icons.Outlined.VisibilityOff,
                     contentDescription = "Hide time while running",
                     tint = if (hideTimeWhileRunning) MaterialTheme.colorScheme.primary
+                          else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Tick sounds toggle (long press opens settings)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .combinedClickable(
+                        onClick = { viewModel.toggleTickEnabled() },
+                        onLongClick = { showTickSettingsDialog = true }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (tickEnabled) Icons.Filled.MusicNote else Icons.Outlined.MusicNote,
+                    contentDescription = stringResource(R.string.tick_sounds),
+                    tint = if (tickEnabled) MaterialTheme.colorScheme.primary
                           else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -470,6 +493,16 @@ fun StopwatchScreen(
                 }
             }
         }
+    }
+
+    if (showTickSettingsDialog) {
+        TickSettingsDialog(
+            tickEnabled = tickEnabled,
+            tickAccents = tickAccents,
+            onTickEnabledChange = { viewModel.setTickEnabled(it) },
+            onAccentsChange = { viewModel.updateTickAccents(it) },
+            onDismiss = { showTickSettingsDialog = false }
+        )
     }
 
     // Permission dialogs

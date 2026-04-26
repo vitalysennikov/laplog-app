@@ -88,6 +88,14 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_HIDE_TIME_WHILE_RUNNING, false)
         set(value) = prefs.edit().putBoolean(KEY_HIDE_TIME_WHILE_RUNNING, value).apply()
 
+    var tickEnabled: Boolean
+        get() = prefs.getBoolean(KEY_TICK_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_TICK_ENABLED, value).apply()
+
+    var tickAccentsJson: String
+        get() = prefs.getString(KEY_TICK_ACCENTS_JSON, DEFAULT_TICK_ACCENTS_JSON) ?: DEFAULT_TICK_ACCENTS_JSON
+        set(value) = prefs.edit().putString(KEY_TICK_ACCENTS_JSON, value).apply()
+
     // Stopwatch state persistence
     var stopwatchElapsedTime: Long
         get() = prefs.getLong(KEY_STOPWATCH_ELAPSED_TIME, 0L)
@@ -168,5 +176,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_STOPWATCH_LAPS_JSON = "stopwatch_laps_json"
         private const val KEY_DIM_BRIGHTNESS = "dim_brightness"
         private const val KEY_HIDE_TIME_WHILE_RUNNING = "hide_time_while_running"
+        private const val KEY_TICK_ENABLED = "tick_enabled"
+        private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
+        private const val DEFAULT_TICK_ACCENTS_JSON =
+            "[{\"i\":1,\"s\":\"TICK\"},{\"i\":7,\"s\":\"TOCK\"},{\"i\":8,\"s\":\"BELL\"}]"
     }
 }

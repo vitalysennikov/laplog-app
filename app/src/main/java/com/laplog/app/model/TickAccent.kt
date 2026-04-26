@@ -1,0 +1,21 @@
+package com.laplog.app.model
+
+enum class TickSoundType {
+    TICK, TOCK, BELL, DEEP, SILENT
+}
+
+data class TickAccent(
+    val intervalSeconds: Int,
+    val soundType: TickSoundType
+)
+
+val TICK_PRESET_INTERVALS = listOf(
+    1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 30,
+    60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360
+)
+
+val DEFAULT_TICK_ACCENTS = listOf(
+    TickAccent(1, TickSoundType.TICK),
+    TickAccent(7, TickSoundType.TOCK),
+    TickAccent(8, TickSoundType.BELL)
+)

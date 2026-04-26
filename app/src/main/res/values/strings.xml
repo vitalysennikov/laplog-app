@@ -178,6 +178,24 @@
     <string name="no_backup_found_title">No Backup Found</string>
     <string name="no_backup_found_message">No backup files were found in the selected folder. You can start using the app fresh or create a backup folder in the Backup section.</string>
 
+    <!-- Tick sounds -->
+    <string name="tick_sounds">Tick sounds</string>
+    <string name="tick_settings">Tick Settings</string>
+    <string name="tick_enabled">Tick enabled</string>
+    <string name="tick_accents">Accents</string>
+    <string name="tick_add_accent">Add accent</string>
+    <string name="tick_reset_defaults">Reset defaults</string>
+    <string name="tick_interval">Interval</string>
+    <string name="tick_sound">Sound</string>
+    <string name="tick_every_n_sec">Every %1$d sec</string>
+    <string name="tick_every_n_min">Every %1$d min</string>
+    <string name="tick_every_n_min_sec">Every %1$d min %2$d sec</string>
+    <string name="tick_sound_tick">Click</string>
+    <string name="tick_sound_tock">Clack</string>
+    <string name="tick_sound_bell">Bell</string>
+    <string name="tick_sound_deep">Bass</string>
+    <string name="tick_sound_silent">Silent</string>
+
     <!-- App Logs -->
     <string name="app_logs">App Logs</string>
     <string name="view_logs">View Logs</string>

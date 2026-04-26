@@ -178,6 +178,24 @@
     <string name="no_backup_found_title">未找到备份</string>
     <string name="no_backup_found_message">在所选文件夹中未找到备份文件。您可以从头开始使用应用程序，或在"备份"部分创建备份文件夹。</string>
 
+    <!-- Tick sounds -->
+    <string name="tick_sounds">节拍声</string>
+    <string name="tick_settings">节拍设置</string>
+    <string name="tick_enabled">启用节拍</string>
+    <string name="tick_accents">重音</string>
+    <string name="tick_add_accent">添加重音</string>
+    <string name="tick_reset_defaults">重置</string>
+    <string name="tick_interval">间隔</string>
+    <string name="tick_sound">声音</string>
+    <string name="tick_every_n_sec">每 %1$d 秒</string>
+    <string name="tick_every_n_min">每 %1$d 分钟</string>
+    <string name="tick_every_n_min_sec">每 %1$d 分 %2$d 秒</string>
+    <string name="tick_sound_tick">点击</string>
+    <string name="tick_sound_tock">咔嗒</string>
+    <string name="tick_sound_bell">铃声</string>
+    <string name="tick_sound_deep">低音</string>
+    <string name="tick_sound_silent">静音</string>
+
     <!-- App Logs -->
     <string name="app_logs">应用日志</string>
     <string name="view_logs">查看日志</string>

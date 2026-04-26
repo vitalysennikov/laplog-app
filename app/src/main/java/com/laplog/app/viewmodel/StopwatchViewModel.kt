@@ -11,11 +11,15 @@ import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
+import com.laplog.app.model.DEFAULT_TICK_ACCENTS
 import com.laplog.app.model.LapTime
 import com.laplog.app.model.StopwatchState
 import com.laplog.app.model.StopwatchCommand
 import com.laplog.app.model.StopwatchCommandManager
+import com.laplog.app.model.TickAccent
+import com.laplog.app.model.TickSoundType
 import com.laplog.app.service.StopwatchService
+import com.laplog.app.util.TickSoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +65,15 @@ class StopwatchViewModel(
 
     private val _hideTimeWhileRunning = MutableStateFlow(preferencesManager.hideTimeWhileRunning)
     val hideTimeWhileRunning: StateFlow<Boolean> = _hideTimeWhileRunning.asStateFlow()
+
+    private val _tickEnabled = MutableStateFlow(preferencesManager.tickEnabled)
+    val tickEnabled: StateFlow<Boolean> = _tickEnabled.asStateFlow()
+
+    private val _tickAccents = MutableStateFlow(parseTickAccents(preferencesManager.tickAccentsJson))
+    val tickAccents: StateFlow<List<TickAccent>> = _tickAccents.asStateFlow()
+
+    private val tickSoundManager = TickSoundManager()
+    private var lastTickedSecond = -1L
 
     private val _showPermissionDialog = MutableStateFlow(false)
     val showPermissionDialog: StateFlow<Boolean> = _showPermissionDialog.asStateFlow()
@@ -113,6 +126,7 @@ class StopwatchViewModel(
 
                 // Reset state IMMEDIATELY to prevent any race conditions
                 StopwatchState.reset()
+                lastTickedSecond = -1L
                 preferencesManager.clearStopwatchState()
 
                 // Save session to database asynchronously if there was any activity
@@ -244,9 +258,70 @@ class StopwatchViewModel(
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (StopwatchState.isRunning.value) {
-                StopwatchState.updateElapsedTime(StopwatchState.getCurrentElapsedTime())
-                delay(1000L) // Always update once per second for better performance
+                val currentTime = StopwatchState.getCurrentElapsedTime()
+                StopwatchState.updateElapsedTime(currentTime)
+
+                if (_tickEnabled.value) {
+                    val currentSecond = currentTime / 1000
+                    if (currentSecond > 0 && currentSecond != lastTickedSecond) {
+                        lastTickedSecond = currentSecond
+                        playTickForSecond(currentSecond)
+                    }
+                }
+
+                delay(1000L)
             }
+        }
+    }
+
+    private fun playTickForSecond(second: Long) {
+        val applicable = _tickAccents.value
+            .filter { it.intervalSeconds > 0 && second % it.intervalSeconds == 0L }
+            .maxByOrNull { it.intervalSeconds }
+        applicable?.let { accent ->
+            viewModelScope.launch {
+                tickSoundManager.play(accent.soundType)
+            }
+        }
+    }
+
+    fun setTickEnabled(enabled: Boolean) {
+        _tickEnabled.value = enabled
+        preferencesManager.tickEnabled = enabled
+    }
+
+    fun toggleTickEnabled() {
+        setTickEnabled(!_tickEnabled.value)
+    }
+
+    fun updateTickAccents(accents: List<TickAccent>) {
+        _tickAccents.value = accents
+        preferencesManager.tickAccentsJson = serializeTickAccents(accents)
+    }
+
+    private fun serializeTickAccents(accents: List<TickAccent>): String =
+        accents.joinToString(",", "[", "]") { a ->
+            "{\"i\":${a.intervalSeconds},\"s\":\"${a.soundType.name}\"}"
+        }
+
+    private fun parseTickAccents(json: String): List<TickAccent> {
+        if (json.isBlank()) return DEFAULT_TICK_ACCENTS
+        return try {
+            val result = mutableListOf<TickAccent>()
+            val pattern = Regex("""{"i":(\d+),"s":"([^"]+)"}""")
+            for (match in pattern.findAll(json)) {
+                val interval = match.groupValues[1].toIntOrNull() ?: continue
+                val soundName = match.groupValues[2]
+                val soundType = try {
+                    TickSoundType.valueOf(soundName)
+                } catch (_: Exception) {
+                    TickSoundType.TICK
+                }
+                if (interval > 0) result.add(TickAccent(interval, soundType))
+            }
+            result.ifEmpty { DEFAULT_TICK_ACCENTS }
+        } catch (_: Exception) {
+            DEFAULT_TICK_ACCENTS
         }
     }
 
@@ -400,6 +475,7 @@ class StopwatchViewModel(
         // Reset state IMMEDIATELY to prevent service restart if app goes to background
         // This must happen synchronously before any async operations
         StopwatchState.reset()
+        lastTickedSecond = -1L
         preferencesManager.clearStopwatchState()
 
         // Save session to database asynchronously if there was any activity
