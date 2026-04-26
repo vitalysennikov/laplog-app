@@ -289,6 +289,13 @@ class HistoryViewModel(
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = false): String {
+        if (preferencesManager.showTimeAsSeconds) {
+            val totalSeconds = timeInMillis / 1000
+            val millis = ((timeInMillis % 1000) / 10).toInt()
+            return if (includeMillis) String.format("%d.%02d", totalSeconds, millis)
+                   else totalSeconds.toString()
+        }
+
         // Apply mathematical rounding if milliseconds are not shown (≥500ms → +1s)
         val adjustedTime = if (!includeMillis && timeInMillis % 1000 >= 500) {
             timeInMillis + 1000 - (timeInMillis % 1000)

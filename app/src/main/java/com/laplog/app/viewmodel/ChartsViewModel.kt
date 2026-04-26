@@ -222,6 +222,10 @@ class ChartsViewModel(
     }
 
     fun formatTime(timeInMillis: Long): String {
+        if (preferencesManager.showTimeAsSeconds) {
+            return (timeInMillis / 1000).toString()
+        }
+
         val hours = (timeInMillis / 3600000).toInt()
         val minutes = ((timeInMillis % 3600000) / 60000).toInt()
         val seconds = ((timeInMillis % 60000) / 1000).toInt()
