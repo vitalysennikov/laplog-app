@@ -54,6 +54,26 @@ class TranslationManager(
     }
 
     /**
+     * Translate session notes to all languages and save to database
+     */
+    suspend fun translateAndSaveSessionNotes(sessionId: Long, notes: String) = withContext(Dispatchers.IO) {
+        AppLogger.i(TAG, "Auto-translating session $sessionId notes")
+
+        val notesEn = translate(notes, "en", "en") ?: notes
+        val notesRu = translate(notes, "en", "ru")
+        val notesZh = translate(notes, "en", "zh")
+
+        sessionDao.updateSessionNotesTranslations(
+            sessionId = sessionId,
+            notesEn = notesEn,
+            notesRu = notesRu,
+            notesZh = notesZh
+        )
+
+        AppLogger.i(TAG, "Session $sessionId: Notes translations saved")
+    }
+
+    /**
      * Translate session name and notes to target language
      * Returns null if no translation needed or available
      */

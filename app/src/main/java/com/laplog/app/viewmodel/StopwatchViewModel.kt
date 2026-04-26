@@ -51,6 +51,9 @@ class StopwatchViewModel(
     private val _currentName = MutableStateFlow(preferencesManager.currentName)
     val currentName: StateFlow<String> = _currentName.asStateFlow()
 
+    private val _currentNotes = MutableStateFlow(preferencesManager.currentNotes)
+    val currentNotes: StateFlow<String> = _currentNotes.asStateFlow()
+
     private val _usedNames = MutableStateFlow<Set<String>>(preferencesManager.usedNames)
     val usedNames: StateFlow<Set<String>> = _usedNames.asStateFlow()
 
@@ -518,11 +521,13 @@ class StopwatchViewModel(
 
         Log.d("StopwatchViewModel", "Creating session: startTime=$sessionStartTime, endTime=$endTime, duration=$elapsedTime")
 
+        val notes = _currentNotes.value.trim().takeIf { it.isNotBlank() }
         val session = SessionEntity(
             startTime = sessionStartTime,
             endTime = endTime,
             totalDuration = elapsedTime,
-            name = _currentName.value.trim().takeIf { it.isNotBlank() }
+            name = _currentName.value.trim().takeIf { it.isNotBlank() },
+            notes = notes
         )
 
         val sessionId = sessionDao.insertSession(session)
@@ -548,6 +553,16 @@ class StopwatchViewModel(
                 translationManager.translateAndSaveSessionName(sessionId, name)
             }
         }
+
+        // Auto-translate notes if provided
+        notes?.let {
+            Log.d("StopwatchViewModel", "Auto-translating notes")
+            translationManager.translateAndSaveSessionNotes(sessionId, it)
+        }
+
+        // Clear notes after saving (notes are session-specific)
+        _currentNotes.value = ""
+        preferencesManager.currentNotes = ""
     }
 
     fun addLap() {
@@ -629,6 +644,11 @@ class StopwatchViewModel(
             _usedNames.value = updated
             preferencesManager.usedNames = updated
         }
+    }
+
+    fun updateCurrentNotes(notes: String) {
+        _currentNotes.value = notes
+        preferencesManager.currentNotes = notes
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = _showMilliseconds.value, roundIfNoMillis: Boolean = true): String {

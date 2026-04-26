@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.*
@@ -69,10 +70,11 @@ fun ChartsScreen(
     val selectedPeriod by viewModel.selectedPeriod.collectAsState()
     val chartData by viewModel.chartData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val showTimeAsSecondsCharts by viewModel.showTimeAsSecondsCharts.collectAsState()
     val currentLanguage = preferencesManager.appLanguage
 
-    // Get all sessions for name localization
-    val allSessions by sessionDao.getAllSessions().collectAsState(initial = emptyList())
+    // Get all sessions for name localization (from ViewModel to avoid recomposition loop)
+    val allSessions by viewModel.allSessions.collectAsState()
 
     // Map original names to localized names
     val nameMapping = remember(availableNames, allSessions, currentLanguage) {
@@ -97,6 +99,16 @@ fun ChartsScreen(
             TopAppBar(
                 title = { }, // Empty title to remove "Графики"
                 actions = {
+                    // Seconds toggle for charts
+                    IconToggleButton(
+                        checked = showTimeAsSecondsCharts,
+                        onCheckedChange = { viewModel.toggleShowTimeAsSecondsCharts() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Numbers,
+                            contentDescription = stringResource(R.string.toggle_seconds_desc)
+                        )
+                    }
                     // Zoom toggle button
                     IconButton(onClick = { zoomEnabled = !zoomEnabled }) {
                         Icon(
@@ -190,7 +202,7 @@ fun ChartsScreen(
                                 AverageLapChart(
                                     statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                    formatTime = ::formatTime,
+                                    formatTime = viewModel::formatTime,
                                     overallAverage = chartData?.overallAverageLapTime ?: 0,
                                     zoomEnabled = zoomEnabled
                                 )
@@ -219,7 +231,7 @@ fun ChartsScreen(
                                 MedianLapChart(
                                     statistics = chartData?.statistics ?: emptyList(),
                                     dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                    formatTime = ::formatTime,
+                                    formatTime = viewModel::formatTime,
                                     overallMedian = chartData?.overallMedianLapTime ?: 0,
                                     zoomEnabled = zoomEnabled
                                 )
@@ -247,7 +259,7 @@ fun ChartsScreen(
                             ActiveTimeChart(
                                 statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                formatTime = ::formatTime,
+                                formatTime = viewModel::formatTime,
                                 overallAverage = chartData?.overallAverageDuration ?: 0,
                                 zoomEnabled = zoomEnabled
                             )
@@ -274,7 +286,7 @@ fun ChartsScreen(
                             ElapsedTimeChart(
                                 statistics = chartData?.statistics ?: emptyList(),
                                 dateFormat = SimpleDateFormat("dd.MM", Locale.getDefault()),
-                                formatTime = ::formatTime,
+                                formatTime = viewModel::formatTime,
                                 overallAverage = chartData?.overallAverageElapsedTime ?: 0,
                                 zoomEnabled = zoomEnabled
                             )
@@ -329,7 +341,7 @@ fun ChartsScreen(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    text = formatTime(chartData?.overallAverageDuration ?: 0),
+                                    text = viewModel.formatTime(chartData?.overallAverageDuration ?: 0),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -348,7 +360,7 @@ fun ChartsScreen(
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = formatTime(chartData?.overallAverageLapTime ?: 0),
+                                        text = viewModel.formatTime(chartData?.overallAverageLapTime ?: 0),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -368,7 +380,7 @@ fun ChartsScreen(
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = formatTime(chartData?.overallMedianLapTime ?: 0),
+                                        text = viewModel.formatTime(chartData?.overallMedianLapTime ?: 0),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -783,14 +795,3 @@ fun MedianLapChart(
     )
 }
 
-private fun formatTime(milliseconds: Long): String {
-    val totalSeconds = milliseconds / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-
-    return when {
-        hours > 0 -> String.format("%d:%02d:%02d", hours, minutes, seconds)
-        else -> String.format("%d:%02d", minutes, seconds)
-    }
-}

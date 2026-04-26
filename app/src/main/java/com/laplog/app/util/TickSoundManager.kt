@@ -15,9 +15,7 @@ class TickSoundManager {
     private val sampleRate = 22050
 
     private val soundBuffers: Map<TickSoundType, ShortArray> =
-        TickSoundType.entries
-            .filter { it != TickSoundType.SILENT }
-            .associateWith { generateSamples(it) }
+        TickSoundType.entries.associateWith { generateSamples(it) }
 
     private fun generateSamples(type: TickSoundType): ShortArray {
         val (freq, durationMs, volume) = when (type) {
@@ -25,7 +23,16 @@ class TickSoundManager {
             TickSoundType.TOCK -> Triple(640.0, 60, 0.85f)
             TickSoundType.BELL -> Triple(1400.0, 200, 0.60f)
             TickSoundType.DEEP -> Triple(280.0, 100, 0.95f)
-            TickSoundType.SILENT -> Triple(0.0, 0, 0f)
+            TickSoundType.HIGH -> Triple(2000.0, 30, 0.65f)
+            TickSoundType.WOOD -> Triple(800.0, 50, 0.90f)
+            TickSoundType.BEEP -> Triple(1200.0, 80, 0.75f)
+            TickSoundType.PING -> Triple(1800.0, 150, 0.55f)
+            TickSoundType.SOFT -> Triple(600.0, 35, 0.38f)
+            TickSoundType.SNAP -> Triple(1600.0, 15, 1.00f)
+            TickSoundType.CHIRP -> Triple(2500.0, 20, 0.55f)
+            TickSoundType.DRUM -> Triple(100.0, 150, 0.95f)
+            TickSoundType.CHIME -> Triple(1700.0, 350, 0.45f)
+            TickSoundType.BUZZ -> Triple(250.0, 90, 0.85f)
         }
         val numSamples = sampleRate * durationMs / 1000
         val samples = ShortArray(numSamples)
@@ -41,7 +48,6 @@ class TickSoundManager {
     }
 
     suspend fun play(soundType: TickSoundType) = withContext(Dispatchers.IO) {
-        if (soundType == TickSoundType.SILENT) return@withContext
         val samples = soundBuffers[soundType] ?: return@withContext
 
         var audioTrack: AudioTrack? = null

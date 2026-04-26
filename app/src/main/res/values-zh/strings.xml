@@ -204,7 +204,16 @@
     <string name="tick_sound_tock">咔嗒</string>
     <string name="tick_sound_bell">铃声</string>
     <string name="tick_sound_deep">低音</string>
-    <string name="tick_sound_silent">静音</string>
+    <string name="tick_sound_high">高音</string>
+    <string name="tick_sound_wood">木声</string>
+    <string name="tick_sound_beep">哔哔</string>
+    <string name="tick_sound_ping">叮</string>
+    <string name="tick_sound_soft">柔和</string>
+    <string name="tick_sound_snap">啪</string>
+    <string name="tick_sound_chirp">啾啾</string>
+    <string name="tick_sound_drum">鼓声</string>
+    <string name="tick_sound_chime">铃铛</string>
+    <string name="tick_sound_buzz">嗡嗡</string>
     <string name="tick_start_offset">起始秒</string>
 
     <!-- App Logs -->

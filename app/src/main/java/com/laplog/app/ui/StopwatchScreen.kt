@@ -68,6 +68,7 @@ fun StopwatchScreen(
     val screenOnMode by viewModel.screenOnMode.collectAsState()
     val lockOrientation by viewModel.lockOrientation.collectAsState()
     val currentName by viewModel.currentName.collectAsState()
+    val currentNotes by viewModel.currentNotes.collectAsState()
     val usedNames by viewModel.usedNames.collectAsState()
     val namesFromHistory by viewModel.namesFromHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
@@ -165,7 +166,19 @@ fun StopwatchScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Notes field
+        OutlinedTextField(
+            value = currentNotes,
+            onValueChange = { viewModel.updateCurrentNotes(it) },
+            label = { Text(stringResource(R.string.notes_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            enabled = !isRunning
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Settings toggles in horizontal row
         Row(

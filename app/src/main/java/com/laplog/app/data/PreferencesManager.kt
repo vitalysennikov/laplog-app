@@ -43,6 +43,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString(KEY_CURRENT_NAME, "") ?: ""
         set(value) = prefs.edit().putString(KEY_CURRENT_NAME, value).apply()
 
+    var currentNotes: String
+        get() = prefs.getString(KEY_CURRENT_NOTES, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_CURRENT_NOTES, value).apply()
+
     var showMillisecondsInHistory: Boolean
         get() = prefs.getBoolean(KEY_SHOW_MILLISECONDS_IN_HISTORY, true)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_MILLISECONDS_IN_HISTORY, value).apply()
@@ -91,6 +95,14 @@ class PreferencesManager(context: Context) {
     var showTimeAsSeconds: Boolean
         get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS, false)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS, value).apply()
+
+    var showTimeAsSecondsHistory: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_HISTORY, false)
+        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS_HISTORY, value).apply()
+
+    var showTimeAsSecondsCharts: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, false)
+        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, value).apply()
 
     var tickEnabled: Boolean
         get() = prefs.getBoolean(KEY_TICK_ENABLED, false)
@@ -163,6 +175,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_USED_NAMES = "used_names"
         private const val KEY_LOCK_ORIENTATION = "lock_orientation"
         private const val KEY_CURRENT_NAME = "current_name"
+        private const val KEY_CURRENT_NOTES = "current_notes"
         private const val KEY_SHOW_MILLISECONDS_IN_HISTORY = "show_milliseconds_in_history"
         private const val KEY_INVERT_LAP_COLORS = "invert_lap_colors"
         private const val KEY_BACKUP_FOLDER_URI = "backup_folder_uri"
@@ -181,6 +194,8 @@ class PreferencesManager(context: Context) {
         private const val KEY_DIM_BRIGHTNESS = "dim_brightness"
         private const val KEY_HIDE_TIME_WHILE_RUNNING = "hide_time_while_running"
         private const val KEY_SHOW_TIME_AS_SECONDS = "show_time_as_seconds"
+        private const val KEY_SHOW_TIME_AS_SECONDS_HISTORY = "show_time_as_seconds_history"
+        private const val KEY_SHOW_TIME_AS_SECONDS_CHARTS = "show_time_as_seconds_charts"
         private const val KEY_TICK_ENABLED = "tick_enabled"
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
         private const val DEFAULT_TICK_ACCENTS_JSON =

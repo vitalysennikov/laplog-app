@@ -204,7 +204,16 @@
     <string name="tick_sound_tock">Тонк</string>
     <string name="tick_sound_bell">Звонок</string>
     <string name="tick_sound_deep">Бас</string>
-    <string name="tick_sound_silent">Тишина</string>
+    <string name="tick_sound_high">Высокий</string>
+    <string name="tick_sound_wood">Дерево</string>
+    <string name="tick_sound_beep">Бип</string>
+    <string name="tick_sound_ping">Пинг</string>
+    <string name="tick_sound_soft">Мягкий</string>
+    <string name="tick_sound_snap">Щелчок</string>
+    <string name="tick_sound_chirp">Писк</string>
+    <string name="tick_sound_drum">Барабан</string>
+    <string name="tick_sound_chime">Перезвон</string>
+    <string name="tick_sound_buzz">Гудок</string>
     <string name="tick_start_offset">С сек.</string>
 
     <!-- App Logs -->

@@ -320,6 +320,15 @@ private fun soundLabel(type: TickSoundType): String = stringResource(
         TickSoundType.TOCK -> R.string.tick_sound_tock
         TickSoundType.BELL -> R.string.tick_sound_bell
         TickSoundType.DEEP -> R.string.tick_sound_deep
-        TickSoundType.SILENT -> R.string.tick_sound_silent
+        TickSoundType.HIGH -> R.string.tick_sound_high
+        TickSoundType.WOOD -> R.string.tick_sound_wood
+        TickSoundType.BEEP -> R.string.tick_sound_beep
+        TickSoundType.PING -> R.string.tick_sound_ping
+        TickSoundType.SOFT -> R.string.tick_sound_soft
+        TickSoundType.SNAP -> R.string.tick_sound_snap
+        TickSoundType.CHIRP -> R.string.tick_sound_chirp
+        TickSoundType.DRUM -> R.string.tick_sound_drum
+        TickSoundType.CHIME -> R.string.tick_sound_chime
+        TickSoundType.BUZZ -> R.string.tick_sound_buzz
     }
 )

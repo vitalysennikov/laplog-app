@@ -21,7 +21,9 @@ data class BackupSettings(
     val hideTimeWhileRunning: Boolean = false,
     val tickEnabled: Boolean = false,
     val tickAccentsJson: String? = null,
-    val showTimeAsSeconds: Boolean = false
+    val showTimeAsSeconds: Boolean = false,
+    val showTimeAsSecondsHistory: Boolean = false,
+    val showTimeAsSecondsCharts: Boolean = false
 )
 
 data class BackupSession(

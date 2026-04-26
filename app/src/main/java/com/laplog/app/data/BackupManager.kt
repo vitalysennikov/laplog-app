@@ -269,7 +269,9 @@ class BackupManager(
             hideTimeWhileRunning = preferencesManager.hideTimeWhileRunning,
             tickEnabled = preferencesManager.tickEnabled,
             tickAccentsJson = preferencesManager.tickAccentsJson,
-            showTimeAsSeconds = preferencesManager.showTimeAsSeconds
+            showTimeAsSeconds = preferencesManager.showTimeAsSeconds,
+            showTimeAsSecondsHistory = preferencesManager.showTimeAsSecondsHistory,
+            showTimeAsSecondsCharts = preferencesManager.showTimeAsSecondsCharts
         )
 
         return BackupData(
@@ -413,6 +415,8 @@ class BackupManager(
         preferencesManager.tickEnabled = settings.tickEnabled
         settings.tickAccentsJson?.let { preferencesManager.tickAccentsJson = it }
         preferencesManager.showTimeAsSeconds = settings.showTimeAsSeconds
+        preferencesManager.showTimeAsSecondsHistory = settings.showTimeAsSecondsHistory
+        preferencesManager.showTimeAsSecondsCharts = settings.showTimeAsSecondsCharts
     }
 
     /**
@@ -529,6 +533,8 @@ class BackupManager(
             settingsObj.put("tickEnabled", settings.tickEnabled)
             settingsObj.put("tickAccentsJson", settings.tickAccentsJson ?: JSONObject.NULL)
             settingsObj.put("showTimeAsSeconds", settings.showTimeAsSeconds)
+            settingsObj.put("showTimeAsSecondsHistory", settings.showTimeAsSecondsHistory)
+            settingsObj.put("showTimeAsSecondsCharts", settings.showTimeAsSecondsCharts)
             json.put("settings", settingsObj)
         }
 
@@ -586,7 +592,9 @@ class BackupManager(
                 hideTimeWhileRunning = if (settingsObj.has("hideTimeWhileRunning")) settingsObj.getBoolean("hideTimeWhileRunning") else false,
                 tickEnabled = if (settingsObj.has("tickEnabled")) settingsObj.getBoolean("tickEnabled") else false,
                 tickAccentsJson = if (settingsObj.has("tickAccentsJson") && !settingsObj.isNull("tickAccentsJson")) settingsObj.getString("tickAccentsJson") else null,
-                showTimeAsSeconds = if (settingsObj.has("showTimeAsSeconds")) settingsObj.getBoolean("showTimeAsSeconds") else false
+                showTimeAsSeconds = if (settingsObj.has("showTimeAsSeconds")) settingsObj.getBoolean("showTimeAsSeconds") else false,
+                showTimeAsSecondsHistory = if (settingsObj.has("showTimeAsSecondsHistory")) settingsObj.getBoolean("showTimeAsSecondsHistory") else false,
+                showTimeAsSecondsCharts = if (settingsObj.has("showTimeAsSecondsCharts")) settingsObj.getBoolean("showTimeAsSecondsCharts") else false
             )
         } else {
             null

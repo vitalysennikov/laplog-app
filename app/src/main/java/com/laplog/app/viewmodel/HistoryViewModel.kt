@@ -36,6 +36,9 @@ class HistoryViewModel(
     private val _showMillisecondsInHistory = MutableStateFlow(preferencesManager.showMillisecondsInHistory)
     val showMillisecondsInHistory: StateFlow<Boolean> = _showMillisecondsInHistory.asStateFlow()
 
+    private val _showTimeAsSecondsHistory = MutableStateFlow(preferencesManager.showTimeAsSecondsHistory)
+    val showTimeAsSecondsHistory: StateFlow<Boolean> = _showTimeAsSecondsHistory.asStateFlow()
+
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
 
@@ -63,6 +66,11 @@ class HistoryViewModel(
     fun toggleMillisecondsInHistory() {
         _showMillisecondsInHistory.value = !_showMillisecondsInHistory.value
         preferencesManager.showMillisecondsInHistory = _showMillisecondsInHistory.value
+    }
+
+    fun toggleShowTimeAsSecondsHistory() {
+        _showTimeAsSecondsHistory.value = !_showTimeAsSecondsHistory.value
+        preferencesManager.showTimeAsSecondsHistory = _showTimeAsSecondsHistory.value
     }
 
     fun toggleInvertLapColors() {
@@ -289,7 +297,7 @@ class HistoryViewModel(
     }
 
     fun formatTime(timeInMillis: Long, includeMillis: Boolean = false): String {
-        if (preferencesManager.showTimeAsSeconds) {
+        if (_showTimeAsSecondsHistory.value) {
             val totalSeconds = timeInMillis / 1000
             val millis = ((timeInMillis % 1000) / 10).toInt()
             return if (includeMillis) String.format("%d.%02d", totalSeconds, millis)

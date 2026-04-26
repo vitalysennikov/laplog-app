@@ -24,6 +24,12 @@ class ChartsViewModel(
     private val _availableNames = MutableStateFlow<List<String>>(emptyList())
     val availableNames: StateFlow<List<String>> = _availableNames.asStateFlow()
 
+    private val _allSessions = MutableStateFlow<List<SessionEntity>>(emptyList())
+    val allSessions: StateFlow<List<SessionEntity>> = _allSessions.asStateFlow()
+
+    private val _showTimeAsSecondsCharts = MutableStateFlow(preferencesManager.showTimeAsSecondsCharts)
+    val showTimeAsSecondsCharts: StateFlow<Boolean> = _showTimeAsSecondsCharts.asStateFlow()
+
     private val _selectedName = MutableStateFlow<String?>(null)
     val selectedName: StateFlow<String?> = _selectedName.asStateFlow()
 
@@ -44,7 +50,7 @@ class ChartsViewModel(
     private fun observeSessionChanges() {
         viewModelScope.launch {
             sessionDao.getAllSessions().collectLatest { sessions ->
-                // Update available names
+                _allSessions.value = sessions
                 val names = sessions.mapNotNull { it.name }.distinct().sorted()
                 _availableNames.value = names
 
@@ -88,6 +94,11 @@ class ChartsViewModel(
     fun selectName(name: String?) {
         _selectedName.value = name
         name?.let { loadChartData(it) }
+    }
+
+    fun toggleShowTimeAsSecondsCharts() {
+        _showTimeAsSecondsCharts.value = !_showTimeAsSecondsCharts.value
+        preferencesManager.showTimeAsSecondsCharts = _showTimeAsSecondsCharts.value
     }
 
     fun selectPeriod(period: TimePeriod) {
@@ -222,7 +233,7 @@ class ChartsViewModel(
     }
 
     fun formatTime(timeInMillis: Long): String {
-        if (preferencesManager.showTimeAsSeconds) {
+        if (_showTimeAsSecondsCharts.value) {
             return (timeInMillis / 1000).toString()
         }
 

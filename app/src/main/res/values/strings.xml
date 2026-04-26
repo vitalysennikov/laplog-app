@@ -204,7 +204,16 @@
     <string name="tick_sound_tock">Clack</string>
     <string name="tick_sound_bell">Bell</string>
     <string name="tick_sound_deep">Bass</string>
-    <string name="tick_sound_silent">Silent</string>
+    <string name="tick_sound_high">High</string>
+    <string name="tick_sound_wood">Wood</string>
+    <string name="tick_sound_beep">Beep</string>
+    <string name="tick_sound_ping">Ping</string>
+    <string name="tick_sound_soft">Soft</string>
+    <string name="tick_sound_snap">Snap</string>
+    <string name="tick_sound_chirp">Chirp</string>
+    <string name="tick_sound_drum">Drum</string>
+    <string name="tick_sound_chime">Chime</string>
+    <string name="tick_sound_buzz">Buzz</string>
     <string name="tick_start_offset">Start</string>
 
     <!-- App Logs -->

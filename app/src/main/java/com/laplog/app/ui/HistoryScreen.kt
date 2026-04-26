@@ -79,6 +79,7 @@ fun HistoryScreen(
     val namesFromHistory by viewModel.namesFromHistory.collectAsState()
     val expandAll by viewModel.expandAll.collectAsState()
     val showMillisecondsInHistory by viewModel.showMillisecondsInHistory.collectAsState()
+    val showTimeAsSecondsHistory by viewModel.showTimeAsSecondsHistory.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
     val filterName by viewModel.filterName.collectAsState()
     val showTableView by viewModel.showTableView.collectAsState()
@@ -138,6 +139,16 @@ fun HistoryScreen(
                         Icon(
                             imageVector = if (showMillisecondsInHistory) Icons.Filled.AccessTime else Icons.Outlined.AccessTime,
                             contentDescription = "Show milliseconds in history"
+                        )
+                    }
+                    // Seconds toggle for history
+                    IconToggleButton(
+                        checked = showTimeAsSecondsHistory,
+                        onCheckedChange = { viewModel.toggleShowTimeAsSecondsHistory() }
+                    ) {
+                        Icon(
+                            imageVector = if (showTimeAsSecondsHistory) Icons.Filled.Numbers else Icons.Outlined.Numbers,
+                            contentDescription = stringResource(R.string.toggle_seconds_desc)
                         )
                     }
                     IconButton(onClick = { showAboutDialog = true }) {
