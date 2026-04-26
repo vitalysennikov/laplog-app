@@ -179,6 +179,6 @@ class PreferencesManager(context: Context) {
         private const val KEY_TICK_ENABLED = "tick_enabled"
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
         private const val DEFAULT_TICK_ACCENTS_JSON =
-            "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7}]"
+            "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7},{\"i\":8,\"s\":\"BELL\",\"o\":0}]"
     }
 }

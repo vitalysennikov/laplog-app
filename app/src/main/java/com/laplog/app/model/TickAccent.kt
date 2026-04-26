@@ -17,5 +17,6 @@ val TICK_PRESET_INTERVALS = listOf(
 
 val DEFAULT_TICK_ACCENTS = listOf(
     TickAccent(1, TickSoundType.TICK, 0),
-    TickAccent(8, TickSoundType.TOCK, 7)
+    TickAccent(8, TickSoundType.TOCK, 7),
+    TickAccent(8, TickSoundType.BELL, 0)
 )

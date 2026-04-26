@@ -2,6 +2,7 @@ package com.laplog.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.laplog.app.R
 import com.laplog.app.model.*
@@ -34,7 +36,7 @@ fun TickSettingsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 480.dp)
+                    .heightIn(max = 520.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -44,10 +46,7 @@ fun TickSettingsDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(stringResource(R.string.tick_enabled))
-                    Switch(
-                        checked = tickEnabled,
-                        onCheckedChange = onTickEnabledChange
-                    )
+                    Switch(checked = tickEnabled, onCheckedChange = onTickEnabledChange)
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -58,27 +57,42 @@ fun TickSettingsDialog(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
-                val sortedAccents = tickAccents.sortedBy { it.intervalSeconds }
-                sortedAccents.forEachIndexed { index, accent ->
+                val sortedAccents = tickAccents.sortedWith(compareBy({ it.intervalSeconds }, { it.startOffsetSeconds }))
+                val usedPairs = tickAccents.map { it.intervalSeconds to it.startOffsetSeconds }.toSet()
+
+                sortedAccents.forEachIndexed { displayIndex, accent ->
+                    val originalIndex = tickAccents.indexOf(accent)
                     TickAccentRow(
-                        ordinal = index + 1,
+                        ordinal = displayIndex + 1,
                         accent = accent,
+                        usedPairs = usedPairs,
+                        onIntervalChange = { newInterval ->
+                            if (newInterval > 0 && originalIndex >= 0) {
+                                val updated = tickAccents.toMutableList()
+                                updated[originalIndex] = updated[originalIndex].copy(intervalSeconds = newInterval)
+                                onAccentsChange(updated)
+                            }
+                        },
                         onSoundChange = { newSound ->
-                            onAccentsChange(tickAccents.map {
-                                if (it.intervalSeconds == accent.intervalSeconds) it.copy(soundType = newSound) else it
-                            })
+                            if (originalIndex >= 0) {
+                                val updated = tickAccents.toMutableList()
+                                updated[originalIndex] = updated[originalIndex].copy(soundType = newSound)
+                                onAccentsChange(updated)
+                            }
                         },
                         onOffsetChange = { newOffset ->
-                            onAccentsChange(tickAccents.map {
-                                if (it.intervalSeconds == accent.intervalSeconds) it.copy(startOffsetSeconds = newOffset) else it
-                            })
+                            if (originalIndex >= 0) {
+                                val updated = tickAccents.toMutableList()
+                                updated[originalIndex] = updated[originalIndex].copy(startOffsetSeconds = newOffset)
+                                onAccentsChange(updated)
+                            }
                         },
                         onPlay = { onPlaySound(accent.soundType) },
                         onDelete = {
-                            onAccentsChange(tickAccents.filter { it.intervalSeconds != accent.intervalSeconds })
+                            onAccentsChange(tickAccents.filter { it != accent })
                         }
                     )
-                    if (index < sortedAccents.lastIndex) {
+                    if (displayIndex < sortedAccents.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 2.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -87,20 +101,13 @@ fun TickSettingsDialog(
                 }
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     TextButton(onClick = { onAccentsChange(DEFAULT_TICK_ACCENTS) }) {
                         Text(stringResource(R.string.tick_reset_defaults))
                     }
-                    val usedIntervals = tickAccents.map { it.intervalSeconds }.toSet()
-                    val available = TICK_PRESET_INTERVALS.filter { it !in usedIntervals }
-                    TextButton(
-                        onClick = { showAddDialog = true },
-                        enabled = available.isNotEmpty()
-                    ) {
+                    TextButton(onClick = { showAddDialog = true }) {
                         Text(stringResource(R.string.tick_add_accent))
                     }
                 }
@@ -114,9 +121,8 @@ fun TickSettingsDialog(
     )
 
     if (showAddDialog) {
-        val usedIntervals = tickAccents.map { it.intervalSeconds }.toSet()
         AddTickAccentDialog(
-            existingIntervals = usedIntervals,
+            existingPairs = tickAccents.map { it.intervalSeconds to it.startOffsetSeconds }.toSet(),
             onConfirm = { accent ->
                 onAccentsChange(tickAccents + accent)
                 showAddDialog = false
@@ -130,109 +136,96 @@ fun TickSettingsDialog(
 private fun TickAccentRow(
     ordinal: Int,
     accent: TickAccent,
+    usedPairs: Set<Pair<Int, Int>>,
+    onIntervalChange: (Int) -> Unit,
     onSoundChange: (TickSoundType) -> Unit,
     onOffsetChange: (Int) -> Unit,
     onPlay: () -> Unit,
     onDelete: () -> Unit
 ) {
     var showSoundMenu by remember { mutableStateOf(false) }
-    var showOffsetMenu by remember { mutableStateOf(false) }
+    var intervalText by remember(accent.intervalSeconds) { mutableStateOf(accent.intervalSeconds.toString()) }
+    var offsetText by remember(accent.startOffsetSeconds) { mutableStateOf(accent.startOffsetSeconds.toString()) }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "$ordinal.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(20.dp)
-            )
-            Text(
-                text = intervalLabel(accent.intervalSeconds),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "$ordinal.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(18.dp)
+        )
+
+        OutlinedTextField(
+            value = intervalText,
+            onValueChange = { v ->
+                val filtered = v.filter { it.isDigit() }
+                intervalText = filtered
+                val n = filtered.toIntOrNull()
+                if (n != null && n > 0 && (n == accent.intervalSeconds || (n to accent.startOffsetSeconds) !in usedPairs)) {
+                    onIntervalChange(n)
+                }
+            },
+            modifier = Modifier.width(62.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodySmall,
+            label = { Text(stringResource(R.string.tick_interval), style = MaterialTheme.typography.labelSmall) }
+        )
+
+        OutlinedTextField(
+            value = offsetText,
+            onValueChange = { v ->
+                val filtered = v.filter { it.isDigit() }
+                offsetText = filtered
+                val n = filtered.toIntOrNull()
+                if (n != null && n >= 0) onOffsetChange(n)
+            },
+            modifier = Modifier.width(62.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodySmall,
+            label = { Text(stringResource(R.string.tick_start_offset), style = MaterialTheme.typography.labelSmall) }
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Box {
+            TextButton(
+                onClick = { showSoundMenu = true },
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+            ) {
+                Text(soundLabel(accent.soundType), style = MaterialTheme.typography.bodySmall)
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            DropdownMenu(expanded = showSoundMenu, onDismissRequest = { showSoundMenu = false }) {
+                TickSoundType.entries.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(soundLabel(type)) },
+                        onClick = { onSoundChange(type); showSoundMenu = false }
+                    )
+                }
             }
         }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(start = 20.dp)
-        ) {
-            // Offset dropdown (only if interval > 1)
-            if (accent.intervalSeconds > 1) {
-                Box {
-                    TextButton(
-                        onClick = { showOffsetMenu = true },
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                    ) {
-                        Text(
-                            text = "${stringResource(R.string.tick_start_offset)}: ${accent.startOffsetSeconds}s",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showOffsetMenu,
-                        onDismissRequest = { showOffsetMenu = false }
-                    ) {
-                        (0 until accent.intervalSeconds).forEach { offset ->
-                            DropdownMenuItem(
-                                text = { Text("${offset}s") },
-                                onClick = {
-                                    onOffsetChange(offset)
-                                    showOffsetMenu = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+        IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Sound dropdown
-            Box {
-                TextButton(
-                    onClick = { showSoundMenu = true },
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                ) {
-                    Text(
-                        text = soundLabel(accent.soundType),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                DropdownMenu(
-                    expanded = showSoundMenu,
-                    onDismissRequest = { showSoundMenu = false }
-                ) {
-                    TickSoundType.entries.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(soundLabel(type)) },
-                            onClick = {
-                                onSoundChange(type)
-                                showSoundMenu = false
-                            }
-                        )
-                    }
-                }
-            }
+        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -240,89 +233,43 @@ private fun TickAccentRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddTickAccentDialog(
-    existingIntervals: Set<Int>,
+    existingPairs: Set<Pair<Int, Int>>,
     onConfirm: (TickAccent) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val available = TICK_PRESET_INTERVALS.filter { it !in existingIntervals }
-    var selectedInterval by remember { mutableStateOf(available.firstOrNull() ?: 1) }
+    var intervalText by remember { mutableStateOf("") }
+    var offsetText by remember { mutableStateOf("0") }
     var selectedSound by remember { mutableStateOf(TickSoundType.TICK) }
-    var selectedOffset by remember { mutableStateOf(0) }
-    var intervalExpanded by remember { mutableStateOf(false) }
     var soundExpanded by remember { mutableStateOf(false) }
-    var offsetExpanded by remember { mutableStateOf(false) }
 
-    // Reset offset when interval changes
-    LaunchedEffect(selectedInterval) {
-        if (selectedOffset >= selectedInterval) selectedOffset = 0
-    }
+    val interval = intervalText.toIntOrNull()
+    val offset = offsetText.toIntOrNull() ?: 0
+    val intervalError = interval != null && (interval <= 0 || (interval to offset) in existingPairs)
+    val isValid = interval != null && interval > 0 && (interval to offset) !in existingPairs
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.tick_add_accent)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ExposedDropdownMenuBox(
-                    expanded = intervalExpanded,
-                    onExpandedChange = { intervalExpanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = intervalLabel(selectedInterval),
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.tick_interval)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(intervalExpanded) }
-                    )
-                    ExposedDropdownMenu(
-                        expanded = intervalExpanded,
-                        onDismissRequest = { intervalExpanded = false }
-                    ) {
-                        available.forEach { interval ->
-                            DropdownMenuItem(
-                                text = { Text(intervalLabel(interval)) },
-                                onClick = {
-                                    selectedInterval = interval
-                                    intervalExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
+                OutlinedTextField(
+                    value = intervalText,
+                    onValueChange = { intervalText = it.filter { c -> c.isDigit() } },
+                    label = { Text(stringResource(R.string.tick_interval)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = intervalError
+                )
 
-                if (selectedInterval > 1) {
-                    ExposedDropdownMenuBox(
-                        expanded = offsetExpanded,
-                        onExpandedChange = { offsetExpanded = it }
-                    ) {
-                        OutlinedTextField(
-                            value = "${selectedOffset}s",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.tick_start_offset)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(offsetExpanded) }
-                        )
-                        ExposedDropdownMenu(
-                            expanded = offsetExpanded,
-                            onDismissRequest = { offsetExpanded = false }
-                        ) {
-                            (0 until selectedInterval).forEach { offset ->
-                                DropdownMenuItem(
-                                    text = { Text("${offset}s") },
-                                    onClick = {
-                                        selectedOffset = offset
-                                        offsetExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                OutlinedTextField(
+                    value = offsetText,
+                    onValueChange = { offsetText = it.filter { c -> c.isDigit() } },
+                    label = { Text(stringResource(R.string.tick_start_offset)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 ExposedDropdownMenuBox(
                     expanded = soundExpanded,
@@ -333,9 +280,7 @@ private fun AddTickAccentDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.tick_sound)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(soundExpanded) }
                     )
                     ExposedDropdownMenu(
@@ -345,10 +290,7 @@ private fun AddTickAccentDialog(
                         TickSoundType.entries.forEach { type ->
                             DropdownMenuItem(
                                 text = { Text(soundLabel(type)) },
-                                onClick = {
-                                    selectedSound = type
-                                    soundExpanded = false
-                                }
+                                onClick = { selectedSound = type; soundExpanded = false }
                             )
                         }
                     }
@@ -357,8 +299,8 @@ private fun AddTickAccentDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(TickAccent(selectedInterval, selectedSound, selectedOffset)) },
-                enabled = available.isNotEmpty()
+                onClick = { if (interval != null) onConfirm(TickAccent(interval, selectedSound, offset)) },
+                enabled = isValid
             ) {
                 Text(stringResource(R.string.tick_add_accent))
             }
@@ -381,14 +323,3 @@ private fun soundLabel(type: TickSoundType): String = stringResource(
         TickSoundType.SILENT -> R.string.tick_sound_silent
     }
 )
-
-@Composable
-private fun intervalLabel(seconds: Int): String {
-    val mins = seconds / 60
-    val secs = seconds % 60
-    return when {
-        seconds < 60 -> stringResource(R.string.tick_every_n_sec, seconds)
-        secs == 0 -> stringResource(R.string.tick_every_n_min, mins)
-        else -> stringResource(R.string.tick_every_n_min_sec, mins, secs)
-    }
-}

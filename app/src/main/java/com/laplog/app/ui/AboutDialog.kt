@@ -7,7 +7,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -106,7 +105,7 @@ fun AboutDialog(
                     )
                 }
 
-                // Keep screen on toggle (2 states)
+                // Keep screen on toggle
                 Row(
                     verticalAlignment = Alignment.Top,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -118,48 +117,10 @@ fun AboutDialog(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.toggle_screen_on_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Smartphone,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = stringResource(R.string.toggle_screen_on_off),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Smartphone,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = stringResource(R.string.toggle_screen_on_running),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.toggle_screen_on_desc),
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
 
                 // Lock orientation toggle
