@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,10 +106,26 @@ fun AboutDialog(
                     )
                 }
 
-                // Keep screen on toggle
+                // Keep screen on toggle (3 modes)
                 Row(
                     verticalAlignment = Alignment.Top,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    modifier = Modifier.padding(bottom = 2.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Smartphone,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.toggle_screen_on_off),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 2.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Smartphone,
@@ -118,7 +135,23 @@ fun AboutDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.toggle_screen_on_desc),
+                        text = stringResource(R.string.toggle_screen_on_running),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhonelinkLock,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.toggle_screen_on_always),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

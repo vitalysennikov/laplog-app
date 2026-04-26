@@ -590,7 +590,7 @@ class StopwatchViewModel(
     fun cycleScreenOnMode() {
         _screenOnMode.value = when (_screenOnMode.value) {
             ScreenOnMode.OFF -> ScreenOnMode.WHILE_RUNNING
-            ScreenOnMode.WHILE_RUNNING -> ScreenOnMode.OFF
+            ScreenOnMode.WHILE_RUNNING -> ScreenOnMode.ALWAYS
             ScreenOnMode.ALWAYS -> ScreenOnMode.OFF
         }
         preferencesManager.screenOnMode = _screenOnMode.value

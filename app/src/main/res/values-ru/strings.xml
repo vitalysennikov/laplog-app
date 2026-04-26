@@ -117,7 +117,7 @@
     <string name="toggle_screen_on_desc">Держать экран включённым пока секундомер работает (нажмите для переключения)</string>
     <string name="toggle_screen_on_off">Экран ВЫКЛ: Экран гаснет как обычно</string>
     <string name="toggle_screen_on_running">Экран ВКЛ при работе: Экран не гаснет только когда секундомер работает</string>
-    <string name="toggle_screen_on_always">Экран ВСЕГДА ВКЛ: Экран не гаснет при работе секундомера, даже в фоне</string>
+    <string name="toggle_screen_on_always">Экран ВСЕГДА ВКЛ: Экран не гаснет, когда секундомер работает и когда остановлен, в том числе при работе в фоне</string>
     <string name="toggle_orientation_desc">Блокировать ориентацию экрана</string>
     <string name="toggle_invert_colors_desc">Инвертировать цвета кругов (быстрее/медленнее)</string>
     <string name="toggle_dim_brightness_desc">Сохранять яркость (применяется когда экран удерживается в режимах RUNNING/ALWAYS; включено: сохранять системную яркость, выключено: уменьшать до 10% после таймаута)</string>
