@@ -18,11 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -318,25 +316,30 @@ fun StopwatchScreen(
         val primaryColor = MaterialTheme.colorScheme.primary
 
         if (shouldHideTime) {
-            // Show placeholder with dimming colon
-            val placeholder = buildAnnotatedString {
-                append("••")
-                pushStyle(SpanStyle(color = primaryColor.copy(alpha = colonAlpha)))
-                append(":")
-                pop()
-                append("••")
-                pushStyle(SpanStyle(color = primaryColor.copy(alpha = colonAlpha)))
-                append(":")
-                pop()
-                append("••")
+            // Show placeholder with blinking colon: ••:••
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "--",
+                    fontSize = 56.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = dseg7Font,
+                    color = primaryColor
+                )
+                Text(
+                    text = ":",
+                    fontSize = 56.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = dseg7Font,
+                    color = primaryColor.copy(alpha = colonAlpha)
+                )
+                Text(
+                    text = "--",
+                    fontSize = 56.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = dseg7Font,
+                    color = primaryColor
+                )
             }
-            Text(
-                text = placeholder,
-                fontSize = 56.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = dseg7Font,
-                color = primaryColor
-            )
         } else {
             Text(
                 text = viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false),
