@@ -1,6 +1,7 @@
 package com.laplog.app.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -55,6 +56,7 @@ fun BackupScreen(
     val backups by viewModel.backups.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val loggingEnabled by viewModel.loggingEnabled.collectAsState()
 
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
@@ -232,7 +234,27 @@ fun BackupScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Logging enabled checkbox
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.toggleLogging() }
+                    ) {
+                        Checkbox(
+                            checked = loggingEnabled,
+                            onCheckedChange = { viewModel.toggleLogging() }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.logging_enabled),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // View Logs button
                     OutlinedButton(

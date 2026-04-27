@@ -106,6 +106,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, false)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, value).apply()
 
+    var loggingEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LOGGING_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_LOGGING_ENABLED, value).apply()
+
     var tickEnabled: Boolean
         get() = prefs.getBoolean(KEY_TICK_ENABLED, false)
         set(value) = prefs.edit().putBoolean(KEY_TICK_ENABLED, value).apply()
@@ -284,6 +288,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SHOW_TIME_AS_SECONDS = "show_time_as_seconds"
         private const val KEY_SHOW_TIME_AS_SECONDS_HISTORY = "show_time_as_seconds_history"
         private const val KEY_SHOW_TIME_AS_SECONDS_CHARTS = "show_time_as_seconds_charts"
+        private const val KEY_LOGGING_ENABLED = "logging_enabled"
         private const val KEY_TICK_ENABLED = "tick_enabled"
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
         private const val KEY_NAME_TOGGLES_JSON = "name_toggles_json"

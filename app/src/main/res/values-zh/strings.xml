@@ -218,6 +218,7 @@
 
     <!-- App Logs -->
     <string name="app_logs">应用日志</string>
+    <string name="logging_enabled">记录日志到文件</string>
     <string name="view_logs">查看日志</string>
     <string name="export_logs">导出日志</string>
     <string name="clear_logs">清除日志</string>

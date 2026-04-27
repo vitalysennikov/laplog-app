@@ -127,11 +127,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize logger
-        AppLogger.init(applicationContext)
-        AppLogger.i("MainActivity", "App started")
-
         preferencesManager = PreferencesManager(applicationContext)
+
+        // Initialize logger (file logging only if enabled in preferences)
+        AppLogger.init(applicationContext, preferencesManager.loggingEnabled)
         database = AppDatabase.getDatabase(applicationContext)
         translationManager = TranslationManager(database.sessionDao())
 

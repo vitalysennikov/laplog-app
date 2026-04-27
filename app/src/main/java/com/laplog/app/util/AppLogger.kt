@@ -20,7 +20,10 @@ object AppLogger {
     private lateinit var logFile: File
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
 
-    fun init(context: Context) {
+    var fileLoggingEnabled: Boolean = false
+
+    fun init(context: Context, loggingEnabled: Boolean = false) {
+        fileLoggingEnabled = loggingEnabled
         logFile = File(context.filesDir, LOG_FILE_NAME)
 
         // Rotate log if too large
@@ -29,7 +32,9 @@ object AppLogger {
             logFile.renameTo(backupFile)
         }
 
-        i("AppLogger", "Logger initialized, version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+        if (fileLoggingEnabled) {
+            i("AppLogger", "Logger initialized, version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+        }
     }
 
     fun d(tag: String, message: String) {
@@ -63,7 +68,7 @@ object AppLogger {
 
         // Log to file
         try {
-            if (::logFile.isInitialized) {
+            if (fileLoggingEnabled && ::logFile.isInitialized) {
                 val timestamp = dateFormat.format(Date())
                 val versionInfo = "v${BuildConfig.VERSION_NAME}"
                 val levelStr = level.name.padEnd(5)

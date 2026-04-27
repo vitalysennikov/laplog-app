@@ -130,7 +130,7 @@ class ChartsViewModel(
                     val laps = sessionDao.getLapsForSession(session.id).first()
 
                     // Calculate lap statistics if available
-                    val (avgDuration, medianDuration) = if (laps.size >= 2) {
+                    val (avgDuration, medianDuration) = if (laps.isNotEmpty()) {
                         val lapDurations = laps.map { it.lapDuration }
                         val avg = lapDurations.average().toLong()
 
@@ -144,7 +144,6 @@ class ChartsViewModel(
                         }
                         Pair(avg, median)
                     } else {
-                        // No laps or only 1 lap - use 0 for lap statistics
                         Pair(0L, 0L)
                     }
 

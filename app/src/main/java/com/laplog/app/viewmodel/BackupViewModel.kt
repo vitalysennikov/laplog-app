@@ -56,6 +56,9 @@ class BackupViewModel(
     private val _logContent = MutableStateFlow("")
     val logContent: StateFlow<String> = _logContent.asStateFlow()
 
+    private val _loggingEnabled = MutableStateFlow(preferencesManager.loggingEnabled)
+    val loggingEnabled: StateFlow<Boolean> = _loggingEnabled.asStateFlow()
+
     init {
         loadBackups()
         loadLogContent()
@@ -223,6 +226,13 @@ class BackupViewModel(
 
     fun refreshLogContent() {
         loadLogContent()
+    }
+
+    fun toggleLogging() {
+        val newValue = !_loggingEnabled.value
+        _loggingEnabled.value = newValue
+        preferencesManager.loggingEnabled = newValue
+        AppLogger.fileLoggingEnabled = newValue
     }
 
     fun exportLogs(onExport: (String, String) -> Unit) {
