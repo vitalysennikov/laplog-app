@@ -79,6 +79,12 @@ fun StopwatchScreen(
 
     var expandedNameDropdown by remember { mutableStateOf(false) }
     var showTickSettingsDialog by remember { mutableStateOf(false) }
+    var showNotes by remember { mutableStateOf(currentNotes.isNotEmpty()) }
+
+    // Auto-show notes field when notes become non-empty (e.g. typed by user)
+    LaunchedEffect(currentNotes) {
+        if (currentNotes.isNotEmpty()) showNotes = true
+    }
 
     // Update screen on state based on mode, running state, elapsed time, and dim brightness
     LaunchedEffect(isRunning, screenOnMode, elapsedTime, dimBrightness) {
@@ -122,59 +128,77 @@ fun StopwatchScreen(
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Name dropdown from history
-        ExposedDropdownMenuBox(
-            expanded = expandedNameDropdown,
-            onExpandedChange = {
-                if (!isRunning) expandedNameDropdown = it
-            }
+        // Name dropdown + notes toggle button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
-                value = currentName,
-                onValueChange = { viewModel.updateCurrentName(it) },
-                label = { Text(stringResource(R.string.name_hint)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-                singleLine = true,
-                enabled = !isRunning,
-                trailingIcon = {
-                    if (namesFromHistory.isNotEmpty()) {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNameDropdown)
-                    }
+            ExposedDropdownMenuBox(
+                expanded = expandedNameDropdown,
+                onExpandedChange = {
+                    if (!isRunning) expandedNameDropdown = it
                 },
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
+                modifier = Modifier.weight(1f)
+            ) {
+                OutlinedTextField(
+                    value = currentName,
+                    onValueChange = { viewModel.updateCurrentName(it) },
+                    label = { Text(stringResource(R.string.name_hint)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    singleLine = true,
+                    enabled = !isRunning,
+                    trailingIcon = {
+                        if (namesFromHistory.isNotEmpty()) {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNameDropdown)
+                        }
+                    },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                )
 
-            if (namesFromHistory.isNotEmpty()) {
-                ExposedDropdownMenu(
-                    expanded = expandedNameDropdown,
-                    onDismissRequest = { expandedNameDropdown = false }
-                ) {
-                    namesFromHistory.forEach { name ->
-                        DropdownMenuItem(
-                            text = { Text(name) },
-                            onClick = {
-                                viewModel.selectNameFromHistory(name)
-                                expandedNameDropdown = false
-                            }
-                        )
+                if (namesFromHistory.isNotEmpty()) {
+                    ExposedDropdownMenu(
+                        expanded = expandedNameDropdown,
+                        onDismissRequest = { expandedNameDropdown = false }
+                    ) {
+                        namesFromHistory.forEach { name ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    viewModel.selectNameFromHistory(name)
+                                    expandedNameDropdown = false
+                                }
+                            )
+                        }
                     }
                 }
             }
+
+            IconButton(
+                onClick = { showNotes = !showNotes },
+                enabled = !isRunning
+            ) {
+                Icon(
+                    imageVector = if (showNotes) Icons.Default.EditNote else Icons.Outlined.EditNote,
+                    contentDescription = stringResource(R.string.notes_hint),
+                    tint = if (showNotes) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Notes field
-        OutlinedTextField(
-            value = currentNotes,
-            onValueChange = { viewModel.updateCurrentNotes(it) },
-            label = { Text(stringResource(R.string.notes_hint)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = !isRunning
-        )
+        if (showNotes) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = currentNotes,
+                onValueChange = { viewModel.updateCurrentNotes(it) },
+                label = { Text(stringResource(R.string.notes_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                enabled = !isRunning
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
