@@ -657,6 +657,8 @@ class StopwatchViewModel(
     }
 
     fun selectNameFromHistory(name: String) {
+        // Save current name's toggles before switching to another name
+        saveCurrentNameToggles()
         _currentName.value = name
         preferencesManager.currentName = name
         val trimmed = name.trim()
