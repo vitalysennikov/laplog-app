@@ -188,7 +188,7 @@ fun SessionEditDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(R.string.laps), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.lap), style = MaterialTheme.typography.titleSmall)
                         TextButton(onClick = {
                             lapDurations.add(0L)
                             lapTexts.add("")
