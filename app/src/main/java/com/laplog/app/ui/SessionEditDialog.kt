@@ -57,6 +57,10 @@ fun SessionEditDialog(
     var showTimePicker by remember { mutableStateOf(false) }
     var expandedNameDropdown by remember { mutableStateOf(false) }
 
+    LaunchedEffect(name) {
+        expandedNameDropdown = name.isNotBlank() && namesFromHistory.any { it.contains(name, ignoreCase = true) && it != name }
+    }
+
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()) }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 

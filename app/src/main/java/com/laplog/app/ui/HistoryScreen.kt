@@ -265,9 +265,6 @@ fun HistoryScreen(
                         SessionItem(
                             sessionWithLaps = sessionWithLaps,
                             namesFromHistory = namesFromHistory,
-                            onUpdateName = { name ->
-                                viewModel.updateSessionName(sessionWithLaps.session.id, name)
-                            },
                             onUpdateNotes = { notes ->
                                 viewModel.updateSessionNotes(sessionWithLaps.session.id, notes)
                             },
@@ -410,7 +407,6 @@ fun HistoryScreen(
 fun SessionItem(
     sessionWithLaps: SessionWithLaps,
     namesFromHistory: List<String>,
-    onUpdateName: (String) -> Unit,
     onUpdateNotes: (String) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -432,7 +428,6 @@ fun SessionItem(
     LaunchedEffect(expandAll) {
         expanded = expandAll
     }
-    var showNameDialog by remember { mutableStateOf(false) }
     var showNotesDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showDeleteBeforeDialog by remember { mutableStateOf(false) }
@@ -602,20 +597,6 @@ fun SessionItem(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                if (session.name.isNullOrBlank())
-                                    stringResource(R.string.add_name)
-                                else
-                                    stringResource(R.string.edit_name)
-                            )
-                        },
-                        onClick = {
-                            showMenu = false
-                            showNameDialog = true
-                        }
-                    )
                     DropdownMenuItem(
                         text = {
                             Text(
@@ -798,19 +779,6 @@ fun SessionItem(
         }
     }
 
-    // Name dialog
-    if (showNameDialog) {
-        NameDialog(
-            currentName = session.name ?: "",
-            namesFromHistory = namesFromHistory,
-            onDismiss = { showNameDialog = false },
-            onSave = { name ->
-                onUpdateName(name)
-                showNameDialog = false
-            }
-        )
-    }
-
     // Notes dialog
     if (showNotesDialog) {
         NotesDialog(
@@ -949,79 +917,6 @@ fun SessionItem(
             }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NameDialog(
-    currentName: String,
-    namesFromHistory: List<String>,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit
-) {
-    var name by remember { mutableStateOf(currentName) }
-    var expandedNameDropdown by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                if (currentName.isBlank())
-                    stringResource(R.string.add_name)
-                else
-                    stringResource(R.string.edit_name)
-            )
-        },
-        text = {
-            ExposedDropdownMenuBox(
-                expanded = expandedNameDropdown,
-                onExpandedChange = { expandedNameDropdown = it }
-            ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.name_hint)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    singleLine = true,
-                    trailingIcon = {
-                        if (namesFromHistory.isNotEmpty()) {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNameDropdown)
-                        }
-                    },
-                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-                )
-
-                if (namesFromHistory.isNotEmpty()) {
-                    ExposedDropdownMenu(
-                        expanded = expandedNameDropdown,
-                        onDismissRequest = { expandedNameDropdown = false }
-                    ) {
-                        namesFromHistory.forEach { historyName ->
-                            DropdownMenuItem(
-                                text = { Text(historyName) },
-                                onClick = {
-                                    name = historyName
-                                    expandedNameDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(name) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
 }
 
 @Composable
