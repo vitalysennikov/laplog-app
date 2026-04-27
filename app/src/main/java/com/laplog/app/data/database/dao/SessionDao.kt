@@ -14,6 +14,12 @@ interface SessionDao {
     @Insert
     suspend fun insertLaps(laps: List<LapEntity>)
 
+    @Update
+    suspend fun updateSession(session: SessionEntity)
+
+    @Query("DELETE FROM laps WHERE sessionId = :sessionId")
+    suspend fun deleteAllLapsForSession(sessionId: Long)
+
     @Query("SELECT * FROM sessions ORDER BY startTime DESC")
     fun getAllSessions(): Flow<List<SessionEntity>>
 

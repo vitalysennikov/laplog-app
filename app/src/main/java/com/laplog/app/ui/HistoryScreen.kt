@@ -89,6 +89,8 @@ fun HistoryScreen(
     var showExportMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var editingSession by remember { mutableStateOf<SessionWithLaps?>(null) }
 
     // Force recomposition when language changes
     key(currentLanguage) {
@@ -96,6 +98,11 @@ fun HistoryScreen(
     }
 
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showCreateDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_session))
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.history)) },
@@ -264,6 +271,7 @@ fun HistoryScreen(
                             onUpdateNotes = { notes ->
                                 viewModel.updateSessionNotes(sessionWithLaps.session.id, notes)
                             },
+                            onEdit = { editingSession = sessionWithLaps },
                             onDelete = { viewModel.deleteSession(sessionWithLaps.session) },
                             onDeleteBefore = { viewModel.deleteSessionsBefore(sessionWithLaps.session.startTime) },
                             onExportJson = { sessionId -> viewModel.getSessionDataAsJson(sessionId) },
@@ -368,6 +376,32 @@ fun HistoryScreen(
                 }
             )
         }
+
+        // Create session dialog
+        if (showCreateDialog) {
+            SessionEditDialog(
+                initialSession = null,
+                namesFromHistory = namesFromHistory,
+                onDismiss = { showCreateDialog = false },
+                onSave = { name, notes, startTimeMs, durationMs, lapDurations ->
+                    viewModel.createSession(name, notes, startTimeMs, durationMs, lapDurations)
+                    showCreateDialog = false
+                }
+            )
+        }
+
+        // Edit session dialog
+        editingSession?.let { session ->
+            SessionEditDialog(
+                initialSession = session,
+                namesFromHistory = namesFromHistory,
+                onDismiss = { editingSession = null },
+                onSave = { name, notes, startTimeMs, durationMs, lapDurations ->
+                    viewModel.updateSessionFull(session.session.id, name, notes, startTimeMs, durationMs, lapDurations)
+                    editingSession = null
+                }
+            )
+        }
     }
 }
 
@@ -378,6 +412,7 @@ fun SessionItem(
     namesFromHistory: List<String>,
     onUpdateName: (String) -> Unit,
     onUpdateNotes: (String) -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     onDeleteBefore: () -> Unit,
     onExportJson: suspend (Long) -> String,
@@ -553,6 +588,10 @@ fun SessionItem(
                             }
                         }
                     }
+                }
+
+                IconButton(onClick = { onEdit() }) {
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_session))
                 }
 
                 IconButton(onClick = { showMenu = true }) {

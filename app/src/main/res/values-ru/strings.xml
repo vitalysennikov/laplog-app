@@ -24,6 +24,12 @@
     <string name="no_laps">Нет кругов</string>
     <string name="add_name">Добавить наименование</string>
     <string name="edit_name">Изменить наименование</string>
+    <string name="edit_session">Редактировать сессию</string>
+    <string name="create_session">Новая сессия</string>
+    <string name="duration_hint">Длительность (ММ:СС или ММ:СС.сс)</string>
+    <string name="add_lap">Добавить круг</string>
+    <string name="total">Итого</string>
+    <string name="save">Сохранить</string>
     <string name="name_hint">Наименование (необязательно)</string>
     <string name="add_notes">Добавить заметку</string>
     <string name="edit_notes">Изменить заметку</string>

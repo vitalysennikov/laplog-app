@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionWithLaps
 import com.laplog.app.util.AppLogger
@@ -211,6 +212,94 @@ class HistoryViewModel(
 
     fun toggleExpandAll() {
         _expandAll.value = !_expandAll.value
+    }
+
+    fun createSession(
+        name: String,
+        notes: String,
+        startTimeMs: Long,
+        durationMs: Long,
+        lapDurations: List<Long>
+    ) {
+        viewModelScope.launch {
+            val trimmedName = name.trim().ifBlank { null }
+            val trimmedNotes = notes.trim().ifBlank { null }
+            val session = SessionEntity(
+                startTime = startTimeMs,
+                endTime = startTimeMs + durationMs,
+                totalDuration = durationMs,
+                name = trimmedName,
+                notes = trimmedNotes
+            )
+            val sessionId = sessionDao.insertSession(session)
+            insertLapsForSession(sessionId, lapDurations)
+
+            trimmedName?.let { n ->
+                val lang = preferencesManager.getCurrentLanguage()
+                val (en, ru, zh) = translateToAllLanguages(n, lang)
+                sessionDao.updateSessionNameTranslations(sessionId, en, ru, zh)
+            }
+            trimmedNotes?.let { n ->
+                val lang = preferencesManager.getCurrentLanguage()
+                val (en, ru, zh) = translateToAllLanguages(n, lang)
+                sessionDao.updateSessionNotesTranslations(sessionId, en, ru, zh)
+            }
+            loadSessions()
+            loadNamesFromHistory()
+        }
+    }
+
+    fun updateSessionFull(
+        sessionId: Long,
+        name: String,
+        notes: String,
+        startTimeMs: Long,
+        durationMs: Long,
+        lapDurations: List<Long>
+    ) {
+        viewModelScope.launch {
+            val trimmedName = name.trim().ifBlank { null }
+            val trimmedNotes = notes.trim().ifBlank { null }
+            val session = SessionEntity(
+                id = sessionId,
+                startTime = startTimeMs,
+                endTime = startTimeMs + durationMs,
+                totalDuration = durationMs,
+                name = trimmedName,
+                notes = trimmedNotes
+            )
+            sessionDao.updateSession(session)
+            sessionDao.deleteAllLapsForSession(sessionId)
+            insertLapsForSession(sessionId, lapDurations)
+
+            trimmedName?.let { n ->
+                val lang = preferencesManager.getCurrentLanguage()
+                val (en, ru, zh) = translateToAllLanguages(n, lang)
+                sessionDao.updateSessionNameTranslations(sessionId, en, ru, zh)
+            }
+            trimmedNotes?.let { n ->
+                val lang = preferencesManager.getCurrentLanguage()
+                val (en, ru, zh) = translateToAllLanguages(n, lang)
+                sessionDao.updateSessionNotesTranslations(sessionId, en, ru, zh)
+            }
+            loadSessions()
+            loadNamesFromHistory()
+        }
+    }
+
+    private suspend fun insertLapsForSession(sessionId: Long, lapDurations: List<Long>) {
+        if (lapDurations.isEmpty()) return
+        var cumulative = 0L
+        val laps = lapDurations.mapIndexed { index, duration ->
+            cumulative += duration
+            LapEntity(
+                sessionId = sessionId,
+                lapNumber = index + 1,
+                totalTime = cumulative,
+                lapDuration = duration
+            )
+        }
+        sessionDao.insertLaps(laps)
     }
 
     /**
