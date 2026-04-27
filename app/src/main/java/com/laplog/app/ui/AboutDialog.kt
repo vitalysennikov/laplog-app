@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Flag
@@ -25,6 +27,7 @@ fun AboutDialog(
     onLanguageChange: (String?) -> Unit
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -46,6 +49,18 @@ fun AboutDialog(
                 Text(
                     text = "© 2025 Vitaly Sennikov",
                     style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // GitHub link
+                Text(
+                    text = "github.com/vitalysennikov/laplog-app",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        uriHandler.openUri("https://github.com/vitalysennikov/laplog-app")
+                    }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
