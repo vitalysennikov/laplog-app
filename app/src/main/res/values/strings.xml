@@ -29,7 +29,6 @@
     <string name="duration_hint">Duration (MM:SS or MM:SS.cc)</string>
     <string name="add_lap">Add lap</string>
     <string name="total">Total</string>
-    <string name="save">Save</string>
     <string name="name_hint">Name (optional)</string>
     <string name="add_notes">Add notes</string>
     <string name="edit_notes">Edit notes</string>

@@ -29,7 +29,6 @@
     <string name="duration_hint">时长（MM:SS 或 MM:SS.cc）</string>
     <string name="add_lap">添加圈</string>
     <string name="total">合计</string>
-    <string name="save">保存</string>
     <string name="name_hint">名称（可选）</string>
     <string name="add_notes">添加备注</string>
     <string name="edit_notes">编辑备注</string>
