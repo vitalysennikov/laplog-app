@@ -175,14 +175,12 @@ fun StopwatchScreen(
                 }
             }
 
-            IconButton(
-                onClick = { showNotes = !showNotes },
-                enabled = !isRunning
-            ) {
+            IconButton(onClick = { showNotes = !showNotes }) {
                 Icon(
-                    imageVector = if (showNotes) Icons.Default.EditNote else Icons.Outlined.EditNote,
+                    imageVector = if (currentNotes.isNotBlank()) Icons.Default.EditNote
+                                  else Icons.Outlined.EditNote,
                     contentDescription = stringResource(R.string.notes_hint),
-                    tint = if (showNotes) MaterialTheme.colorScheme.primary
+                    tint = if (currentNotes.isNotBlank()) MaterialTheme.colorScheme.primary
                            else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -195,8 +193,8 @@ fun StopwatchScreen(
                 onValueChange = { viewModel.updateCurrentNotes(it) },
                 label = { Text(stringResource(R.string.notes_hint)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = !isRunning
+                maxLines = 3,
+                textStyle = MaterialTheme.typography.bodySmall
             )
         }
 
