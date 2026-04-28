@@ -172,7 +172,14 @@ class StopwatchService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        if (intent == null) {
+            // Restarted by Android after process kill — state is gone, clean up and stop
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        when (intent.action) {
             // === Special action for ALWAYS ON mode ===
             ACTION_ALWAYS_ON -> {
                 // Keep screen on with dimming in ALWAYS mode when stopwatch is stopped
@@ -403,11 +410,16 @@ class StopwatchService : Service() {
 
             // === Actions from MainActivity (app state changes) ===
             ACTION_APP_FOREGROUND -> {
-                // App came to foreground - stop notification updates, show static text
-                // Only process if service is running (in foreground mode)
                 if (StopwatchState.elapsedTime.value > 0 || StopwatchState.isRunning.value) {
+                    // App visible — stop live updates, show static text
                     stopNotificationUpdates()
-                    updateNotification() // Update once with static text
+                    updateNotification()
+                } else {
+                    // Stopwatch fully stopped but notification still showing — clean up
+                    notificationJob?.cancel()
+                    stateListenerJob?.cancel()
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
                 }
             }
             ACTION_APP_BACKGROUND -> {
@@ -466,6 +478,8 @@ class StopwatchService : Service() {
     }
 
     private fun updateNotification() {
+        // Don't update notification if stopwatch is fully stopped
+        if (StopwatchState.elapsedTime.value == 0L && !StopwatchState.isRunning.value) return
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, buildNotification())
     }
