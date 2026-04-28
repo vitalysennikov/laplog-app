@@ -177,6 +177,8 @@
     <string name="stopwatch_notification_channel">Stopwatch</string>
     <string name="stopwatch_notification_channel_description">Shows stopwatch time while running in background</string>
     <string name="notification_lap_info">Lap %1$d: %2$s</string>
+    <string name="notification_running">⏱ %1$s running</string>
+    <string name="notification_paused">⏸ %1$s paused</string>
 
     <!-- Permissions -->
     <string name="permission_notification_title">Enable Notifications</string>

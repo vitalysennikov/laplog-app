@@ -177,6 +177,8 @@
     <string name="stopwatch_notification_channel">秒表</string>
     <string name="stopwatch_notification_channel_description">在后台运行时显示秒表时间</string>
     <string name="notification_lap_info">圈数 %1$d: %2$s</string>
+    <string name="notification_running">⏱ %1$s 运行中</string>
+    <string name="notification_paused">⏸ %1$s 已暂停</string>
 
     <!-- Permissions -->
     <string name="permission_notification_title">启用通知</string>

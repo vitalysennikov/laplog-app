@@ -578,5 +578,8 @@ class MainActivity : ComponentActivity() {
         config.setLocale(locale)
         createConfigurationContext(config)
         resources.updateConfiguration(config, resources.displayMetrics)
+        // Update Application context so Service components use the same locale
+        @Suppress("DEPRECATION")
+        applicationContext.resources.updateConfiguration(config, resources.displayMetrics)
     }
 }

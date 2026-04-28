@@ -103,6 +103,13 @@ class StopwatchViewModel(
                 handleCommand(command)
             }
         }
+
+        // Keep StopwatchState.currentName in sync for notification display
+        viewModelScope.launch {
+            _currentName.collect { name ->
+                StopwatchState.setCurrentName(name)
+            }
+        }
     }
 
     private fun handleCommand(command: StopwatchCommand) {

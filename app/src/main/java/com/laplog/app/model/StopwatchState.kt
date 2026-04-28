@@ -21,6 +21,14 @@ object StopwatchState {
     private val _laps = MutableStateFlow<List<LapTime>>(emptyList())
     val laps: StateFlow<List<LapTime>> = _laps.asStateFlow()
 
+    // Current activity name (shown in notification)
+    private val _currentName = MutableStateFlow("")
+    val currentName: StateFlow<String> = _currentName.asStateFlow()
+
+    fun setCurrentName(name: String) {
+        _currentName.value = name
+    }
+
     // Internal state for time calculations
     var startTime = 0L
         private set
