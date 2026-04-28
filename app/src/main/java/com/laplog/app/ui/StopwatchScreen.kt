@@ -6,6 +6,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -16,11 +17,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,13 +35,14 @@ import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
+import java.util.concurrent.atomic.AtomicLong
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
-    onScreenOnModeChanged: (ScreenOnMode, Boolean, Long, Boolean) -> Unit, // (mode, isRunning, elapsedTime, dimBrightness)
+    onScreenOnModeChanged: (ScreenOnMode, Boolean, Long, Boolean, Boolean) -> Unit, // (mode, isRunning, elapsedTime, dimBrightness, isTimedDim)
     onLockOrientation: (Boolean) -> Unit,
     isVisible: Boolean = true
 ) {
@@ -72,6 +77,7 @@ fun StopwatchScreen(
     val invertLapColors by viewModel.invertLapColors.collectAsState()
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val dimBrightness by viewModel.dimBrightness.collectAsState()
+    val dimTimeoutSeconds by viewModel.dimTimeoutSeconds.collectAsState()
     val hideTimeWhileRunning by viewModel.hideTimeWhileRunning.collectAsState()
     val tickEnabled by viewModel.tickEnabled.collectAsState()
     val tickAccents by viewModel.tickAccents.collectAsState()
@@ -79,16 +85,39 @@ fun StopwatchScreen(
 
     var expandedNameDropdown by remember { mutableStateOf(false) }
     var showTickSettingsDialog by remember { mutableStateOf(false) }
+    var showDimTimeoutDialog by remember { mutableStateOf(false) }
     var showNotes by remember { mutableStateOf(currentNotes.isNotEmpty()) }
+
+    // Dim timer state
+    var isTimedDim by remember { mutableStateOf(false) }
+    val lastInteractionMs = remember { AtomicLong(System.currentTimeMillis()) }
 
     // Auto-show notes field when notes become non-empty (e.g. typed by user)
     LaunchedEffect(currentNotes) {
         if (currentNotes.isNotEmpty()) showNotes = true
     }
 
-    // Update screen on state based on mode, running state, elapsed time, and dim brightness
-    LaunchedEffect(isRunning, screenOnMode, elapsedTime, dimBrightness) {
-        onScreenOnModeChanged(screenOnMode, isRunning, elapsedTime, dimBrightness)
+    // Update screen on state based on mode, running state, elapsed time, dim brightness, and timed dim
+    LaunchedEffect(isRunning, screenOnMode, elapsedTime, dimBrightness, isTimedDim) {
+        onScreenOnModeChanged(screenOnMode, isRunning, elapsedTime, dimBrightness, isTimedDim)
+    }
+
+    // Dim timer: after dimTimeoutSeconds of no interaction, dim screen to 10%
+    val shouldRunDimTimer = !dimBrightness && when (screenOnMode) {
+        ScreenOnMode.WHILE_RUNNING -> isRunning
+        ScreenOnMode.ALWAYS -> true
+        ScreenOnMode.OFF -> false
+    }
+    LaunchedEffect(shouldRunDimTimer, dimTimeoutSeconds) {
+        if (!shouldRunDimTimer) {
+            isTimedDim = false
+            return@LaunchedEffect
+        }
+        while (true) {
+            kotlinx.coroutines.delay(500L)
+            val elapsed = System.currentTimeMillis() - lastInteractionMs.get()
+            isTimedDim = elapsed >= dimTimeoutSeconds * 1000L
+        }
     }
 
     // In ALWAYS mode with dimBrightness OFF, keep service running even when stopped
@@ -123,7 +152,16 @@ fun StopwatchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial)
+                        lastInteractionMs.set(System.currentTimeMillis())
+                        if (isTimedDim) isTimedDim = false
+                    }
+                }
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -260,10 +298,15 @@ fun StopwatchScreen(
                 )
             }
 
-            // Dim brightness toggle
-            IconToggleButton(
-                checked = dimBrightness,
-                onCheckedChange = { viewModel.toggleDimBrightness() }
+            // Dim brightness toggle (long press to configure timeout)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .combinedClickable(
+                        onClick = { viewModel.toggleDimBrightness() },
+                        onLongClick = { showDimTimeoutDialog = true }
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = if (dimBrightness) Icons.Filled.Brightness4 else Icons.Outlined.Brightness4,
@@ -559,6 +602,14 @@ fun StopwatchScreen(
         )
     }
 
+    if (showDimTimeoutDialog) {
+        DimTimeoutDialog(
+            currentSeconds = dimTimeoutSeconds,
+            onConfirm = { viewModel.setDimTimeoutSeconds(it) },
+            onDismiss = { showDimTimeoutDialog = false }
+        )
+    }
+
     // Permission dialogs
     val showPermissionDialog by viewModel.showPermissionDialog.collectAsState()
     val showBatteryDialog by viewModel.showBatteryDialog.collectAsState()
@@ -662,4 +713,50 @@ fun LapItem(
             textAlign = androidx.compose.ui.text.style.TextAlign.End
         )
     }
+}
+
+@Composable
+private fun DimTimeoutDialog(
+    currentSeconds: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var sliderValue by remember { mutableFloatStateOf(currentSeconds.toFloat()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.dim_timeout_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.dim_timeout_value, sliderValue.toInt()),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { sliderValue = it },
+                    valueRange = 5f..300f,
+                    steps = 58, // (300-5)/5 - 1 = 58 steps → 60 positions of 5s each
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("5 ${stringResource(R.string.dim_timeout_sec)}", style = MaterialTheme.typography.labelSmall)
+                    Text("300 ${stringResource(R.string.dim_timeout_sec)}", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(sliderValue.toInt()); onDismiss() }) {
+                Text(stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }

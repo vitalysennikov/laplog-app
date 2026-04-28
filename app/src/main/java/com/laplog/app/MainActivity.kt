@@ -254,7 +254,7 @@ class MainActivity : ComponentActivity() {
                             0 -> StopwatchScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
-                                onScreenOnModeChanged = { mode, isRunning, elapsedTime, dimBrightness ->
+                                onScreenOnModeChanged = { mode, isRunning, elapsedTime, dimBrightness, isTimedDim ->
                                     // Determine if screen should stay on
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
@@ -270,11 +270,11 @@ class MainActivity : ComponentActivity() {
                                         layoutParams.screenBrightness = 0.1f
                                         window.attributes = layoutParams
                                     } else if (shouldKeepOn && !dimBrightness) {
-                                        // Natural dimming mode - DON'T use FLAG_KEEP_SCREEN_ON
-                                        // Rely on service's SCREEN_DIM_WAKE_LOCK to keep screen on with dimming
-                                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                                        // Custom dim timer mode - FLAG_KEEP_SCREEN_ON, brightness by our timer
+                                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                                         val layoutParams = window.attributes
-                                        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                                        layoutParams.screenBrightness = if (isTimedDim) 0.1f
+                                            else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                                         window.attributes = layoutParams
                                     } else {
                                         // Screen can turn off
