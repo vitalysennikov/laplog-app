@@ -219,6 +219,8 @@
     <string name="tick_sound_drum">Drum</string>
     <string name="tick_sound_chime">Chime</string>
     <string name="tick_sound_buzz">Buzz</string>
+    <string name="tick_sound_chime2">Chime 2</string>
+    <string name="tick_sound_gong">Gong</string>
     <string name="tick_start_offset">Start</string>
 
     <!-- App Logs -->

@@ -219,6 +219,8 @@
     <string name="tick_sound_drum">Барабан</string>
     <string name="tick_sound_chime">Перезвон</string>
     <string name="tick_sound_buzz">Гудок</string>
+    <string name="tick_sound_chime2">Перезвон 2</string>
+    <string name="tick_sound_gong">Гонг</string>
     <string name="tick_start_offset">С сек.</string>
 
     <!-- App Logs -->

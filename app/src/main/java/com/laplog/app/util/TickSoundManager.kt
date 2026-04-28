@@ -17,31 +17,93 @@ class TickSoundManager {
     private val soundBuffers: Map<TickSoundType, ShortArray> =
         TickSoundType.entries.associateWith { generateSamples(it) }
 
-    private fun generateSamples(type: TickSoundType): ShortArray {
+    private fun generateSamples(type: TickSoundType): ShortArray = when (type) {
+        TickSoundType.BUZZ   -> generateBuzz()
+        TickSoundType.CHIME2 -> generateBell(freq = 1300.0, durationMs = 700, volume = 0.50f, decayRate = 3.0)
+        TickSoundType.GONG   -> generateGong()
+        else -> generateSine(type)
+    }
+
+    private fun generateSine(type: TickSoundType): ShortArray {
         val (freq, durationMs, volume) = when (type) {
-            TickSoundType.TICK -> Triple(1000.0, 40, 0.70f)
-            TickSoundType.TOCK -> Triple(640.0, 60, 0.85f)
-            TickSoundType.BELL -> Triple(1400.0, 200, 0.60f)
-            TickSoundType.DEEP -> Triple(280.0, 100, 0.95f)
-            TickSoundType.HIGH -> Triple(2000.0, 30, 0.65f)
-            TickSoundType.WOOD -> Triple(800.0, 50, 0.90f)
-            TickSoundType.BEEP -> Triple(1200.0, 80, 0.75f)
-            TickSoundType.PING -> Triple(1800.0, 150, 0.55f)
-            TickSoundType.SOFT -> Triple(600.0, 35, 0.38f)
-            TickSoundType.SNAP -> Triple(1600.0, 15, 1.00f)
-            TickSoundType.CHIRP -> Triple(2500.0, 20, 0.55f)
-            TickSoundType.DRUM -> Triple(100.0, 150, 0.95f)
+            TickSoundType.TICK  -> Triple(1000.0,  40, 0.70f)
+            TickSoundType.TOCK  -> Triple( 640.0,  60, 0.85f)
+            TickSoundType.BELL  -> Triple(1400.0, 200, 0.60f)
+            TickSoundType.DEEP  -> Triple( 280.0, 100, 0.95f)
+            TickSoundType.HIGH  -> Triple(2000.0,  30, 0.65f)
+            TickSoundType.WOOD  -> Triple( 800.0,  50, 0.90f)
+            TickSoundType.BEEP  -> Triple(1200.0,  80, 0.75f)
+            TickSoundType.PING  -> Triple(1800.0, 150, 0.55f)
+            TickSoundType.SOFT  -> Triple( 600.0,  35, 0.38f)
+            TickSoundType.SNAP  -> Triple(1600.0,  15, 1.00f)
+            TickSoundType.CHIRP -> Triple(2500.0,  20, 0.55f)
+            TickSoundType.DRUM  -> Triple( 100.0, 150, 0.95f)
             TickSoundType.CHIME -> Triple(1700.0, 350, 0.45f)
-            TickSoundType.BUZZ -> Triple(250.0, 90, 0.85f)
+            else -> Triple(1000.0, 40, 0.70f)
         }
         val numSamples = sampleRate * durationMs / 1000
         val samples = ShortArray(numSamples)
         val angleIncrement = 2.0 * PI * freq / sampleRate
-
         for (i in 0 until numSamples) {
             val t = i.toDouble() / numSamples
             val envelope = if (t < 0.05) t / 0.05 else exp(-8.0 * (t - 0.05))
             val sample = (sin(angleIncrement * i) * envelope * volume * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Buzz: square-wave approximation via odd harmonics — harsh, horn-like
+    private fun generateBuzz(): ShortArray {
+        val freq = 160.0
+        val durationMs = 150
+        val volume = 0.80f
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        val omega = 2.0 * PI * freq / sampleRate
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / numSamples
+            val envelope = if (t < 0.03) t / 0.03 else exp(-5.0 * (t - 0.03))
+            // Square-wave approximation (odd harmonics)
+            val wave = sin(omega * i) +
+                       0.333 * sin(3 * omega * i) +
+                       0.200 * sin(5 * omega * i) +
+                       0.143 * sin(7 * omega * i)
+            val sample = (wave / 1.676 * envelope * volume * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Bell with configurable frequency and slow decay
+    private fun generateBell(freq: Double, durationMs: Int, volume: Float, decayRate: Double): ShortArray {
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        val omega = 2.0 * PI * freq / sampleRate
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / numSamples
+            val envelope = if (t < 0.02) t / 0.02 else exp(-decayRate * (t - 0.02))
+            val sample = (sin(omega * i) * envelope * volume * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Gong: multi-partial resonant bell with very slow decay
+    private fun generateGong(): ShortArray {
+        val durationMs = 1500
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        // Fundamental + inharmonic partials typical of struck metal
+        val partials = listOf(200.0 to 0.70f, 520.0 to 0.40f, 940.0 to 0.22f, 1480.0 to 0.10f)
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / numSamples
+            val envelope = if (t < 0.01) t / 0.01 else exp(-2.0 * (t - 0.01))
+            var wave = 0.0
+            for ((freq, amp) in partials) {
+                wave += sin(2.0 * PI * freq / sampleRate * i) * amp
+            }
+            val sample = (wave / 1.42 * envelope * 0.65f * Short.MAX_VALUE).toInt()
             samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return samples
