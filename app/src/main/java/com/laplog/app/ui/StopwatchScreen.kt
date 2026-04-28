@@ -528,6 +528,7 @@ fun StopwatchScreen(
                     items(laps.reversed()) { lap ->
                         LapItem(
                             lap = lap,
+                            showTimeAsSeconds = showTimeAsSeconds,
                             formatTime = { time ->
                                 viewModel.formatTime(time, showMilliseconds)
                             },
@@ -585,6 +586,7 @@ fun StopwatchScreen(
 @Composable
 fun LapItem(
     lap: com.laplog.app.model.LapTime,
+    showTimeAsSeconds: Boolean = false,
     formatTime: (Long) -> String,
     formatDifference: (Long) -> String,
     fontFamily: FontFamily,
