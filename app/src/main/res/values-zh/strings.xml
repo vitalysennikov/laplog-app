@@ -221,6 +221,9 @@
     <string name="tick_sound_buzz">嗡嗡</string>
     <string name="tick_sound_chime2">铃铛2</string>
     <string name="tick_sound_gong">锣声</string>
+    <string name="tick_sound_bowl">钵声</string>
+    <string name="tick_sound_whistle">哨声</string>
+    <string name="tick_preview">预览</string>
     <string name="tick_start_offset">起始秒</string>
 
     <!-- App Logs -->

@@ -111,6 +111,50 @@ fun TickSettingsDialog(
                         Text(stringResource(R.string.tick_add_accent))
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text(
+                    text = stringResource(R.string.tick_preview),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+
+                val allSounds = TickSoundType.entries
+                val half = (allSounds.size + 1) / 2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Two columns
+                    listOf(allSounds.take(half), allSounds.drop(half)).forEach { column ->
+                        Column(modifier = Modifier.weight(1f)) {
+                            column.forEach { type ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = soundLabel(type),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { onPlaySound(type) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -330,7 +374,9 @@ private fun soundLabel(type: TickSoundType): String = stringResource(
         TickSoundType.DRUM -> R.string.tick_sound_drum
         TickSoundType.CHIME  -> R.string.tick_sound_chime
         TickSoundType.BUZZ   -> R.string.tick_sound_buzz
-        TickSoundType.CHIME2 -> R.string.tick_sound_chime2
-        TickSoundType.GONG   -> R.string.tick_sound_gong
+        TickSoundType.CHIME2   -> R.string.tick_sound_chime2
+        TickSoundType.GONG     -> R.string.tick_sound_gong
+        TickSoundType.BOWL     -> R.string.tick_sound_bowl
+        TickSoundType.WHISTLE  -> R.string.tick_sound_whistle
     }
 )

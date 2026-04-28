@@ -221,6 +221,9 @@
     <string name="tick_sound_buzz">Гудок</string>
     <string name="tick_sound_chime2">Перезвон 2</string>
     <string name="tick_sound_gong">Гонг</string>
+    <string name="tick_sound_bowl">Чаша</string>
+    <string name="tick_sound_whistle">Свисток</string>
+    <string name="tick_preview">Предпросмотр</string>
     <string name="tick_start_offset">С сек.</string>
 
     <!-- App Logs -->

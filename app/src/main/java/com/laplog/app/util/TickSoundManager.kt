@@ -18,9 +18,11 @@ class TickSoundManager {
         TickSoundType.entries.associateWith { generateSamples(it) }
 
     private fun generateSamples(type: TickSoundType): ShortArray = when (type) {
-        TickSoundType.BUZZ   -> generateBuzz()
-        TickSoundType.CHIME2 -> generateBell(freq = 1300.0, durationMs = 700, volume = 0.50f, decayRate = 3.0)
-        TickSoundType.GONG   -> generateGong()
+        TickSoundType.BUZZ    -> generateBuzz()
+        TickSoundType.CHIME2  -> generateBell(freq = 1300.0, durationMs = 700,  volume = 0.50f, decayRate = 3.0)
+        TickSoundType.GONG    -> generateGong()
+        TickSoundType.BOWL    -> generateBowl()
+        TickSoundType.WHISTLE -> generateWhistle()
         else -> generateSine(type)
     }
 
@@ -104,6 +106,43 @@ class TickSoundManager {
                 wave += sin(2.0 * PI * freq / sampleRate * i) * amp
             }
             val sample = (wave / 1.42 * envelope * 0.65f * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Singing bowl: fundamental + harmonics, very slow decay (~2 s)
+    private fun generateBowl(): ShortArray {
+        val durationMs = 2000
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        val partials = listOf(432.0 to 0.70f, 1200.0 to 0.30f, 2120.0 to 0.15f)
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / numSamples
+            val envelope = if (t < 0.04) t / 0.04 else exp(-1.5 * (t - 0.04))
+            var wave = 0.0
+            for ((freq, amp) in partials) {
+                wave += sin(2.0 * PI * freq / sampleRate * i) * amp
+            }
+            val sample = (wave / 1.15 * envelope * 0.55f * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Referee whistle: high freq with tremolo, ~1 s
+    private fun generateWhistle(): ShortArray {
+        val durationMs = 1000
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        val freq = 2700.0
+        val omega = 2.0 * PI * freq / sampleRate
+        val tremoloRate = 2.0 * PI * 25.0 / sampleRate  // 25 Hz flutter
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / numSamples
+            val envelope = if (t < 0.02) t / 0.02 else exp(-2.5 * (t - 0.02))
+            val tremolo = 1.0 + 0.12 * sin(tremoloRate * i)
+            val sample = (sin(omega * i) * tremolo * envelope * 0.60f * Short.MAX_VALUE).toInt()
             samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return samples
