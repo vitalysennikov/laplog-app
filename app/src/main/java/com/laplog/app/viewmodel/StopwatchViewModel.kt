@@ -766,6 +766,17 @@ class StopwatchViewModel(
         }
     }
 
+    fun formatTimeMmSs(timeInMillis: Long): String {
+        val hours = (timeInMillis / 3600000).toInt()
+        val minutes = ((timeInMillis % 3600000) / 60000).toInt()
+        val seconds = ((timeInMillis % 60000) / 1000).toInt()
+        return if (hours > 0) {
+            String.format("%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            String.format("%02d:%02d", minutes, seconds)
+        }
+    }
+
     fun formatDifference(diffMillis: Long, includeMillis: Boolean = _showMilliseconds.value): String {
         // Use unicode minus (U+2212) for consistent width with plus sign
         val sign = if (diffMillis >= 0) "+" else "\u2212"

@@ -363,51 +363,31 @@ fun StopwatchScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Time display with digital clock font (show milliseconds only when paused)
-        // If hideTimeWhileRunning is ON and stopwatch is running, show placeholder with blinking colon
+        // Current lap time (main display) + total elapsed time below
+        val currentLapTime = elapsedTime - (laps.lastOrNull()?.totalTime ?: 0L)
         val shouldHideTime = hideTimeWhileRunning && isRunning
         var colonAlpha by remember { mutableStateOf(1f) }
 
-        // Animate colon alpha every second when time is hidden
         LaunchedEffect(shouldHideTime, elapsedTime) {
-            if (shouldHideTime) {
-                // Toggle colon alpha based on current second
-                colonAlpha = if ((elapsedTime / 1000) % 2 == 0L) 1f else 0.3f
-            } else {
-                colonAlpha = 1f
-            }
+            colonAlpha = if (shouldHideTime) {
+                if ((elapsedTime / 1000) % 2 == 0L) 1f else 0.3f
+            } else 1f
         }
 
         val primaryColor = MaterialTheme.colorScheme.primary
+        val secondaryColor = MaterialTheme.colorScheme.onSurfaceVariant
 
         if (shouldHideTime) {
-            // Show placeholder with blinking colon: ••:••
+            // Blinking placeholder for current lap
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "--",
-                    fontSize = 56.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = dseg7Font,
-                    color = primaryColor
-                )
-                Text(
-                    text = ":",
-                    fontSize = 56.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = dseg7Font,
-                    color = primaryColor.copy(alpha = colonAlpha)
-                )
-                Text(
-                    text = "--",
-                    fontSize = 56.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = dseg7Font,
-                    color = primaryColor
-                )
+                Text(text = "--", fontSize = 56.sp, fontWeight = FontWeight.Bold, fontFamily = dseg7Font, color = primaryColor)
+                Text(text = ":", fontSize = 56.sp, fontWeight = FontWeight.Bold, fontFamily = dseg7Font, color = primaryColor.copy(alpha = colonAlpha))
+                Text(text = "--", fontSize = 56.sp, fontWeight = FontWeight.Bold, fontFamily = dseg7Font, color = primaryColor)
             }
         } else {
+            // Current lap time (large, affected by showTimeAsSeconds)
             Text(
-                text = viewModel.formatTime(elapsedTime, includeMillis = !isRunning, roundIfNoMillis = false),
+                text = viewModel.formatTime(currentLapTime, includeMillis = !isRunning, roundIfNoMillis = false),
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = dseg7Font,
@@ -415,7 +395,18 @@ fun StopwatchScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        // Total elapsed time — always mm:ss, smaller, secondary color
+        if (!shouldHideTime || elapsedTime == 0L) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = viewModel.formatTimeMmSs(elapsedTime),
+                fontSize = 22.sp,
+                fontFamily = dseg7Font,
+                color = secondaryColor
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Control buttons - dynamic layout based on state
         Row(
