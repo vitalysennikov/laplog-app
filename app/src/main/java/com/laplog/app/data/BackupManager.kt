@@ -273,6 +273,7 @@ class BackupManager(
             showTimeAsSeconds = preferencesManager.showTimeAsSeconds,
             showTimeAsSecondsHistory = preferencesManager.showTimeAsSecondsHistory,
             showTimeAsSecondsCharts = preferencesManager.showTimeAsSecondsCharts,
+            dimTimeoutSeconds = preferencesManager.dimTimeoutSeconds,
             nameToggles = preferencesManager.getAllNameToggles().ifEmpty { null }
         )
 
@@ -419,6 +420,7 @@ class BackupManager(
         preferencesManager.showTimeAsSeconds = settings.showTimeAsSeconds
         preferencesManager.showTimeAsSecondsHistory = settings.showTimeAsSecondsHistory
         preferencesManager.showTimeAsSecondsCharts = settings.showTimeAsSecondsCharts
+        preferencesManager.dimTimeoutSeconds = settings.dimTimeoutSeconds
         settings.nameToggles?.let { preferencesManager.setAllNameToggles(it) }
     }
 
@@ -538,6 +540,7 @@ class BackupManager(
             settingsObj.put("showTimeAsSeconds", settings.showTimeAsSeconds)
             settingsObj.put("showTimeAsSecondsHistory", settings.showTimeAsSecondsHistory)
             settingsObj.put("showTimeAsSecondsCharts", settings.showTimeAsSecondsCharts)
+            settingsObj.put("dimTimeoutSeconds", settings.dimTimeoutSeconds)
             val nameTogglesObj = JSONObject()
             settings.nameToggles?.forEach { (name, toggles) ->
                 val t = JSONObject()
@@ -613,6 +616,7 @@ class BackupManager(
                 showTimeAsSeconds = if (settingsObj.has("showTimeAsSeconds")) settingsObj.getBoolean("showTimeAsSeconds") else false,
                 showTimeAsSecondsHistory = if (settingsObj.has("showTimeAsSecondsHistory")) settingsObj.getBoolean("showTimeAsSecondsHistory") else false,
                 showTimeAsSecondsCharts = if (settingsObj.has("showTimeAsSecondsCharts")) settingsObj.getBoolean("showTimeAsSecondsCharts") else false,
+                dimTimeoutSeconds = if (settingsObj.has("dimTimeoutSeconds")) settingsObj.getInt("dimTimeoutSeconds") else 30,
                 nameToggles = if (settingsObj.has("nameToggles")) {
                     val ntObj = settingsObj.getJSONObject("nameToggles")
                     val map = mutableMapOf<String, NameToggles>()

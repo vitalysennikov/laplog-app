@@ -4,7 +4,7 @@
 
 A stopwatch app for Android with lap tracking, session history, charts, backup, and flexible display settings.
 
-**Current version: 0.18.0** · Min Android: 7.0 (API 24) · Target: Android 14 (API 35)
+**Current version: 0.19.0** · Min Android: 7.0 (API 24) · Target: Android 14 (API 35)
 
 ---
 
@@ -13,6 +13,7 @@ A stopwatch app for Android with lap tracking, session history, charts, backup, 
 ### Stopwatch
 - Start, pause, resume, reset
 - Lap marks: two modes — lap only (empty flag) or lap + pause simultaneously (filled flag)
+- **Main timer shows current lap time**; total elapsed time shown below in MM:SS (always)
 - Per-lap statistics: average and median shown on main screen
 - Lap comparison: each lap highlighted green (faster) or red (slower) relative to average
 - Digital clock font (DSEG7) for the main timer
@@ -64,7 +65,7 @@ A stopwatch app for Android with lap tracking, session history, charts, backup, 
 | Screen mode | OFF / ON while running / ALWAYS ON (cycles on tap) |
 | Orientation lock | Lock screen in current orientation |
 | Invert lap colors | Swap green/red for faster/slower laps |
-| Keep brightness | When screen is kept on: maintain system brightness or dim to 10% after timeout |
+| Keep brightness | When screen is kept on: maintain system brightness or dim to 10% after timeout (long-press to set timeout: 5–300 s) |
 | Hide time | Blink `--:--` placeholder instead of showing actual time (privacy/focus) |
 | Show seconds | Display elapsed time as total seconds instead of MM:SS |
 | Tick sounds | Audible ticks while running — tap to toggle, long-press to configure |
@@ -74,13 +75,15 @@ Each session name remembers its own toggle configuration. Selecting a name from 
 
 ### Tick Sounds
 - Enable/disable audible ticks while the stopwatch runs
-- Multiple sound types: Click, Clack, Bell, Bass, High, Wood, Beep, Ping, Soft, Snap, Chirp, Drum, Chime, Buzz
+- 18 sound types: Click, Clack, Bell, Bass, High, Wood, Beep, Ping, Soft, Snap, Chirp, Drum, Chime, Buzz, Chime 2, Gong, Bowl, Whistle
 - Configurable accents: each accent has its own interval, sound type, and start offset
+- **Sound preview panel**: play any sound directly in the settings dialog without assigning it
 - Default: Chime every 60 seconds
 
 ### Background Operation
 - Foreground service keeps the stopwatch running when the app is in the background
-- Persistent notification shows elapsed time and last lap while running
+- Persistent notification shows **current activity name** (e.g. "Running running") and elapsed time
+- Notification language follows the app's selected language
 - Continues timing accurately without battery optimization interference
 
 ### Languages

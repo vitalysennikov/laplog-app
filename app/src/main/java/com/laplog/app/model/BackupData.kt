@@ -36,6 +36,7 @@ data class BackupSettings(
     val showTimeAsSeconds: Boolean = false,
     val showTimeAsSecondsHistory: Boolean = false,
     val showTimeAsSecondsCharts: Boolean = false,
+    val dimTimeoutSeconds: Int = 30,
     val nameToggles: Map<String, NameToggles>? = null
 )
 
