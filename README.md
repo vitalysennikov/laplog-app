@@ -20,7 +20,7 @@ A stopwatch app for Android with lap tracking, session history, charts, backup, 
 - Milliseconds shown on main timer when paused
 
 ### History
-- All sessions saved automatically on reset
+- All sessions saved automatically on reset (stop)
 - Expandable session cards with full lap list
 - Session name (optional) with autocomplete from previous sessions
 - Notes field (optional, hidden by default — toggle with icon button)
@@ -61,14 +61,14 @@ A stopwatch app for Android with lap tracking, session history, charts, backup, 
 
 | Toggle | Function |
 |---|---|
-| Milliseconds | Show/hide milliseconds on main timer (visible when paused) |
-| Screen mode | OFF / ON while running / ALWAYS ON (cycles on tap) |
-| Orientation lock | Lock screen in current orientation |
-| Invert lap colors | Swap green/red for faster/slower laps |
-| Keep brightness | When screen is kept on: maintain system brightness or dim to 10% after timeout (long-press to set timeout: 5–300 s) |
-| Hide time | Blink `--:--` placeholder instead of showing actual time (privacy/focus) |
-| Show seconds | Display elapsed time as total seconds instead of MM:SS |
-| Tick sounds | Audible ticks while running — tap to toggle, long-press to configure |
+| 📱 / 📵 Screen mode | OFF / ON while running / ALWAYS ON (cycles on tap) |
+| 🔒 / 🔓 Orientation lock | Lock screen in current orientation |
+| ⏱ / 🕐 Milliseconds | Show/hide milliseconds on main timer (visible when paused) |
+| 🔄 / ↕️ Invert lap colors | Swap green/red for faster/slower laps |
+| ☀️ / 🌑 Keep brightness | When screen is kept on: maintain system brightness or dim to 10% after timeout (long-press to set timeout: 5–300 s) |
+| 🙈 / 👁 Hide time | Blink `--:--` placeholder instead of showing actual time (privacy/focus) |
+| 🔢 / ⏰ Show seconds | Display elapsed time as total seconds instead of MM:SS |
+| 🔔 / 🔕 Tick sounds | Audible ticks while running — tap to toggle, long-press to configure |
 
 ### Per-Name Toggle Presets
 Each session name remembers its own toggle configuration. Selecting a name from history automatically restores its settings.
@@ -84,7 +84,7 @@ Each session name remembers its own toggle configuration. Selecting a name from 
 - Foreground service keeps the stopwatch running when the app is in the background
 - Persistent notification shows **current activity name** (e.g. "Running running") and elapsed time
 - Notification language follows the app's selected language
-- Continues timing accurately without battery optimization interference
+- Keeps timing accurately when the app is minimized or the screen is off
 
 ### Languages
 English, Russian, Chinese (Simplified). System language detected automatically; manual override available in the About dialog.
