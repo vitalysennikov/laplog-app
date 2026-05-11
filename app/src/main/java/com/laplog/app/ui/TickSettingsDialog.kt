@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -23,7 +25,8 @@ fun TickSettingsDialog(
     tickAccents: List<TickAccent>,
     onAccentsChange: (List<TickAccent>) -> Unit,
     onPlaySound: (TickSoundType) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onUserInteraction: () -> Unit = {}
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -35,7 +38,15 @@ fun TickSettingsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 520.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent(PointerEventPass.Initial)
+                                onUserInteraction()
+                            }
+                        }
+                    },
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(

@@ -38,6 +38,7 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -598,7 +599,11 @@ fun StopwatchScreen(
             tickAccents = tickAccents,
             onAccentsChange = { viewModel.updateTickAccents(it) },
             onPlaySound = { viewModel.playTestSound(it) },
-            onDismiss = { showTickSettingsDialog = false }
+            onDismiss = { showTickSettingsDialog = false },
+            onUserInteraction = {
+                lastInteractionMs.set(System.currentTimeMillis())
+                if (isTimedDim) isTimedDim = false
+            }
         )
     }
 
@@ -729,7 +734,7 @@ private fun DimTimeoutDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = stringResource(R.string.dim_timeout_value, sliderValue.toInt()),
+                    text = stringResource(R.string.dim_timeout_value, sliderValue.roundToInt()),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Slider(
@@ -749,7 +754,7 @@ private fun DimTimeoutDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(sliderValue.toInt()); onDismiss() }) {
+            TextButton(onClick = { onConfirm(sliderValue.roundToInt()); onDismiss() }) {
                 Text(stringResource(R.string.ok))
             }
         },
