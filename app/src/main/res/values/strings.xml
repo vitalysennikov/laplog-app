@@ -218,16 +218,16 @@
     <string name="tick_sound_wood">Wood</string>
     <string name="tick_sound_beep">Beep</string>
     <string name="tick_sound_ping">Ping</string>
-    <string name="tick_sound_soft">Soft</string>
+    <string name="tick_sound_soft">Soft 2s</string>
     <string name="tick_sound_snap">Snap</string>
     <string name="tick_sound_chirp">Chirp</string>
     <string name="tick_sound_drum">Drum</string>
     <string name="tick_sound_chime">Chime</string>
     <string name="tick_sound_buzz">Buzz</string>
-    <string name="tick_sound_chime2">Chime 2</string>
-    <string name="tick_sound_gong">Gong</string>
-    <string name="tick_sound_bowl">Bowl</string>
-    <string name="tick_sound_whistle">Whistle</string>
+    <string name="tick_sound_chime2">Chime 2s</string>
+    <string name="tick_sound_gong">Gong 2s</string>
+    <string name="tick_sound_bowl">Bowl 2s</string>
+    <string name="tick_sound_whistle">Whistle 2s</string>
     <string name="tick_preview">Preview</string>
     <string name="tick_start_offset">Start</string>
 

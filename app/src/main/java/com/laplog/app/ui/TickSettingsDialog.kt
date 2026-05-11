@@ -20,9 +20,7 @@ import com.laplog.app.model.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TickSettingsDialog(
-    tickEnabled: Boolean,
     tickAccents: List<TickAccent>,
-    onTickEnabledChange: (Boolean) -> Unit,
     onAccentsChange: (List<TickAccent>) -> Unit,
     onPlaySound: (TickSoundType) -> Unit,
     onDismiss: () -> Unit
@@ -40,17 +38,6 @@ fun TickSettingsDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(stringResource(R.string.tick_enabled))
-                    Switch(checked = tickEnabled, onCheckedChange = onTickEnabledChange)
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
                 Text(
                     text = stringResource(R.string.tick_accents),
                     style = MaterialTheme.typography.titleSmall,

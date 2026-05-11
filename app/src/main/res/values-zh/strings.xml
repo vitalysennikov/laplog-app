@@ -218,16 +218,16 @@
     <string name="tick_sound_wood">木声</string>
     <string name="tick_sound_beep">哔哔</string>
     <string name="tick_sound_ping">叮</string>
-    <string name="tick_sound_soft">柔和</string>
+    <string name="tick_sound_soft">柔和 2s</string>
     <string name="tick_sound_snap">啪</string>
     <string name="tick_sound_chirp">啾啾</string>
     <string name="tick_sound_drum">鼓声</string>
     <string name="tick_sound_chime">铃铛</string>
     <string name="tick_sound_buzz">嗡嗡</string>
-    <string name="tick_sound_chime2">铃铛2</string>
-    <string name="tick_sound_gong">锣声</string>
-    <string name="tick_sound_bowl">钵声</string>
-    <string name="tick_sound_whistle">哨声</string>
+    <string name="tick_sound_chime2">铃铛2s</string>
+    <string name="tick_sound_gong">锣声 2s</string>
+    <string name="tick_sound_bowl">钵声 2s</string>
+    <string name="tick_sound_whistle">哨声 2s</string>
     <string name="tick_preview">预览</string>
     <string name="tick_start_offset">起始秒</string>
 

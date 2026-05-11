@@ -2,8 +2,10 @@ package com.laplog.app.ui
 
 import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -214,13 +216,22 @@ fun StopwatchScreen(
             }
 
             IconButton(onClick = { showNotes = !showNotes }) {
-                Icon(
-                    imageVector = if (currentNotes.isNotBlank()) Icons.Default.EditNote
-                                  else Icons.Outlined.EditNote,
-                    contentDescription = stringResource(R.string.notes_hint),
-                    tint = if (currentNotes.isNotBlank()) MaterialTheme.colorScheme.primary
-                           else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box {
+                    Icon(
+                        imageVector = Icons.Outlined.EditNote,
+                        contentDescription = stringResource(R.string.notes_hint),
+                        tint = if (currentNotes.isNotBlank()) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (currentNotes.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .align(Alignment.TopEnd)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
+                    }
+                }
             }
         }
 
@@ -564,7 +575,7 @@ fun StopwatchScreen(
                             lap = lap,
                             showTimeAsSeconds = showTimeAsSeconds,
                             formatTime = { time ->
-                                viewModel.formatTime(time, showMilliseconds)
+                                viewModel.formatTime(time, showMilliseconds, showTimeAsSeconds = showTimeAsSeconds)
                             },
                             formatDifference = { diff ->
                                 viewModel.formatDifference(diff, showMilliseconds)
@@ -584,9 +595,7 @@ fun StopwatchScreen(
 
     if (showTickSettingsDialog) {
         TickSettingsDialog(
-            tickEnabled = tickEnabled,
             tickAccents = tickAccents,
-            onTickEnabledChange = { viewModel.setTickEnabled(it) },
             onAccentsChange = { viewModel.updateTickAccents(it) },
             onPlaySound = { viewModel.playTestSound(it) },
             onDismiss = { showTickSettingsDialog = false }
@@ -726,8 +735,8 @@ private fun DimTimeoutDialog(
                 Slider(
                     value = sliderValue,
                     onValueChange = { sliderValue = it },
-                    valueRange = 5f..300f,
-                    steps = 58, // (300-5)/5 - 1 = 58 steps → 60 positions of 5s each
+                    valueRange = 5f..60f,
+                    steps = 10, // (60-5)/5 - 1 = 10 steps → 12 positions of 5s each
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(
@@ -735,7 +744,7 @@ private fun DimTimeoutDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("5 ${stringResource(R.string.dim_timeout_sec)}", style = MaterialTheme.typography.labelSmall)
-                    Text("300 ${stringResource(R.string.dim_timeout_sec)}", style = MaterialTheme.typography.labelSmall)
+                    Text("60 ${stringResource(R.string.dim_timeout_sec)}", style = MaterialTheme.typography.labelSmall)
                 }
             }
         },

@@ -97,6 +97,13 @@ class StopwatchViewModel(
         loadNamesFromHistory()
         restoreStopwatchState()
 
+        // Load per-name tick settings for the restored name so in-memory state
+        // matches what was saved for this name (not the last globally-written prefs)
+        val restoredName = _currentName.value.trim()
+        if (restoredName.isNotBlank()) {
+            loadNameToggles(restoredName)
+        }
+
         // Listen for commands from notification service
         viewModelScope.launch {
             StopwatchCommandManager.commands.collect { command ->
@@ -640,7 +647,7 @@ class StopwatchViewModel(
     }
 
     fun setDimTimeoutSeconds(seconds: Int) {
-        val clamped = seconds.coerceIn(5, 300)
+        val clamped = seconds.coerceIn(5, 60)
         _dimTimeoutSeconds.value = clamped
         preferencesManager.dimTimeoutSeconds = clamped
     }
@@ -729,7 +736,7 @@ class StopwatchViewModel(
             hideTimeWhileRunning = _hideTimeWhileRunning.value,
             showTimeAsSeconds = _showTimeAsSeconds.value,
             tickEnabled = _tickEnabled.value,
-            tickAccentsJson = preferencesManager.tickAccentsJson
+            tickAccentsJson = serializeTickAccents(_tickAccents.value)
         ))
     }
 
@@ -738,8 +745,8 @@ class StopwatchViewModel(
         preferencesManager.currentNotes = notes
     }
 
-    fun formatTime(timeInMillis: Long, includeMillis: Boolean = _showMilliseconds.value, roundIfNoMillis: Boolean = true): String {
-        if (_showTimeAsSeconds.value) {
+    fun formatTime(timeInMillis: Long, includeMillis: Boolean = _showMilliseconds.value, roundIfNoMillis: Boolean = true, showTimeAsSeconds: Boolean = _showTimeAsSeconds.value): String {
+        if (showTimeAsSeconds) {
             val totalSeconds = timeInMillis / 1000
             val millis = ((timeInMillis % 1000) / 10).toInt()
             return if (includeMillis) String.format("%d.%02d", totalSeconds, millis)

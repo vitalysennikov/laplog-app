@@ -218,16 +218,16 @@
     <string name="tick_sound_wood">Дерево</string>
     <string name="tick_sound_beep">Бип</string>
     <string name="tick_sound_ping">Пинг</string>
-    <string name="tick_sound_soft">Мягкий</string>
+    <string name="tick_sound_soft">Мягкий 2с</string>
     <string name="tick_sound_snap">Щелчок</string>
     <string name="tick_sound_chirp">Писк</string>
     <string name="tick_sound_drum">Барабан</string>
     <string name="tick_sound_chime">Перезвон</string>
     <string name="tick_sound_buzz">Гудок</string>
-    <string name="tick_sound_chime2">Перезвон 2</string>
-    <string name="tick_sound_gong">Гонг</string>
-    <string name="tick_sound_bowl">Чаша</string>
-    <string name="tick_sound_whistle">Свисток</string>
+    <string name="tick_sound_chime2">Перезвон 2с</string>
+    <string name="tick_sound_gong">Гонг 2с</string>
+    <string name="tick_sound_bowl">Чаша 2с</string>
+    <string name="tick_sound_whistle">Свисток 2с</string>
     <string name="tick_preview">Предпросмотр</string>
     <string name="tick_start_offset">С сек.</string>
 

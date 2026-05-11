@@ -36,7 +36,7 @@ class TickSoundManager {
             TickSoundType.WOOD  -> Triple( 800.0,  50, 0.90f)
             TickSoundType.BEEP  -> Triple(1200.0,  80, 0.75f)
             TickSoundType.PING  -> Triple(1800.0, 150, 0.55f)
-            TickSoundType.SOFT  -> Triple( 600.0,  35, 0.38f)
+            TickSoundType.SOFT  -> Triple( 600.0, 2000, 0.38f)
             TickSoundType.SNAP  -> Triple(1600.0,  15, 1.00f)
             TickSoundType.CHIRP -> Triple(2500.0,  20, 0.55f)
             TickSoundType.DRUM  -> Triple( 100.0, 150, 0.95f)
