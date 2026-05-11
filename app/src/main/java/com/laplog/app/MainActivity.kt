@@ -263,11 +263,10 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     if (shouldKeepOn && dimBrightness) {
-                                        // Fixed brightness mode - use FLAG_KEEP_SCREEN_ON
-                                        // This prevents screen off and keeps brightness fixed
+                                        // System brightness mode - keep screen on at system brightness
                                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                                         val layoutParams = window.attributes
-                                        layoutParams.screenBrightness = 0.0f
+                                        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                                         window.attributes = layoutParams
                                     } else if (shouldKeepOn && !dimBrightness) {
                                         // Custom dim timer mode - FLAG_KEEP_SCREEN_ON, brightness by our timer
