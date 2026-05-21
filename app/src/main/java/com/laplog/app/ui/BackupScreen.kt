@@ -667,6 +667,11 @@ fun BackupItem(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
+                text = backup.name,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
                 text = SimpleDateFormat("MMM d, yyyy HH:mm:ss", Locale.getDefault())
                     .format(Date(backup.timestamp)),
                 style = MaterialTheme.typography.bodyMedium,

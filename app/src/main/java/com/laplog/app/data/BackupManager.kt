@@ -102,20 +102,19 @@ class BackupManager(
         folder.listFiles().forEach { file ->
             if (file.name?.startsWith(BACKUP_PREFIX) == true &&
                 file.name?.endsWith(BACKUP_EXTENSION) == true) {
-                try {
-                    // Extract timestamp from filename
-                    val timestamp = extractTimestampFromFileName(file.name!!)
-                    backups.add(
-                        BackupFileInfo(
-                            uri = file.uri,
-                            name = file.name!!,
-                            timestamp = timestamp,
-                            size = file.length()
-                        )
-                    )
-                } catch (e: Exception) {
-                    // Skip invalid files
+                val timestamp = try {
+                    extractTimestampFromFileName(file.name!!)
+                } catch (_: Exception) {
+                    file.lastModified().takeIf { it > 0 } ?: System.currentTimeMillis()
                 }
+                backups.add(
+                    BackupFileInfo(
+                        uri = file.uri,
+                        name = file.name!!,
+                        timestamp = timestamp,
+                        size = file.length()
+                    )
+                )
             }
         }
 
