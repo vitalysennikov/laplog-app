@@ -57,6 +57,10 @@ class MainActivity : ComponentActivity() {
     private var pendingExportData: String? = null
     private var pendingFileName: String? = null
     private var pendingBackupData: String? = null
+
+    private var brightnessKeepOn = false
+    private var brightnessDimBrightness = true
+    private var brightnessIsTimedDim = false
     private lateinit var backupViewModel: BackupViewModel
 
     private val selectBackupFolderLauncher = registerForActivityResult(
@@ -255,33 +259,15 @@ class MainActivity : ComponentActivity() {
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
                                 onScreenOnModeChanged = { mode, isRunning, elapsedTime, dimBrightness, isTimedDim ->
-                                    // Determine if screen should stay on
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
                                         ScreenOnMode.WHILE_RUNNING -> isRunning
                                         ScreenOnMode.ALWAYS -> true
                                     }
-
-                                    if (shouldKeepOn && dimBrightness) {
-                                        // System brightness mode - keep screen on at system brightness
-                                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                        val layoutParams = window.attributes
-                                        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                                        window.attributes = layoutParams
-                                    } else if (shouldKeepOn && !dimBrightness) {
-                                        // Custom dim timer mode - FLAG_KEEP_SCREEN_ON, brightness by our timer
-                                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                        val layoutParams = window.attributes
-                                        layoutParams.screenBrightness = if (isTimedDim) 0.0f
-                                            else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                                        window.attributes = layoutParams
-                                    } else {
-                                        // Screen can turn off
-                                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                        val layoutParams = window.attributes
-                                        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                                        window.attributes = layoutParams
-                                    }
+                                    brightnessKeepOn = shouldKeepOn
+                                    brightnessDimBrightness = dimBrightness
+                                    brightnessIsTimedDim = isTimedDim
+                                    applyBrightness(shouldKeepOn, dimBrightness, isTimedDim)
                                 },
                                 onLockOrientation = { lock ->
                                     requestedOrientation = if (lock) {
@@ -561,6 +547,33 @@ class MainActivity : ComponentActivity() {
                 action = StopwatchService.ACTION_APP_BACKGROUND
             }
             startService(intent)
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Restore brightness when notification shade is pulled (hasFocus=false),
+        // re-apply dim when shade is dismissed (hasFocus=true)
+        applyBrightness(brightnessKeepOn, brightnessDimBrightness, brightnessIsTimedDim && hasFocus)
+    }
+
+    private fun applyBrightness(shouldKeepOn: Boolean, dimBrightness: Boolean, isTimedDim: Boolean) {
+        if (shouldKeepOn && dimBrightness) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            val lp = window.attributes
+            lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            window.attributes = lp
+        } else if (shouldKeepOn && !dimBrightness) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            val lp = window.attributes
+            lp.screenBrightness = if (isTimedDim) 0.0f
+                else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            window.attributes = lp
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            val lp = window.attributes
+            lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            window.attributes = lp
         }
     }
 
