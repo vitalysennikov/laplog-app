@@ -799,9 +799,9 @@ class StopwatchViewModel(
         val millis = ((absDiff % 1000) / 10).toInt()
 
         return if (includeMillis) {
-            String.format("%s%d.%02d", sign, seconds, millis)
+            String.format("%s %d.%02d", sign, seconds, millis)
         } else {
-            String.format("%s%d", sign, seconds)
+            String.format("%s %d", sign, seconds)
         }
     }
 
