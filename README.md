@@ -4,7 +4,7 @@
 
 A stopwatch app for Android with lap tracking, session history, charts, backup, and flexible display settings.
 
-**Current version: 0.19.0** · Min Android: 7.0 (API 24) · Target: Android 14 (API 35)
+**Current version: 0.19.3** · Min Android: 7.0 (API 24) · Target: Android 14 (API 35)
 
 ---
 
