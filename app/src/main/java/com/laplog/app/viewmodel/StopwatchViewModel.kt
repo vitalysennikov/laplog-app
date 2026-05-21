@@ -330,7 +330,12 @@ class StopwatchViewModel(
 
     fun updateTickAccents(accents: List<TickAccent>) {
         _tickAccents.value = accents
-        preferencesManager.tickAccentsJson = serializeTickAccents(accents)
+        val json = serializeTickAccents(accents)
+        preferencesManager.tickAccentsJson = json
+        val name = _currentName.value.trim()
+        if (name.isNotBlank()) {
+            preferencesManager.saveNameAccents(name, json)
+        }
         saveCurrentNameToggles()
     }
 
@@ -355,9 +360,8 @@ class StopwatchViewModel(
                 }
                 if (interval > 0) result.add(TickAccent(interval, soundType, offset))
             }
-            // Empty JSON array "[]" means user intentionally cleared all accents;
-            // only fall back to defaults for corrupt/unrecognized JSON (no braces at all)
-            if (result.isEmpty() && !json.contains('{')) DEFAULT_TICK_ACCENTS else result
+            // Fall back to defaults only for corrupt/empty input, not for "[]"
+            if (result.isEmpty() && !json.contains('[')) DEFAULT_TICK_ACCENTS else result
         } catch (_: Exception) {
             DEFAULT_TICK_ACCENTS
         }
@@ -667,17 +671,23 @@ class StopwatchViewModel(
     }
 
     fun updateCurrentName(name: String) {
-        // Don't trim during input - allow spaces inside names
+        val prevTrimmed = _currentName.value.trim()
         _currentName.value = name
         preferencesManager.currentName = name
 
-        // Add to used names if not empty (trim for checking and storage)
-        val trimmedForStorage = name.trim()
-        if (trimmedForStorage.isNotBlank() && !_usedNames.value.contains(trimmedForStorage)) {
+        val trimmed = name.trim()
+        if (trimmed.isNotBlank() && !_usedNames.value.contains(trimmed)) {
             val updated = _usedNames.value.toMutableSet()
-            updated.add(trimmedForStorage)
+            updated.add(trimmed)
             _usedNames.value = updated
             preferencesManager.usedNames = updated
+        }
+        // При точном совпадении с сохранённым именем — загрузить акценты
+        if (trimmed.isNotBlank() && trimmed != prevTrimmed && _usedNames.value.contains(trimmed)) {
+            val savedAccents = preferencesManager.getNameAccents(trimmed)
+            if (savedAccents != null) {
+                _tickAccents.value = parseTickAccents(savedAccents)
+            }
         }
     }
 
@@ -716,16 +726,16 @@ class StopwatchViewModel(
         preferencesManager.showTimeAsSeconds = toggles.showTimeAsSeconds
         _tickEnabled.value = toggles.tickEnabled
         preferencesManager.tickEnabled = toggles.tickEnabled
-        if (toggles.tickAccentsJson != null) {
-            // Name has explicitly saved accents — restore them.
-            // Do NOT update preferencesManager.tickAccentsJson here: that key holds the
-            // user's last *explicitly* chosen accent set and must not be overwritten by
-            // per-name loads, otherwise names with null tickAccentsJson will inherit the
-            // wrong (last-loaded) defaults instead of the user's own choice.
-            _tickAccents.value = parseTickAccents(toggles.tickAccentsJson)
-        } else {
-            // Name has no saved accents yet — use the user's last explicitly set accents.
-            _tickAccents.value = parseTickAccents(preferencesManager.tickAccentsJson)
+        // Separate name_accents_json takes priority (always written by updateTickAccents),
+        // fall back to NameToggles field (legacy), then to global last-set accents.
+        val nameAccentsJson = preferencesManager.getNameAccents(name)
+        when {
+            nameAccentsJson != null ->
+                _tickAccents.value = parseTickAccents(nameAccentsJson)
+            toggles.tickAccentsJson != null ->
+                _tickAccents.value = parseTickAccents(toggles.tickAccentsJson)
+            else ->
+                _tickAccents.value = parseTickAccents(preferencesManager.tickAccentsJson)
         }
         if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
             updateServiceWakeLock()

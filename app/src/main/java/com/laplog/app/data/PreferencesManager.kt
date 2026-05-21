@@ -148,6 +148,21 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString(KEY_STOPWATCH_LAPS_JSON, null)
         set(value) = prefs.edit().putString(KEY_STOPWATCH_LAPS_JSON, value).apply()
 
+    fun getNameAccents(name: String): String? {
+        val allJson = prefs.getString(KEY_NAME_ACCENTS_JSON, null) ?: return null
+        return try {
+            val all = org.json.JSONObject(allJson)
+            if (all.has(name) && !all.isNull(name)) all.getString(name) else null
+        } catch (_: Exception) { null }
+    }
+
+    fun saveNameAccents(name: String, accentsJson: String) {
+        val allJson = prefs.getString(KEY_NAME_ACCENTS_JSON, null)
+        val all = if (allJson != null) try { org.json.JSONObject(allJson) } catch (_: Exception) { org.json.JSONObject() } else org.json.JSONObject()
+        all.put(name, accentsJson)
+        prefs.edit().putString(KEY_NAME_ACCENTS_JSON, all.toString()).apply()
+    }
+
     fun getNameToggles(name: String): NameToggles? {
         val allJson = prefs.getString(KEY_NAME_TOGGLES_JSON, null) ?: return null
         return try {
@@ -297,6 +312,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_TICK_ENABLED = "tick_enabled"
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
         private const val KEY_NAME_TOGGLES_JSON = "name_toggles_json"
+        private const val KEY_NAME_ACCENTS_JSON = "name_accents_json"
         private const val DEFAULT_TICK_ACCENTS_JSON =
             "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7},{\"i\":8,\"s\":\"BELL\",\"o\":0},{\"i\":60,\"s\":\"CHIME\",\"o\":0},{\"i\":300,\"s\":\"GONG\",\"o\":0}]"
     }
