@@ -152,6 +152,7 @@ class MainActivity : ComponentActivity() {
             StopwatchTheme {
                 val pagerState = rememberPagerState(pageCount = { 4 })
                 val coroutineScope = rememberCoroutineScope()
+                val hasErrorLog by backupViewModel.hasErrorLog.collectAsState()
                 var showAboutDialog by remember { mutableStateOf(false) }
                 var showRestartDialog by remember { mutableStateOf(false) }
                 var showWelcomeDialog by remember { mutableStateOf(preferencesManager.isFirstLaunch) }
@@ -235,7 +236,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                                 NavigationBarItem(
-                                    icon = { Icon(Icons.Default.Backup, contentDescription = null) },
+                                    icon = {
+                                        BadgedBox(badge = {
+                                            if (hasErrorLog) Badge()
+                                        }) {
+                                            Icon(Icons.Default.Backup, contentDescription = null)
+                                        }
+                                    },
                                     label = { Text(getString(R.string.backup)) },
                                     selected = pagerState.currentPage == 3,
                                     onClick = {

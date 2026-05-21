@@ -59,9 +59,13 @@ class BackupViewModel(
     private val _loggingEnabled = MutableStateFlow(preferencesManager.loggingEnabled)
     val loggingEnabled: StateFlow<Boolean> = _loggingEnabled.asStateFlow()
 
+    private val _hasErrorLog = MutableStateFlow(false)
+    val hasErrorLog: StateFlow<Boolean> = _hasErrorLog.asStateFlow()
+
     init {
         loadBackups()
         loadLogContent()
+        checkErrorLog()
 
         // Schedule backup if auto-backup is enabled
         if (preferencesManager.autoBackupEnabled) {
@@ -247,6 +251,27 @@ class BackupViewModel(
                 AppLogger.w("BackupViewModel", "No logs to export")
                 _errorMessage.value = "No logs available to export"
             }
+        }
+    }
+
+    fun exportErrorLog(onExport: (String, String) -> Unit) {
+        viewModelScope.launch {
+            val logContent = AppLogger.getErrorLogFileContent()
+            if (logContent.isNotEmpty()) {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.getDefault())
+                val fileName = "laplog_errors_${dateFormat.format(Date())}.txt"
+                AppLogger.i("BackupViewModel", "Exporting error log to file: $fileName")
+                onExport(fileName, logContent)
+            } else {
+                AppLogger.w("BackupViewModel", "No errors to export")
+                _errorMessage.value = "No errors available to export"
+            }
+        }
+    }
+
+    private fun checkErrorLog() {
+        viewModelScope.launch {
+            _hasErrorLog.value = AppLogger.getErrorLogFileContent().isNotEmpty()
         }
     }
 

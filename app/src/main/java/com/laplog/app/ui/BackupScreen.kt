@@ -287,6 +287,22 @@ fun BackupScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Export Error Log button
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.exportErrorLog { fileName, logContent ->
+                                onSaveBackupManually(fileName, logContent)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.export_error_log))
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     // Clear Logs button
                     OutlinedButton(
                         onClick = {

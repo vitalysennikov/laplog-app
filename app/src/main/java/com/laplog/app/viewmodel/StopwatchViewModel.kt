@@ -570,14 +570,14 @@ class StopwatchViewModel(
         session.name?.let { name ->
             if (name.isNotBlank()) {
                 Log.d("StopwatchViewModel", "Auto-translating name: $name")
-                translationManager.translateAndSaveSessionName(sessionId, name)
+                translationManager.translateAndSaveSessionName(sessionId, name, preferencesManager.getCurrentLanguage())
             }
         }
 
         // Auto-translate notes if provided
         notes?.let {
             Log.d("StopwatchViewModel", "Auto-translating notes")
-            translationManager.translateAndSaveSessionNotes(sessionId, it)
+            translationManager.translateAndSaveSessionNotes(sessionId, it, preferencesManager.getCurrentLanguage())
         }
 
         // Clear notes after saving (notes are session-specific)

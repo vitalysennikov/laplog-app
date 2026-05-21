@@ -30,16 +30,12 @@ class TranslationManager(
      * Translate session name to all languages and save to database
      * Called when a new session is saved with a name
      */
-    suspend fun translateAndSaveSessionName(sessionId: Long, name: String) = withContext(Dispatchers.IO) {
-        AppLogger.i(TAG, "Auto-translating session $sessionId name: '$name'")
+    suspend fun translateAndSaveSessionName(sessionId: Long, name: String, sourceLang: String) = withContext(Dispatchers.IO) {
+        AppLogger.i(TAG, "Auto-translating session $sessionId name: '$name' (source: $sourceLang)")
 
-        // Get current language from PreferencesManager
-        // For now, we'll assume the name is in the source language and translate to all others
-        // We'll try from EN first, then RU, then ZH
-
-        val nameEn = translate(name, "en", "en") ?: name
-        val nameRu = translate(name, "en", "ru")
-        val nameZh = translate(name, "en", "zh")
+        val nameEn = if (sourceLang == "en") name else translate(name, sourceLang, "en")
+        val nameRu = if (sourceLang == "ru") name else translate(name, sourceLang, "ru")
+        val nameZh = if (sourceLang == "zh") name else translate(name, sourceLang, "zh")
 
         AppLogger.d(TAG, "Session $sessionId translations - EN: '$nameEn', RU: '$nameRu', ZH: '$nameZh'")
 
@@ -56,12 +52,12 @@ class TranslationManager(
     /**
      * Translate session notes to all languages and save to database
      */
-    suspend fun translateAndSaveSessionNotes(sessionId: Long, notes: String) = withContext(Dispatchers.IO) {
-        AppLogger.i(TAG, "Auto-translating session $sessionId notes")
+    suspend fun translateAndSaveSessionNotes(sessionId: Long, notes: String, sourceLang: String) = withContext(Dispatchers.IO) {
+        AppLogger.i(TAG, "Auto-translating session $sessionId notes (source: $sourceLang)")
 
-        val notesEn = translate(notes, "en", "en") ?: notes
-        val notesRu = translate(notes, "en", "ru")
-        val notesZh = translate(notes, "en", "zh")
+        val notesEn = if (sourceLang == "en") notes else translate(notes, sourceLang, "en")
+        val notesRu = if (sourceLang == "ru") notes else translate(notes, sourceLang, "ru")
+        val notesZh = if (sourceLang == "zh") notes else translate(notes, sourceLang, "zh")
 
         sessionDao.updateSessionNotesTranslations(
             sessionId = sessionId,
@@ -176,8 +172,11 @@ class TranslationManager(
 
                 AppLogger.d("TranslationManager", "MyMemory API result: '$text' -> '$translatedText'")
 
-                // Check if translation actually happened (API sometimes returns original text)
-                if (translatedText != text) {
+                // Check if translation actually happened
+                if (translatedText == "PLEASE SELECT TWO DISTINCT LANGUAGES") {
+                    AppLogger.w("TranslationManager", "MyMemory API error: same-language request rejected")
+                    return@withContext null
+                } else if (translatedText != text) {
                     return@withContext translatedText
                 } else {
                     AppLogger.w("TranslationManager", "MyMemory API returned same text (no translation)")

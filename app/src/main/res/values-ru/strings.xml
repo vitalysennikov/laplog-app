@@ -236,6 +236,7 @@
     <string name="logging_enabled">Записывать лог в файл</string>
     <string name="view_logs">Просмотр логов</string>
     <string name="export_logs">Экспорт логов</string>
+    <string name="export_error_log">Экспорт лога ошибок</string>
     <string name="clear_logs">Очистить логи</string>
     <string name="clear_logs_confirm">Вы уверены, что хотите очистить все логи? Это действие нельзя отменить.</string>
     <string name="logs_cleared">Логи успешно очищены</string>
