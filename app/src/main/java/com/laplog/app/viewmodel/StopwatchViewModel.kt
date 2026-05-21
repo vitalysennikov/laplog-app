@@ -293,7 +293,7 @@ class StopwatchViewModel(
                     }
                 }
 
-                delay(1000L)
+                delay(100L)
             }
         }
     }

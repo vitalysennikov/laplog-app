@@ -642,7 +642,7 @@ class StopwatchService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Screen stays on")
+            .setContentText(getString(R.string.notification_screen_always_on))
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFF1976D2.toInt())
             .setOngoing(true)

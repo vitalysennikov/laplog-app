@@ -177,8 +177,9 @@
     <string name="stopwatch_notification_channel">Секундомер</string>
     <string name="stopwatch_notification_channel_description">Показывает время секундомера при работе в фоне</string>
     <string name="notification_lap_info">Круг %1$d: %2$s</string>
-    <string name="notification_running">⏱ %1$s запущен</string>
-    <string name="notification_paused">⏸ %1$s на паузе</string>
+    <string name="notification_running">⏱ %1$s — запущен</string>
+    <string name="notification_paused">⏸ %1$s — на паузе</string>
+    <string name="notification_screen_always_on">Экран держим активным</string>
 
     <!-- Permissions -->
     <string name="permission_notification_title">Включить уведомления</string>
