@@ -19,7 +19,9 @@ class TickSoundManager {
 
     private fun generateSamples(type: TickSoundType): ShortArray = when (type) {
         TickSoundType.BUZZ    -> generateBuzz()
-        TickSoundType.CHIME2  -> generateBell(freq = 1300.0, durationMs = 700,  volume = 0.50f, decayRate = 3.0)
+        TickSoundType.DRUM    -> generateDrum()
+        TickSoundType.SOFT    -> generateSoft()
+        TickSoundType.CHIME2  -> generateBell(freq = 1300.0, durationMs = 3000, volume = 0.50f, decayRate = 0.8, fadeStartSec = 2.0)
         TickSoundType.GONG    -> generateGong()
         TickSoundType.BOWL    -> generateBowl()
         TickSoundType.WHISTLE -> generateWhistle()
@@ -36,10 +38,8 @@ class TickSoundManager {
             TickSoundType.WOOD  -> Triple( 800.0,  50, 0.90f)
             TickSoundType.BEEP  -> Triple(1200.0,  80, 0.75f)
             TickSoundType.PING  -> Triple(1800.0, 150, 0.55f)
-            TickSoundType.SOFT  -> Triple( 600.0, 2000, 0.38f)
             TickSoundType.SNAP  -> Triple(1600.0,  15, 1.00f)
             TickSoundType.CHIRP -> Triple(2500.0,  20, 0.55f)
-            TickSoundType.DRUM  -> Triple( 100.0, 150, 0.95f)
             TickSoundType.CHIME -> Triple(1700.0, 350, 0.45f)
             else -> Triple(1000.0, 40, 0.70f)
         }
@@ -50,6 +50,25 @@ class TickSoundManager {
             val t = i.toDouble() / numSamples
             val envelope = if (t < 0.05) t / 0.05 else exp(-8.0 * (t - 0.05))
             val sample = (sin(angleIncrement * i) * envelope * volume * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Kick drum: pitch sweep 200→50 Hz + noise click at attack
+    private fun generateDrum(): ShortArray {
+        val durationMs = 180
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        val random = java.util.Random(42)
+        var phase = 0.0
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / numSamples
+            val freq = 200.0 + (50.0 - 200.0) * t  // sweep 200→50 Hz
+            phase += 2.0 * PI * freq / sampleRate
+            val envelope = if (t < 0.02) t / 0.02 else exp(-7.0 * (t - 0.02))
+            val noise = if (t < 0.04) (random.nextDouble() * 2 - 1) * 0.35 else 0.0
+            val sample = ((sin(phase) + noise) * envelope * 0.95 * Short.MAX_VALUE).toInt()
             samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return samples
@@ -77,30 +96,37 @@ class TickSoundManager {
         return samples
     }
 
-    // Bell with configurable frequency and slow decay
-    private fun generateBell(freq: Double, durationMs: Int, volume: Float, decayRate: Double): ShortArray {
+    // Bell with configurable frequency, slow decay, optional linear fadeout
+    private fun generateBell(freq: Double, durationMs: Int, volume: Float, decayRate: Double, fadeStartSec: Double = -1.0): ShortArray {
         val numSamples = sampleRate * durationMs / 1000
         val samples = ShortArray(numSamples)
         val omega = 2.0 * PI * freq / sampleRate
+        val totalSec = durationMs / 1000.0
         for (i in 0 until numSamples) {
-            val t = i.toDouble() / numSamples
-            val envelope = if (t < 0.02) t / 0.02 else exp(-decayRate * (t - 0.02))
-            val sample = (sin(omega * i) * envelope * volume * Short.MAX_VALUE).toInt()
+            val secs = i.toDouble() / sampleRate
+            val naturalEnv = if (secs < 0.02) secs / 0.02 else exp(-decayRate * (secs - 0.02))
+            val fadeEnv = if (fadeStartSec < 0 || secs < fadeStartSec) 1.0
+                          else (1.0 - (secs - fadeStartSec) / (totalSec - fadeStartSec)).coerceAtLeast(0.0)
+            val sample = (sin(omega * i) * naturalEnv * fadeEnv * volume * Short.MAX_VALUE).toInt()
             samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return samples
     }
 
-    // Gong: multi-partial resonant bell with very slow decay
+    // Gong: multi-partial resonant bell, natural decay + linear fadeout after 2 s
     private fun generateGong(): ShortArray {
-        val durationMs = 1500
+        val durationMs = 3000
         val numSamples = sampleRate * durationMs / 1000
         val samples = ShortArray(numSamples)
-        // Fundamental + inharmonic partials typical of struck metal
         val partials = listOf(200.0 to 0.70f, 520.0 to 0.40f, 940.0 to 0.22f, 1480.0 to 0.10f)
+        val fadeStartSec = 2.0
+        val totalSec = durationMs / 1000.0
         for (i in 0 until numSamples) {
-            val t = i.toDouble() / numSamples
-            val envelope = if (t < 0.01) t / 0.01 else exp(-2.0 * (t - 0.01))
+            val secs = i.toDouble() / sampleRate
+            val naturalEnv = if (secs < 0.01) secs / 0.01 else exp(-1.2 * (secs - 0.01))
+            val fadeEnv = if (secs < fadeStartSec) 1.0
+                          else (1.0 - (secs - fadeStartSec) / (totalSec - fadeStartSec)).coerceAtLeast(0.0)
+            val envelope = naturalEnv * fadeEnv
             var wave = 0.0
             for ((freq, amp) in partials) {
                 wave += sin(2.0 * PI * freq / sampleRate * i) * amp
@@ -111,15 +137,39 @@ class TickSoundManager {
         return samples
     }
 
-    // Singing bowl: fundamental + harmonics, very slow decay (~2 s)
+    // Soft tone: slow sine at 600 Hz, natural decay + linear fadeout after 2 s
+    private fun generateSoft(): ShortArray {
+        val durationMs = 3000
+        val numSamples = sampleRate * durationMs / 1000
+        val samples = ShortArray(numSamples)
+        val omega = 2.0 * PI * 600.0 / sampleRate
+        val fadeStartSec = 2.0
+        val totalSec = durationMs / 1000.0
+        for (i in 0 until numSamples) {
+            val secs = i.toDouble() / sampleRate
+            val naturalEnv = if (secs < 0.05) secs / 0.05 else exp(-1.5 * (secs - 0.05))
+            val fadeEnv = if (secs < fadeStartSec) 1.0
+                          else (1.0 - (secs - fadeStartSec) / (totalSec - fadeStartSec)).coerceAtLeast(0.0)
+            val sample = (sin(omega * i) * naturalEnv * fadeEnv * 0.38f * Short.MAX_VALUE).toInt()
+            samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return samples
+    }
+
+    // Singing bowl: fundamental + harmonics, natural decay + linear fadeout after 2 s
     private fun generateBowl(): ShortArray {
-        val durationMs = 2000
+        val durationMs = 3000
         val numSamples = sampleRate * durationMs / 1000
         val samples = ShortArray(numSamples)
         val partials = listOf(432.0 to 0.70f, 1200.0 to 0.30f, 2120.0 to 0.15f)
+        val fadeStartSec = 2.0
+        val totalSec = durationMs / 1000.0
         for (i in 0 until numSamples) {
-            val t = i.toDouble() / numSamples
-            val envelope = if (t < 0.04) t / 0.04 else exp(-1.5 * (t - 0.04))
+            val secs = i.toDouble() / sampleRate
+            val naturalEnv = if (secs < 0.04) secs / 0.04 else exp(-1.5 * (secs - 0.04))
+            val fadeEnv = if (secs < fadeStartSec) 1.0
+                          else (1.0 - (secs - fadeStartSec) / (totalSec - fadeStartSec)).coerceAtLeast(0.0)
+            val envelope = naturalEnv * fadeEnv
             var wave = 0.0
             for ((freq, amp) in partials) {
                 wave += sin(2.0 * PI * freq / sampleRate * i) * amp
@@ -130,19 +180,23 @@ class TickSoundManager {
         return samples
     }
 
-    // Referee whistle: high freq with tremolo, ~1 s
+    // Referee whistle: high freq with tremolo, fadeout after 2 s
     private fun generateWhistle(): ShortArray {
-        val durationMs = 1000
+        val durationMs = 3000
         val numSamples = sampleRate * durationMs / 1000
         val samples = ShortArray(numSamples)
         val freq = 2700.0
         val omega = 2.0 * PI * freq / sampleRate
-        val tremoloRate = 2.0 * PI * 25.0 / sampleRate  // 25 Hz flutter
+        val tremoloRate = 2.0 * PI * 25.0 / sampleRate
+        val fadeStartSec = 2.0
+        val totalSec = durationMs / 1000.0
         for (i in 0 until numSamples) {
-            val t = i.toDouble() / numSamples
-            val envelope = if (t < 0.02) t / 0.02 else exp(-2.5 * (t - 0.02))
+            val secs = i.toDouble() / sampleRate
+            val naturalEnv = if (secs < 0.02) secs / 0.02 else exp(-1.2 * (secs - 0.02))
+            val fadeEnv = if (secs < fadeStartSec) 1.0
+                          else (1.0 - (secs - fadeStartSec) / (totalSec - fadeStartSec)).coerceAtLeast(0.0)
             val tremolo = 1.0 + 0.12 * sin(tremoloRate * i)
-            val sample = (sin(omega * i) * tremolo * envelope * 0.60f * Short.MAX_VALUE).toInt()
+            val sample = (sin(omega * i) * tremolo * naturalEnv * fadeEnv * 0.60f * Short.MAX_VALUE).toInt()
             samples[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return samples

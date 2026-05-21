@@ -26,6 +26,7 @@ fun TickSettingsDialog(
     onAccentsChange: (List<TickAccent>) -> Unit,
     onPlaySound: (TickSoundType) -> Unit,
     onDismiss: () -> Unit,
+    onSave: () -> Unit = {},
     onUserInteraction: () -> Unit = {}
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
@@ -156,8 +157,8 @@ fun TickSettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
+            TextButton(onClick = { onSave(); onDismiss() }) {
+                Text(stringResource(R.string.save))
             }
         }
     )

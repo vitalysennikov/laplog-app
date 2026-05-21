@@ -724,7 +724,7 @@ class StopwatchViewModel(
         }
     }
 
-    private fun saveCurrentNameToggles() {
+    fun saveCurrentNameToggles() {
         val name = _currentName.value.trim()
         if (name.isBlank()) return
         preferencesManager.saveNameToggles(name, NameToggles(

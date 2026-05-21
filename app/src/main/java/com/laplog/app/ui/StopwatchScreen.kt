@@ -600,6 +600,7 @@ fun StopwatchScreen(
             onAccentsChange = { viewModel.updateTickAccents(it) },
             onPlaySound = { viewModel.playTestSound(it) },
             onDismiss = { showTickSettingsDialog = false },
+            onSave = { viewModel.saveCurrentNameToggles() },
             onUserInteraction = {
                 lastInteractionMs.set(System.currentTimeMillis())
                 if (isTimedDim) isTimedDim = false
