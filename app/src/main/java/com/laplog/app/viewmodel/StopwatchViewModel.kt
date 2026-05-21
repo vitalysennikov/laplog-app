@@ -355,7 +355,9 @@ class StopwatchViewModel(
                 }
                 if (interval > 0) result.add(TickAccent(interval, soundType, offset))
             }
-            result.ifEmpty { DEFAULT_TICK_ACCENTS }
+            // Empty JSON array "[]" means user intentionally cleared all accents;
+            // only fall back to defaults for corrupt/unrecognized JSON (no braces at all)
+            if (result.isEmpty() && !json.contains('{')) DEFAULT_TICK_ACCENTS else result
         } catch (_: Exception) {
             DEFAULT_TICK_ACCENTS
         }
@@ -714,10 +716,16 @@ class StopwatchViewModel(
         preferencesManager.showTimeAsSeconds = toggles.showTimeAsSeconds
         _tickEnabled.value = toggles.tickEnabled
         preferencesManager.tickEnabled = toggles.tickEnabled
-        toggles.tickAccentsJson?.let {
-            val accents = parseTickAccents(it)
-            _tickAccents.value = accents
-            preferencesManager.tickAccentsJson = it
+        if (toggles.tickAccentsJson != null) {
+            // Name has explicitly saved accents — restore them.
+            // Do NOT update preferencesManager.tickAccentsJson here: that key holds the
+            // user's last *explicitly* chosen accent set and must not be overwritten by
+            // per-name loads, otherwise names with null tickAccentsJson will inherit the
+            // wrong (last-loaded) defaults instead of the user's own choice.
+            _tickAccents.value = parseTickAccents(toggles.tickAccentsJson)
+        } else {
+            // Name has no saved accents yet — use the user's last explicitly set accents.
+            _tickAccents.value = parseTickAccents(preferencesManager.tickAccentsJson)
         }
         if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
             updateServiceWakeLock()
