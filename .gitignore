@@ -20,7 +20,5 @@ release/
 app/release/
 
 # Log files
-laplog_logs_*.txt.json
-laplog_logs_*.txt
 *.log
-task_*.md
+tmp
