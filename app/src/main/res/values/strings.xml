@@ -40,6 +40,7 @@
     <string name="copy">Copy</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="rename">Rename</string>
 
     <!-- Delete options -->
     <string name="delete_session">Delete session</string>

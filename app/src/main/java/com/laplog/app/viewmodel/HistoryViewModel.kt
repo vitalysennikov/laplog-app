@@ -6,20 +6,26 @@ import androidx.lifecycle.viewModelScope
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
+import com.laplog.app.data.database.entity.SessionNameEntity
 import com.laplog.app.model.SessionWithLaps
 import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class HistoryViewModel(
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao,
+    private val sessionNameDao: SessionNameDao,
     private val translationManager: TranslationManager
 ) : ViewModel() {
 
@@ -28,8 +34,12 @@ class HistoryViewModel(
     private val _sessions = MutableStateFlow<List<SessionWithLaps>>(emptyList())
     val sessions: StateFlow<List<SessionWithLaps>> = _sessions.asStateFlow()
 
-    private val _usedNames = MutableStateFlow<Set<String>>(emptySet())
-    val usedNames: StateFlow<Set<String>> = _usedNames.asStateFlow()
+    val sessionNames: StateFlow<List<SessionNameEntity>> = sessionNameDao.getAllFlow()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val usedNames: StateFlow<Set<String>> = sessionNameDao.getAllFlow()
+        .map { list -> list.map { it.name }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     private val _expandAll = MutableStateFlow(true) // default: all expanded
     val expandAll: StateFlow<Boolean> = _expandAll.asStateFlow()
@@ -43,8 +53,9 @@ class HistoryViewModel(
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
 
-    private val _namesFromHistory = MutableStateFlow<List<String>>(emptyList())
-    val namesFromHistory: StateFlow<List<String>> = _namesFromHistory.asStateFlow()
+    val namesFromHistory: StateFlow<List<String>> = sessionNameDao.getAllFlow()
+        .map { list -> list.map { it.name } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _filterName = MutableStateFlow<String?>(null)
     val filterName: StateFlow<String?> = _filterName.asStateFlow()
@@ -54,14 +65,6 @@ class HistoryViewModel(
 
     init {
         loadSessions()
-        loadUsedNames()
-        loadNamesFromHistory()
-    }
-
-    private fun loadNamesFromHistory() {
-        viewModelScope.launch {
-            _namesFromHistory.value = sessionDao.getDistinctNames()
-        }
     }
 
     fun toggleMillisecondsInHistory() {
@@ -86,9 +89,6 @@ class HistoryViewModel(
         loadSessionsJob = viewModelScope.launch {
             sessionDao.getAllSessions().collect { sessionEntities ->
                 AppLogger.d("HistoryViewModel", "Loaded ${sessionEntities.size} sessions from database")
-
-                // Update available names list when sessions change
-                loadNamesFromHistory()
 
                 // Apply filter if set
                 val filteredSessions = if (_filterName.value != null) {
@@ -116,21 +116,18 @@ class HistoryViewModel(
         }
     }
 
-    private fun loadUsedNames() {
-        _usedNames.value = preferencesManager.usedNames
-    }
-
     fun updateSessionName(sessionId: Long, name: String) {
         viewModelScope.launch {
             AppLogger.i("HistoryViewModel", "Updating session $sessionId name to '$name'")
             sessionDao.updateSessionName(sessionId, name)
 
-            // Add to used names
             if (name.isNotBlank()) {
-                val updated = _usedNames.value.toMutableSet()
-                updated.add(name)
-                _usedNames.value = updated
-                preferencesManager.usedNames = updated
+                // Ensure name exists in session_names
+                val existing = sessionNameDao.getByName(name)
+                val nameId = existing?.id ?: sessionNameDao.insert(
+                    com.laplog.app.data.database.entity.SessionNameEntity(name = name)
+                )
+                sessionDao.renameSessionsByName(name, name, nameId)
 
                 // Translate to all languages
                 val currentLang = preferencesManager.getCurrentLanguage()
@@ -139,7 +136,6 @@ class HistoryViewModel(
 
                 AppLogger.d("HistoryViewModel", "Session $sessionId: Translations - EN: '$nameEn', RU: '$nameRu', ZH: '$nameZh'")
 
-                // Save translations
                 sessionDao.updateSessionNameTranslations(
                     sessionId = sessionId,
                     nameEn = nameEn,
@@ -150,7 +146,6 @@ class HistoryViewModel(
             }
 
             loadSessions()
-            loadNamesFromHistory() // Reload names from database
         }
     }
 
@@ -190,7 +185,6 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.deleteSession(session)
             loadSessions()
-            loadNamesFromHistory() // Update names list
         }
     }
 
@@ -198,7 +192,6 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.deleteSessionsBefore(beforeTime)
             loadSessions()
-            loadNamesFromHistory() // Update names list
         }
     }
 
@@ -206,7 +199,6 @@ class HistoryViewModel(
         viewModelScope.launch {
             sessionDao.deleteAllSessions()
             loadSessions()
-            loadNamesFromHistory() // Update names list
         }
     }
 
@@ -245,7 +237,6 @@ class HistoryViewModel(
                 sessionDao.updateSessionNotesTranslations(sessionId, en, ru, zh)
             }
             loadSessions()
-            loadNamesFromHistory()
         }
     }
 
@@ -283,7 +274,6 @@ class HistoryViewModel(
                 sessionDao.updateSessionNotesTranslations(sessionId, en, ru, zh)
             }
             loadSessions()
-            loadNamesFromHistory()
         }
     }
 
@@ -308,7 +298,6 @@ class HistoryViewModel(
     fun refreshData() {
         AppLogger.i("HistoryViewModel", "Refreshing data (backup restoration or external changes)")
         loadSessions()
-        loadNamesFromHistory()
     }
 
     /**

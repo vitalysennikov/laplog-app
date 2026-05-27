@@ -6,17 +6,19 @@ import androidx.lifecycle.ViewModelProvider
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 
 class StopwatchViewModelFactory(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao,
+    private val sessionNameDao: SessionNameDao,
     private val translationManager: TranslationManager
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(StopwatchViewModel::class.java)) {
-            return StopwatchViewModel(context, preferencesManager, sessionDao, translationManager) as T
+            return StopwatchViewModel(context, preferencesManager, sessionDao, sessionNameDao, translationManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

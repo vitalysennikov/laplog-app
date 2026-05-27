@@ -35,6 +35,7 @@ import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.viewmodel.StopwatchViewModel
 import com.laplog.app.viewmodel.StopwatchViewModelFactory
 import java.util.concurrent.atomic.AtomicLong
@@ -45,6 +46,7 @@ import kotlin.math.roundToInt
 fun StopwatchScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
+    sessionNameDao: SessionNameDao,
     onScreenOnModeChanged: (ScreenOnMode, Boolean, Long, Boolean, Boolean) -> Unit, // (mode, isRunning, elapsedTime, dimBrightness, isTimedDim)
     onLockOrientation: (Boolean) -> Unit,
     isVisible: Boolean = true
@@ -52,15 +54,8 @@ fun StopwatchScreen(
     val context = LocalContext.current
     val translationManager = remember { TranslationManager(sessionDao) }
     val viewModel: StopwatchViewModel = viewModel(
-        factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao, translationManager)
+        factory = StopwatchViewModelFactory(context, preferencesManager, sessionDao, sessionNameDao, translationManager)
     )
-
-    // Refresh names from history when screen becomes visible
-    LaunchedEffect(isVisible) {
-        if (isVisible) {
-            viewModel.refreshNamesFromHistory()
-        }
-    }
 
     // Digital clock style font
     val dseg7Font = FontFamily(
@@ -77,6 +72,7 @@ fun StopwatchScreen(
     val currentNotes by viewModel.currentNotes.collectAsState()
     val usedNames by viewModel.usedNames.collectAsState()
     val namesFromHistory by viewModel.namesFromHistory.collectAsState()
+    val sessionNames by viewModel.sessionNames.collectAsState()
     val invertLapColors by viewModel.invertLapColors.collectAsState()
     val showMilliseconds by viewModel.showMilliseconds.collectAsState()
     val dimBrightness by viewModel.dimBrightness.collectAsState()
@@ -90,6 +86,8 @@ fun StopwatchScreen(
     var showTickSettingsDialog by remember { mutableStateOf(false) }
     var showDimTimeoutDialog by remember { mutableStateOf(false) }
     var showNotes by remember { mutableStateOf(currentNotes.isNotEmpty()) }
+    var renameTargetName by remember { mutableStateOf<String?>(null) }
+    var renameNewName by remember { mutableStateOf("") }
 
     // Dim timer state
     var isTimedDim by remember { mutableStateOf(false) }
@@ -206,6 +204,22 @@ fun StopwatchScreen(
                         namesFromHistory.forEach { name ->
                             DropdownMenuItem(
                                 text = { Text(name) },
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            renameTargetName = name
+                                            renameNewName = name
+                                            expandedNameDropdown = false
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Edit,
+                                            contentDescription = stringResource(R.string.rename),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                },
                                 onClick = {
                                     viewModel.selectNameFromHistory(name)
                                     expandedNameDropdown = false
@@ -213,6 +227,35 @@ fun StopwatchScreen(
                             )
                         }
                     }
+                }
+
+                // Rename dialog
+                renameTargetName?.let { targetName ->
+                    val entity = sessionNames.firstOrNull { it.name == targetName }
+                    AlertDialog(
+                        onDismissRequest = { renameTargetName = null },
+                        title = { Text(stringResource(R.string.rename)) },
+                        text = {
+                            OutlinedTextField(
+                                value = renameNewName,
+                                onValueChange = { renameNewName = it },
+                                singleLine = true
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                if (entity != null) {
+                                    viewModel.renameSessionName(entity, renameNewName)
+                                }
+                                renameTargetName = null
+                            }) { Text(stringResource(R.string.save)) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { renameTargetName = null }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        }
+                    )
                 }
             }
 

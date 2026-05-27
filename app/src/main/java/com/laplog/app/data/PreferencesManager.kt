@@ -249,6 +249,24 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_NAME_TOGGLES_JSON, all.toString()).apply()
     }
 
+    var nameSettingsMigrated: Boolean
+        get() = prefs.getBoolean(KEY_NAME_SETTINGS_MIGRATED, false)
+        set(value) = prefs.edit().putBoolean(KEY_NAME_SETTINGS_MIGRATED, value).apply()
+
+    fun getAllNameAccents(): Map<String, String> {
+        val allJson = prefs.getString(KEY_NAME_ACCENTS_JSON, null) ?: return emptyMap()
+        return try {
+            val all = org.json.JSONObject(allJson)
+            val result = mutableMapOf<String, String>()
+            val keys = all.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                if (!all.isNull(key)) result[key] = all.getString(key)
+            }
+            result
+        } catch (_: Exception) { emptyMap() }
+    }
+
     fun clearStopwatchState() {
         prefs.edit()
             .remove(KEY_STOPWATCH_ELAPSED_TIME)
@@ -313,6 +331,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_TICK_ACCENTS_JSON = "tick_accents_json"
         private const val KEY_NAME_TOGGLES_JSON = "name_toggles_json"
         private const val KEY_NAME_ACCENTS_JSON = "name_accents_json"
+        private const val KEY_NAME_SETTINGS_MIGRATED = "name_settings_migrated_v1"
         private const val DEFAULT_TICK_ACCENTS_JSON =
             "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7},{\"i\":8,\"s\":\"BELL\",\"o\":0},{\"i\":60,\"s\":\"CHIME\",\"o\":0},{\"i\":300,\"s\":\"GONG\",\"o\":0}]"
     }

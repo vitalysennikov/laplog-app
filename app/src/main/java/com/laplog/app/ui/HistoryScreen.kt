@@ -27,6 +27,7 @@ import com.laplog.app.R
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.model.SessionWithLaps
 import com.laplog.app.viewmodel.HistoryViewModel
@@ -56,13 +57,14 @@ private fun calculateMiddle(values: List<Long>): Long? {
 fun HistoryScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
+    sessionNameDao: SessionNameDao,
     translationManager: TranslationManager,
     onExportCsv: (List<SessionWithLaps>) -> Unit,
     onExportJson: (List<SessionWithLaps>) -> Unit,
     onLanguageChange: (String?) -> Unit
 ) {
     val viewModel: HistoryViewModel = viewModel(
-        factory = HistoryViewModelFactory(preferencesManager, sessionDao, translationManager)
+        factory = HistoryViewModelFactory(preferencesManager, sessionDao, sessionNameDao, translationManager)
     )
 
     // Get current language for localized names

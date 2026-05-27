@@ -265,6 +265,7 @@ class MainActivity : ComponentActivity() {
                             0 -> StopwatchScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
+                                sessionNameDao = database.sessionNameDao(),
                                 onScreenOnModeChanged = { mode, isRunning, elapsedTime, dimBrightness, isTimedDim ->
                                     val shouldKeepOn = when (mode) {
                                         ScreenOnMode.OFF -> false
@@ -288,6 +289,7 @@ class MainActivity : ComponentActivity() {
                             1 -> HistoryScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
+                                sessionNameDao = database.sessionNameDao(),
                                 translationManager = translationManager,
                                 onExportCsv = { sessions -> exportToCsv(sessions) },
                                 onExportJson = { sessions -> exportToJson(sessions) },

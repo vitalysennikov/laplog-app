@@ -9,8 +9,10 @@ import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.ScreenOnMode
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
+import com.laplog.app.data.database.entity.SessionNameEntity
 import com.laplog.app.model.DEFAULT_TICK_ACCENTS
 import com.laplog.app.model.LapTime
 import com.laplog.app.model.NameToggles
@@ -24,15 +26,20 @@ import com.laplog.app.util.TickSoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 class StopwatchViewModel(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao,
+    private val sessionNameDao: SessionNameDao,
     private val translationManager: TranslationManager
 ) : ViewModel() {
     // Use shared StopwatchState instead of local state
@@ -55,11 +62,16 @@ class StopwatchViewModel(
     private val _currentNotes = MutableStateFlow(preferencesManager.currentNotes)
     val currentNotes: StateFlow<String> = _currentNotes.asStateFlow()
 
-    private val _usedNames = MutableStateFlow<Set<String>>(preferencesManager.usedNames)
-    val usedNames: StateFlow<Set<String>> = _usedNames.asStateFlow()
+    val sessionNames: StateFlow<List<SessionNameEntity>> = sessionNameDao.getAllFlow()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val _namesFromHistory = MutableStateFlow<List<String>>(emptyList())
-    val namesFromHistory: StateFlow<List<String>> = _namesFromHistory.asStateFlow()
+    val usedNames: StateFlow<Set<String>> = sessionNameDao.getAllFlow()
+        .map { list -> list.map { it.name }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, preferencesManager.usedNames)
+
+    val namesFromHistory: StateFlow<List<String>> = sessionNameDao.getAllFlow()
+        .map { list -> list.map { it.name } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _invertLapColors = MutableStateFlow(preferencesManager.invertLapColors)
     val invertLapColors: StateFlow<Boolean> = _invertLapColors.asStateFlow()
@@ -94,11 +106,9 @@ class StopwatchViewModel(
     private var timerJob: Job? = null
 
     init {
-        loadNamesFromHistory()
+        migrateNameSettingsFromPrefsIfNeeded()
         restoreStopwatchState()
 
-        // Load per-name tick settings for the restored name so in-memory state
-        // matches what was saved for this name (not the last globally-written prefs)
         val restoredName = _currentName.value.trim()
         if (restoredName.isNotBlank()) {
             loadNameToggles(restoredName)
@@ -158,7 +168,6 @@ class StopwatchViewModel(
                     viewModelScope.launch {
                         try {
                             saveSession(elapsedTime, laps, sessionStartTime)
-                            loadNamesFromHistory()
                         } catch (e: Exception) {
                             Log.e("StopwatchViewModel", "Error saving session", e)
                         }
@@ -180,29 +189,6 @@ class StopwatchViewModel(
                 }
             }
         }
-    }
-
-    private fun loadNamesFromHistory() {
-        viewModelScope.launch {
-            val currentLang = preferencesManager.appLanguage
-            val allSessions = sessionDao.getAllSessions().first()
-
-            // Get unique original names
-            val originalNames = sessionDao.getDistinctNames()
-
-            // Map to localized names
-            val localizedNames = originalNames.map { originalName ->
-                allSessions.find { it.name == originalName }
-                    ?.getLocalizedName(currentLang)
-                    ?: originalName
-            }.distinct().sorted()
-
-            _namesFromHistory.value = localizedNames
-        }
-    }
-
-    fun refreshNamesFromHistory() {
-        loadNamesFromHistory()
     }
 
     private fun restoreStopwatchState() {
@@ -330,12 +316,7 @@ class StopwatchViewModel(
 
     fun updateTickAccents(accents: List<TickAccent>) {
         _tickAccents.value = accents
-        val json = serializeTickAccents(accents)
-        preferencesManager.tickAccentsJson = json
-        val name = _currentName.value.trim()
-        if (name.isNotBlank()) {
-            preferencesManager.saveNameAccents(name, json)
-        }
+        preferencesManager.tickAccentsJson = serializeTickAccents(accents)
         saveCurrentNameToggles()
     }
 
@@ -527,8 +508,6 @@ class StopwatchViewModel(
                 try {
                     saveSession(elapsedTime, laps, sessionStartTime)
                     Log.d("StopwatchViewModel", "Session saved successfully")
-                    // Reload names from history after saving
-                    loadNamesFromHistory()
                 } catch (e: Exception) {
                     Log.e("StopwatchViewModel", "Error saving session", e)
                 }
@@ -548,11 +527,17 @@ class StopwatchViewModel(
         Log.d("StopwatchViewModel", "Creating session: startTime=$sessionStartTime, endTime=$endTime, duration=$elapsedTime")
 
         val notes = _currentNotes.value.trim().takeIf { it.isNotBlank() }
+        val sessionName = _currentName.value.trim().takeIf { it.isNotBlank() }
+        val nameId = sessionName?.let { name ->
+            sessionNameDao.getByName(name)?.id
+                ?: sessionNameDao.insert(SessionNameEntity(name = name))
+        }
         val session = SessionEntity(
             startTime = sessionStartTime,
             endTime = endTime,
             totalDuration = elapsedTime,
-            name = _currentName.value.trim().takeIf { it.isNotBlank() },
+            name = sessionName,
+            nameId = nameId,
             notes = notes
         )
 
@@ -674,88 +659,157 @@ class StopwatchViewModel(
         val prevTrimmed = _currentName.value.trim()
         _currentName.value = name
         preferencesManager.currentName = name
-
         val trimmed = name.trim()
-        if (trimmed.isNotBlank() && !_usedNames.value.contains(trimmed)) {
-            val updated = _usedNames.value.toMutableSet()
-            updated.add(trimmed)
-            _usedNames.value = updated
-            preferencesManager.usedNames = updated
-        }
-        // При точном совпадении с сохранённым именем — загрузить акценты
-        if (trimmed.isNotBlank() && trimmed != prevTrimmed && _usedNames.value.contains(trimmed)) {
-            val savedAccents = preferencesManager.getNameAccents(trimmed)
-            if (savedAccents != null) {
-                _tickAccents.value = parseTickAccents(savedAccents)
-            }
+        // Load toggles only when user finishes typing an exact known name
+        if (trimmed.isNotBlank() && trimmed != prevTrimmed && usedNames.value.contains(trimmed)) {
+            loadNameToggles(trimmed)
         }
     }
 
     fun selectNameFromHistory(name: String) {
-        // Save current name's toggles before switching to another name
         saveCurrentNameToggles()
         _currentName.value = name
         preferencesManager.currentName = name
         val trimmed = name.trim()
         if (trimmed.isNotBlank()) {
-            val updated = _usedNames.value.toMutableSet()
-            if (updated.add(trimmed)) {
-                _usedNames.value = updated
-                preferencesManager.usedNames = updated
-            }
             loadNameToggles(trimmed)
         }
     }
 
     private fun loadNameToggles(name: String) {
-        val toggles = preferencesManager.getNameToggles(name) ?: return
-        _showMilliseconds.value = toggles.showMilliseconds
-        preferencesManager.showMilliseconds = toggles.showMilliseconds
-        val mode = try { ScreenOnMode.valueOf(toggles.screenOnMode) } catch (_: Exception) { ScreenOnMode.WHILE_RUNNING }
-        _screenOnMode.value = mode
-        preferencesManager.screenOnMode = mode
-        _lockOrientation.value = toggles.lockOrientation
-        preferencesManager.lockOrientation = toggles.lockOrientation
-        _invertLapColors.value = toggles.invertLapColors
-        preferencesManager.invertLapColors = toggles.invertLapColors
-        _dimBrightness.value = toggles.dimBrightness
-        preferencesManager.dimBrightness = toggles.dimBrightness
-        _hideTimeWhileRunning.value = toggles.hideTimeWhileRunning
-        preferencesManager.hideTimeWhileRunning = toggles.hideTimeWhileRunning
-        _showTimeAsSeconds.value = toggles.showTimeAsSeconds
-        preferencesManager.showTimeAsSeconds = toggles.showTimeAsSeconds
-        _tickEnabled.value = toggles.tickEnabled
-        preferencesManager.tickEnabled = toggles.tickEnabled
-        // Separate name_accents_json takes priority (always written by updateTickAccents),
-        // fall back to NameToggles field (legacy), then to global last-set accents.
-        val nameAccentsJson = preferencesManager.getNameAccents(name)
-        when {
-            nameAccentsJson != null ->
-                _tickAccents.value = parseTickAccents(nameAccentsJson)
-            toggles.tickAccentsJson != null ->
-                _tickAccents.value = parseTickAccents(toggles.tickAccentsJson)
-            else ->
-                _tickAccents.value = parseTickAccents(preferencesManager.tickAccentsJson)
-        }
-        if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
-            updateServiceWakeLock()
+        viewModelScope.launch {
+            val entity = sessionNameDao.getByName(name)
+            if (entity?.togglesJson != null) {
+                applyTogglesJson(entity.togglesJson)
+                _tickAccents.value = parseTickAccents(
+                    entity.accentsJson ?: preferencesManager.tickAccentsJson
+                )
+            } else {
+                // Fall back to SharedPreferences for migration
+                val toggles = preferencesManager.getNameToggles(name)
+                if (toggles != null) {
+                    applyLegacyToggles(toggles)
+                    val accentsJson = preferencesManager.getNameAccents(name)
+                        ?: toggles.tickAccentsJson
+                        ?: preferencesManager.tickAccentsJson
+                    _tickAccents.value = parseTickAccents(accentsJson)
+                    // Migrate to DB immediately
+                    val togglesJson = serializeCurrentToggles()
+                    val dbEntity = entity ?: SessionNameEntity(name = name)
+                    if (entity != null) {
+                        sessionNameDao.update(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+                    } else {
+                        sessionNameDao.insert(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+                    }
+                }
+            }
+            if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
+                updateServiceWakeLock()
+            }
         }
     }
 
     fun saveCurrentNameToggles() {
         val name = _currentName.value.trim()
         if (name.isBlank()) return
-        preferencesManager.saveNameToggles(name, NameToggles(
-            showMilliseconds = _showMilliseconds.value,
-            screenOnMode = _screenOnMode.value.name,
-            lockOrientation = _lockOrientation.value,
-            invertLapColors = _invertLapColors.value,
-            dimBrightness = _dimBrightness.value,
-            hideTimeWhileRunning = _hideTimeWhileRunning.value,
-            showTimeAsSeconds = _showTimeAsSeconds.value,
-            tickEnabled = _tickEnabled.value,
-            tickAccentsJson = serializeTickAccents(_tickAccents.value)
-        ))
+        val togglesJson = serializeCurrentToggles()
+        val accentsJson = serializeTickAccents(_tickAccents.value)
+        viewModelScope.launch {
+            val existing = sessionNameDao.getByName(name)
+            if (existing != null) {
+                sessionNameDao.update(existing.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+            } else {
+                sessionNameDao.insert(SessionNameEntity(name = name, togglesJson = togglesJson, accentsJson = accentsJson))
+            }
+        }
+    }
+
+    fun renameSessionName(entity: SessionNameEntity, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank() || trimmed == entity.name) return
+        viewModelScope.launch {
+            if (sessionNameDao.getByName(trimmed) != null) return@launch  // already exists
+            sessionNameDao.rename(entity.id, trimmed)
+            sessionDao.renameSessionsByName(entity.name, trimmed, entity.id)
+            if (_currentName.value.trim() == entity.name) {
+                _currentName.value = trimmed
+                preferencesManager.currentName = trimmed
+            }
+        }
+    }
+
+    private fun serializeCurrentToggles(): String = JSONObject().apply {
+        put("showMilliseconds", _showMilliseconds.value)
+        put("screenOnMode", _screenOnMode.value.name)
+        put("lockOrientation", _lockOrientation.value)
+        put("invertLapColors", _invertLapColors.value)
+        put("dimBrightness", _dimBrightness.value)
+        put("hideTimeWhileRunning", _hideTimeWhileRunning.value)
+        put("showTimeAsSeconds", _showTimeAsSeconds.value)
+        put("tickEnabled", _tickEnabled.value)
+    }.toString()
+
+    private fun applyTogglesJson(json: String) {
+        try {
+            val obj = JSONObject(json)
+            val showMs = obj.optBoolean("showMilliseconds", _showMilliseconds.value)
+            _showMilliseconds.value = showMs; preferencesManager.showMilliseconds = showMs
+            val mode = try { ScreenOnMode.valueOf(obj.optString("screenOnMode", _screenOnMode.value.name)) }
+                       catch (_: Exception) { ScreenOnMode.WHILE_RUNNING }
+            _screenOnMode.value = mode; preferencesManager.screenOnMode = mode
+            val lockOri = obj.optBoolean("lockOrientation", _lockOrientation.value)
+            _lockOrientation.value = lockOri; preferencesManager.lockOrientation = lockOri
+            val invertLap = obj.optBoolean("invertLapColors", _invertLapColors.value)
+            _invertLapColors.value = invertLap; preferencesManager.invertLapColors = invertLap
+            val dimBright = obj.optBoolean("dimBrightness", _dimBrightness.value)
+            _dimBrightness.value = dimBright; preferencesManager.dimBrightness = dimBright
+            val hideTime = obj.optBoolean("hideTimeWhileRunning", _hideTimeWhileRunning.value)
+            _hideTimeWhileRunning.value = hideTime; preferencesManager.hideTimeWhileRunning = hideTime
+            val showSecs = obj.optBoolean("showTimeAsSeconds", _showTimeAsSeconds.value)
+            _showTimeAsSeconds.value = showSecs; preferencesManager.showTimeAsSeconds = showSecs
+            val tickEn = obj.optBoolean("tickEnabled", _tickEnabled.value)
+            _tickEnabled.value = tickEn; preferencesManager.tickEnabled = tickEn
+        } catch (_: Exception) {}
+    }
+
+    private fun applyLegacyToggles(toggles: NameToggles) {
+        _showMilliseconds.value = toggles.showMilliseconds; preferencesManager.showMilliseconds = toggles.showMilliseconds
+        val mode = try { ScreenOnMode.valueOf(toggles.screenOnMode) } catch (_: Exception) { ScreenOnMode.WHILE_RUNNING }
+        _screenOnMode.value = mode; preferencesManager.screenOnMode = mode
+        _lockOrientation.value = toggles.lockOrientation; preferencesManager.lockOrientation = toggles.lockOrientation
+        _invertLapColors.value = toggles.invertLapColors; preferencesManager.invertLapColors = toggles.invertLapColors
+        _dimBrightness.value = toggles.dimBrightness; preferencesManager.dimBrightness = toggles.dimBrightness
+        _hideTimeWhileRunning.value = toggles.hideTimeWhileRunning; preferencesManager.hideTimeWhileRunning = toggles.hideTimeWhileRunning
+        _showTimeAsSeconds.value = toggles.showTimeAsSeconds; preferencesManager.showTimeAsSeconds = toggles.showTimeAsSeconds
+        _tickEnabled.value = toggles.tickEnabled; preferencesManager.tickEnabled = toggles.tickEnabled
+    }
+
+    private fun migrateNameSettingsFromPrefsIfNeeded() {
+        if (preferencesManager.nameSettingsMigrated) return
+        viewModelScope.launch {
+            val allToggles = preferencesManager.getAllNameToggles()
+            val allAccents = preferencesManager.getAllNameAccents()
+            for ((name, toggles) in allToggles) {
+                val togglesJson = JSONObject().apply {
+                    put("showMilliseconds", toggles.showMilliseconds)
+                    put("screenOnMode", toggles.screenOnMode)
+                    put("lockOrientation", toggles.lockOrientation)
+                    put("invertLapColors", toggles.invertLapColors)
+                    put("dimBrightness", toggles.dimBrightness)
+                    put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
+                    put("showTimeAsSeconds", toggles.showTimeAsSeconds)
+                    put("tickEnabled", toggles.tickEnabled)
+                }.toString()
+                val accentsJson = allAccents[name] ?: toggles.tickAccentsJson
+                val existing = sessionNameDao.getByName(name)
+                if (existing != null) {
+                    sessionNameDao.update(existing.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+                } else {
+                    sessionNameDao.insert(SessionNameEntity(name = name, togglesJson = togglesJson, accentsJson = accentsJson))
+                }
+            }
+            preferencesManager.nameSettingsMigrated = true
+        }
     }
 
     fun updateCurrentNotes(notes: String) {

@@ -1,5 +1,6 @@
 package com.laplog.app.data.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -11,6 +12,7 @@ data class SessionEntity(
     val endTime: Long,
     val totalDuration: Long, // Active time (without pauses)
     val name: String? = null,
+    @ColumnInfo(name = "name_id") val nameId: Long? = null,
     val notes: String? = null,
     // Translations cache
     val name_en: String? = null,
