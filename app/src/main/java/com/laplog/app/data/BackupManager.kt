@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
+import com.laplog.app.data.database.entity.SessionNameEntity
 import com.laplog.app.model.BackupData
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.model.BackupLap
@@ -23,7 +25,8 @@ class BackupManager(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao,
-    private val translationManager: TranslationManager
+    private val translationManager: TranslationManager,
+    private val sessionNameDao: SessionNameDao? = null
 ) {
     companion object {
         private const val BACKUP_PREFIX = "laplog_backup_"
@@ -355,6 +358,9 @@ class BackupManager(
             onProgress(index + 1, total)
         }
 
+        // Restore session_names from unique session names
+        restoreSessionNames(backupData)
+
         // Restore settings if available
         val settingsRestored = backupData.settings != null
         backupData.settings?.let { settings ->
@@ -422,6 +428,9 @@ class BackupManager(
             onProgress(index + 1, total)
         }
 
+        // Restore session_names from unique session names
+        restoreSessionNames(backupData)
+
         // Restore settings if available
         val settingsRestored = backupData.settings != null
         backupData.settings?.let { settings ->
@@ -430,6 +439,17 @@ class BackupManager(
         }
 
         return RestoreResult(total, totalLaps, settingsRestored)
+    }
+
+    private suspend fun restoreSessionNames(backupData: BackupData) {
+        val dao = sessionNameDao ?: return
+        val uniqueNames = backupData.sessions.mapNotNull { it.name ?: it.comment }
+            .filter { it.isNotBlank() }
+            .distinct()
+        AppLogger.i("BackupManager", "Restoring ${uniqueNames.size} session names")
+        uniqueNames.forEach { name ->
+            dao.insert(SessionNameEntity(name = name))
+        }
     }
 
     private fun restoreSettings(settings: BackupSettings) {

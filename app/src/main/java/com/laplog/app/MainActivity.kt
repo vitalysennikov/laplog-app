@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(backupViewModel.backupFolderUri.collectAsState().value) {
                     val folderUri = backupViewModel.backupFolderUri.value
                     if (preferencesManager.isFirstLaunch && folderUri != null && !showWelcomeDialog) {
-                        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager)
+                        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao())
                         val backups = backupManager.listBackups(android.net.Uri.parse(folderUri))
 
                         if (backups.isNotEmpty()) {
@@ -305,6 +305,7 @@ class MainActivity : ComponentActivity() {
                             3 -> BackupScreen(
                                 preferencesManager = preferencesManager,
                                 sessionDao = database.sessionDao(),
+                                sessionNameDao = database.sessionNameDao(),
                                 onSelectFolder = { launchFolderPicker() },
                                 onSaveBackupManually = { fileName, jsonData ->
                                     pendingBackupData = jsonData
@@ -380,7 +381,7 @@ class MainActivity : ComponentActivity() {
                         onConfirm = {
                             showRestoreBackupDialog = false
                             coroutineScope.launch {
-                                val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager)
+                                val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao())
                                 val result = backupManager.restoreBackup(latestBackup!!.uri, BackupManager.RestoreMode.REPLACE)
                                 if (result.isSuccess) {
                                     Toast.makeText(

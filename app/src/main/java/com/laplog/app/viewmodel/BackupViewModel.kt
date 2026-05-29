@@ -11,6 +11,7 @@ import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.util.AppLogger
 import com.laplog.app.worker.BackupWorker
@@ -27,10 +28,11 @@ class BackupViewModel(
     private val context: Context,
     private val preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
-    translationManager: TranslationManager
+    translationManager: TranslationManager,
+    sessionNameDao: SessionNameDao? = null
 ) : ViewModel() {
 
-    private val backupManager = BackupManager(context, preferencesManager, sessionDao, translationManager)
+    private val backupManager = BackupManager(context, preferencesManager, sessionDao, translationManager, sessionNameDao)
 
     private val _backupFolderUri = MutableStateFlow(preferencesManager.backupFolderUri)
     val backupFolderUri: StateFlow<String?> = _backupFolderUri.asStateFlow()

@@ -23,6 +23,7 @@ import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
 import com.laplog.app.data.database.dao.SessionDao
+import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.viewmodel.BackupViewModel
 import com.laplog.app.viewmodel.BackupViewModelFactory
@@ -34,6 +35,7 @@ import java.util.*
 fun BackupScreen(
     preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
+    sessionNameDao: SessionNameDao,
     onSelectFolder: () -> Unit,
     onSaveBackupManually: (String, String) -> Unit
 ) {
@@ -45,7 +47,8 @@ fun BackupScreen(
             context = context,
             preferencesManager = preferencesManager,
             sessionDao = sessionDao,
-            translationManager = translationManager
+            translationManager = translationManager,
+            sessionNameDao = sessionNameDao
         )
     )
 
