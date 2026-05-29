@@ -167,6 +167,13 @@
     <string name="replace_all_desc">删除现有数据并从备份中恢复</string>
     <string name="merge">合并</string>
     <string name="merge_desc">将备份数据添加到现有数据</string>
+    <string name="restore_in_progress">正在恢复…</string>
+    <string name="restore_progress_sessions">%1$d / %2$d 个会话</string>
+    <string name="restore_complete_title">恢复完成</string>
+    <string name="restore_summary_sessions">会话数：%1$d</string>
+    <string name="restore_summary_laps">圈数：%1$d</string>
+    <string name="restore_summary_settings_yes">设置：已恢复</string>
+    <string name="restore_summary_settings_no">设置：备份中未找到</string>
     <string name="delete_backup_title">删除备份</string>
     <string name="delete_backup">删除备份</string>
     <string name="delete_backup_message">删除此备份文件？</string>

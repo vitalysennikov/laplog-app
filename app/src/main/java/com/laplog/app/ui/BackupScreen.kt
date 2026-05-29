@@ -57,6 +57,8 @@ fun BackupScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val loggingEnabled by viewModel.loggingEnabled.collectAsState()
+    val restoreProgress by viewModel.restoreProgress.collectAsState()
+    val restoreSummary by viewModel.restoreSummary.collectAsState()
 
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf<BackupFileInfo?>(null) }
@@ -642,6 +644,59 @@ fun BackupScreen(
             dismissButton = {
                 TextButton(onClick = { showClearLogsDialog = false }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Restore progress dialog (non-dismissable)
+    restoreProgress?.let { (current, total) ->
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.restore_in_progress)) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.restore_progress_sessions, current, total),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = if (total > 0) current.toFloat() / total else 0f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    // Restore summary dialog
+    restoreSummary?.let { summary ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissRestoreSummary() },
+            title = { Text(stringResource(R.string.restore_complete_title)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.restore_summary_sessions, summary.sessions))
+                    Text(stringResource(R.string.restore_summary_laps, summary.laps))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (summary.settingsRestored)
+                            stringResource(R.string.restore_summary_settings_yes)
+                        else
+                            stringResource(R.string.restore_summary_settings_no),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissRestoreSummary() }) {
+                    Text(stringResource(R.string.ok))
                 }
             }
         )

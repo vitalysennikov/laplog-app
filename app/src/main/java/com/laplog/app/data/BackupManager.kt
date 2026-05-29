@@ -121,10 +121,20 @@ class BackupManager(
         return backups.sortedByDescending { it.timestamp }
     }
 
+    data class RestoreResult(
+        val sessions: Int,
+        val laps: Int,
+        val settingsRestored: Boolean
+    )
+
     /**
      * Restore database from backup
      */
-    suspend fun restoreBackup(fileUri: Uri, mode: RestoreMode): Result<Int> {
+    suspend fun restoreBackup(
+        fileUri: Uri,
+        mode: RestoreMode,
+        onProgress: suspend (current: Int, total: Int) -> Unit = {}
+    ): Result<RestoreResult> {
         AppLogger.i("BackupManager", "Restoring backup from: $fileUri, mode: $mode")
         return try {
             // Read JSON from file
@@ -139,19 +149,19 @@ class BackupManager(
             val backupData = jsonToBackupData(json)
             AppLogger.i("BackupManager", "Backup data parsed: version=${backupData.version}, ${backupData.sessions.size} sessions")
 
-            when (mode) {
+            val restoreResult = when (mode) {
                 RestoreMode.REPLACE -> {
                     AppLogger.i("BackupManager", "Starting REPLACE mode restoration")
-                    restoreReplace(backupData)
+                    restoreReplace(backupData, onProgress)
                 }
                 RestoreMode.MERGE -> {
                     AppLogger.i("BackupManager", "Starting MERGE mode restoration")
-                    restoreMerge(backupData)
+                    restoreMerge(backupData, onProgress)
                 }
             }
 
-            AppLogger.i("BackupManager", "Backup restored successfully: ${backupData.sessions.size} sessions")
-            Result.success(backupData.sessions.size)
+            AppLogger.i("BackupManager", "Backup restored successfully: ${restoreResult.sessions} sessions, ${restoreResult.laps} laps")
+            Result.success(restoreResult)
         } catch (e: Exception) {
             AppLogger.e("BackupManager", "Failed to restore backup: ${e.message}", e)
             Result.failure(e)
@@ -284,18 +294,23 @@ class BackupManager(
         )
     }
 
-    private suspend fun restoreReplace(backupData: BackupData) {
+    private suspend fun restoreReplace(
+        backupData: BackupData,
+        onProgress: suspend (current: Int, total: Int) -> Unit
+    ): RestoreResult {
+        val total = backupData.sessions.size
         // Delete all existing data
         AppLogger.i("BackupManager", "Deleting all existing sessions")
         sessionDao.deleteAllSessions()
 
         // Insert backup data
-        AppLogger.i("BackupManager", "Restoring ${backupData.sessions.size} sessions")
+        AppLogger.i("BackupManager", "Restoring $total sessions")
+        var totalLaps = 0
         backupData.sessions.forEachIndexed { index, backupSession ->
             val finalName = backupSession.name ?: backupSession.comment // Use comment as fallback for old backups
             val finalNotes = backupSession.notes
 
-            AppLogger.d("BackupManager", "Restoring session ${index + 1}/${backupData.sessions.size}: name='$finalName', " +
+            AppLogger.d("BackupManager", "Restoring session ${index + 1}/$total: name='$finalName', " +
                     "translations: name_en=${backupSession.name_en != null}, name_ru=${backupSession.name_ru != null}, name_zh=${backupSession.name_zh != null}")
 
             val session = SessionEntity(
@@ -334,24 +349,35 @@ class BackupManager(
             }
             if (laps.isNotEmpty()) {
                 sessionDao.insertLaps(laps)
+                totalLaps += laps.size
             }
+
+            onProgress(index + 1, total)
         }
 
         // Restore settings if available
+        val settingsRestored = backupData.settings != null
         backupData.settings?.let { settings ->
             AppLogger.i("BackupManager", "Restoring settings: language=${settings.appLanguage}")
             restoreSettings(settings)
         }
+
+        return RestoreResult(total, totalLaps, settingsRestored)
     }
 
-    private suspend fun restoreMerge(backupData: BackupData) {
+    private suspend fun restoreMerge(
+        backupData: BackupData,
+        onProgress: suspend (current: Int, total: Int) -> Unit
+    ): RestoreResult {
+        val total = backupData.sessions.size
         // Insert backup data (merge with existing)
-        AppLogger.i("BackupManager", "Merging ${backupData.sessions.size} sessions with existing data")
+        AppLogger.i("BackupManager", "Merging $total sessions with existing data")
+        var totalLaps = 0
         backupData.sessions.forEachIndexed { index, backupSession ->
             val finalName = backupSession.name ?: backupSession.comment // Use comment as fallback for old backups
             val finalNotes = backupSession.notes
 
-            AppLogger.d("BackupManager", "Merging session ${index + 1}/${backupData.sessions.size}: name='$finalName', " +
+            AppLogger.d("BackupManager", "Merging session ${index + 1}/$total: name='$finalName', " +
                     "translations: name_en=${backupSession.name_en != null}, name_ru=${backupSession.name_ru != null}, name_zh=${backupSession.name_zh != null}")
 
             val session = SessionEntity(
@@ -390,14 +416,20 @@ class BackupManager(
             }
             if (laps.isNotEmpty()) {
                 sessionDao.insertLaps(laps)
+                totalLaps += laps.size
             }
+
+            onProgress(index + 1, total)
         }
 
         // Restore settings if available
+        val settingsRestored = backupData.settings != null
         backupData.settings?.let { settings ->
             AppLogger.i("BackupManager", "Restoring settings: language=${settings.appLanguage}")
             restoreSettings(settings)
         }
+
+        return RestoreResult(total, totalLaps, settingsRestored)
     }
 
     private fun restoreSettings(settings: BackupSettings) {

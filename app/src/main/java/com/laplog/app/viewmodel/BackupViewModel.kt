@@ -53,6 +53,12 @@ class BackupViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _restoreProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+    val restoreProgress: StateFlow<Pair<Int, Int>?> = _restoreProgress.asStateFlow()
+
+    private val _restoreSummary = MutableStateFlow<BackupManager.RestoreResult?>(null)
+    val restoreSummary: StateFlow<BackupManager.RestoreResult?> = _restoreSummary.asStateFlow()
+
     private val _logContent = MutableStateFlow("")
     val logContent: StateFlow<String> = _logContent.asStateFlow()
 
@@ -148,16 +154,26 @@ class BackupViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            _restoreProgress.value = null
 
-            val result = backupManager.restoreBackup(fileInfo.uri, mode)
+            val result = backupManager.restoreBackup(fileInfo.uri, mode) { current, total ->
+                _restoreProgress.value = Pair(current, total)
+            }
+
+            _restoreProgress.value = null
+
             if (result.isSuccess) {
-                _errorMessage.value = "Restored ${result.getOrNull()} sessions"
+                _restoreSummary.value = result.getOrNull()
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Restore failed"
             }
 
             _isLoading.value = false
         }
+    }
+
+    fun dismissRestoreSummary() {
+        _restoreSummary.value = null
     }
 
     fun deleteBackup(fileInfo: BackupFileInfo) {

@@ -167,6 +167,13 @@
     <string name="replace_all_desc">Удалить существующие данные и восстановить из резервной копии</string>
     <string name="merge">Объединить</string>
     <string name="merge_desc">Добавить данные из резервной копии к существующим</string>
+    <string name="restore_in_progress">Восстановление…</string>
+    <string name="restore_progress_sessions">%1$d из %2$d сессий</string>
+    <string name="restore_complete_title">Восстановление завершено</string>
+    <string name="restore_summary_sessions">Сессий: %1$d</string>
+    <string name="restore_summary_laps">Отсечек: %1$d</string>
+    <string name="restore_summary_settings_yes">Настройки: восстановлены</string>
+    <string name="restore_summary_settings_no">Настройки: не найдены в резервной копии</string>
     <string name="delete_backup_title">Удаление резервной копии</string>
     <string name="delete_backup">Удалить резервную копию</string>
     <string name="delete_backup_message">Удалить этот файл резервной копии?</string>

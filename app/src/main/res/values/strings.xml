@@ -167,6 +167,13 @@
     <string name="replace_all_desc">Delete existing data and restore from backup</string>
     <string name="merge">Merge</string>
     <string name="merge_desc">Add backup data to existing data</string>
+    <string name="restore_in_progress">Restoring backup…</string>
+    <string name="restore_progress_sessions">%1$d of %2$d sessions</string>
+    <string name="restore_complete_title">Restore Complete</string>
+    <string name="restore_summary_sessions">Sessions: %1$d</string>
+    <string name="restore_summary_laps">Laps: %1$d</string>
+    <string name="restore_summary_settings_yes">Settings: restored</string>
+    <string name="restore_summary_settings_no">Settings: not found in backup</string>
     <string name="delete_backup_title">Delete Backup</string>
     <string name="delete_backup">Delete backup</string>
     <string name="delete_backup_message">Delete this backup file?</string>
