@@ -136,7 +136,7 @@ class BackupManager(
     suspend fun restoreBackup(
         fileUri: Uri,
         mode: RestoreMode,
-        onProgress: suspend (current: Int, total: Int) -> Unit = {}
+        onProgress: suspend (current: Int, total: Int) -> Unit = { _, _ -> }
     ): Result<RestoreResult> {
         AppLogger.i("BackupManager", "Restoring backup from: $fileUri, mode: $mode")
         return try {
