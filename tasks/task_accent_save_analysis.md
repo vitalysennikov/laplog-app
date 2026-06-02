@@ -26,120 +26,124 @@ preferencesManager.tickAccentsJson = it   // ← перезаписывал гл
   `preferencesManager.tickAccentsJson`.
 - `tickAccentsJson == null` → явно читать `preferencesManager.tickAccentsJson`.
 - `parseTickAccents("[]")` → больше не сбрасывается к DEFAULT (откат только
-  для полностью битого JSON без `{`).
-
-**Остаточная ошибка в этом исправлении:**
-```kotlin
-if (result.isEmpty() && !json.contains('{')) DEFAULT_TICK_ACCENTS else result
-```
-Для `"[]"`: `result.isEmpty()` = true И `!"[]".contains('{')` = true →
-возвращается `DEFAULT_TICK_ACCENTS`. То есть пустой список акцентов
-(намеренно очищенный) всё равно сбрасывается к дефолту!
+  для полностью битого JSON без `[`).
 
 ---
 
-## Оставшиеся проблемы
+### Текущая попытка (не зафиксирована) — третье исправление
 
-### Проблема 1: ручной ввод имени не загружает акценты
-`loadNameToggles` вызывается **только** из `selectNameFromHistory`.
-`updateCurrentName` (каждое нажатие клавиши) не вызывает `loadNameToggles`.
+Найдены три корневые причины, по которым акценты сбрасывались к DEFAULT при
+переключении имени:
 
-**Сценарий:**
-1. Имя «Бег», акценты A1, сохранены.
-2. Пользователь **вручную** набирает «Велик» → акценты не загружаются.
-3. Меняет акценты на A2 → сохраняется под «Велик» ✓.
-4. **Вручную** набирает «Бег» снова → A1 не загружаются, остаётся A2.
+#### Причина 1: `saveSession` создаёт entity без togglesJson/accentsJson
+```kotlin
+// Было в saveSession:
+sessionNameDao.insert(SessionNameEntity(name = name))  // togglesJson=null, accentsJson=null
+```
+Когда пользователь сохраняет сессию с именем впервые, entity в `session_names`
+создаётся с null-полями. При последующем `loadNameToggles` для этого имени код
+попадает в `else`-ветку, там `preferencesManager.getNameToggles` возвращает null
+(миграция уже выполнена), и ничего не применяется — акценты остаются от
+предыдущего состояния (при старте приложения это DEFAULT).
 
-### Проблема 2: `saveCurrentNameToggles` сохраняет под неверным именем
-При вводе нового имени (например «В»), `_currentName.value` уже стало «В».
-Если затем кликнуть «Велик» из выпадающего:
-- `selectNameFromHistory("Велик")` вызывает `saveCurrentNameToggles()` под «В»,
-  а не под предыдущим полным именем.
+#### Причина 2: Заражённый глобальный ключ как fallback в IF-ветке
+```kotlin
+// Было в loadNameToggles (IF-ветка):
+_tickAccents.value = parseTickAccents(
+    entity.accentsJson ?: preferencesManager.tickAccentsJson  // ← заражённый глобал!
+)
+```
+Если `accentsJson == null` (entity создана через saveSession), читался глобальный
+ключ. Этот ключ перезаписывался при каждом `updateTickAccents` любого имени,
+т.е. содержал акценты последнего редактировавшего имени, а не DEFAULT и не
+акценты целевого имени.
 
-### Проблема 3: пустой список акцентов не сохраняется (см. выше)
+#### Причина 3: `updateTickAccents` не сохранял per-name акценты в SharedPreferences
+```kotlin
+// Было в updateTickAccents:
+preferencesManager.tickAccentsJson = serializeTickAccents(accents)  // только глобал
+saveCurrentNameToggles()  // DB — OK, но SharedPreferences per-name — нет
+```
+Метод `preferencesManager.saveNameAccents(name, accentsJson)` (введённый ранее)
+не вызывался, поэтому `preferencesManager.getNameAccents(name)` в fallback-цепочке
+всегда возвращал null.
 
 ---
 
-## Предложение: отдельная структура «имя → акценты»
+## Применённые исправления (StopwatchViewModel.kt)
 
-### Новые методы в PreferencesManager
-
-```kotlin
-fun getNameAccents(name: String): String? {
-    val allJson = prefs.getString(KEY_NAME_ACCENTS_JSON, null) ?: return null
-    return try { JSONObject(allJson).optString(name, null) } catch (_: Exception) { null }
-}
-
-fun saveNameAccents(name: String, accentsJson: String) {
-    val allJson = prefs.getString(KEY_NAME_ACCENTS_JSON, null)
-    val all = if (allJson != null) try { JSONObject(allJson) }
-              catch (_: Exception) { JSONObject() } else JSONObject()
-    all.put(name, accentsJson)
-    prefs.edit().putString(KEY_NAME_ACCENTS_JSON, all.toString()).apply()
-}
-
-private const val KEY_NAME_ACCENTS_JSON = "name_accents_json"
-```
-
-### Изменения в StopwatchViewModel
-
-**updateTickAccents** — сохранять и в отдельную структуру:
+### 1. `updateTickAccents` — сохранять и в per-name SharedPreferences
 ```kotlin
 fun updateTickAccents(accents: List<TickAccent>) {
     _tickAccents.value = accents
-    preferencesManager.tickAccentsJson = serializeTickAccents(accents)
+    val accentsJson = serializeTickAccents(accents)
+    preferencesManager.tickAccentsJson = accentsJson
     val name = _currentName.value.trim()
     if (name.isNotBlank()) {
-        preferencesManager.saveNameAccents(name, serializeTickAccents(accents))
+        preferencesManager.saveNameAccents(name, accentsJson)
     }
     saveCurrentNameToggles()
 }
 ```
 
-**loadNameToggles** — читать из отдельной структуры в первую очередь:
+### 2. `loadNameToggles` IF-ветка — правильная fallback-цепочка
 ```kotlin
-val nameAccentsJson = preferencesManager.getNameAccents(name)
-when {
-    nameAccentsJson != null ->
-        _tickAccents.value = parseTickAccents(nameAccentsJson)
-    toggles.tickAccentsJson != null ->
-        _tickAccents.value = parseTickAccents(toggles.tickAccentsJson)
-    else ->
-        _tickAccents.value = parseTickAccents(preferencesManager.tickAccentsJson)
-}
-```
-
-**updateCurrentName** — загружать акценты при точном совпадении с сохранённым именем:
-```kotlin
-fun updateCurrentName(name: String) {
-    val prevTrimmed = _currentName.value.trim()
-    _currentName.value = name
-    preferencesManager.currentName = name
-    val trimmed = name.trim()
-    if (trimmed.isNotBlank() && !_usedNames.value.contains(trimmed)) {
-        val updated = _usedNames.value.toMutableSet()
-        updated.add(trimmed)
-        _usedNames.value = updated
-        preferencesManager.usedNames = updated
-    }
-    // Загружать акценты только при точном совпадении с известным именем
-    if (trimmed.isNotBlank() && trimmed != prevTrimmed && _usedNames.value.contains(trimmed)) {
-        val savedAccents = preferencesManager.getNameAccents(trimmed)
-        if (savedAccents != null) {
-            _tickAccents.value = parseTickAccents(savedAccents)
-        }
-    }
-}
-```
-
-**parseTickAccents** — исправить проверку пустого массива:
-```kotlin
-// Было:
-if (result.isEmpty() && !json.contains('{')) DEFAULT_TICK_ACCENTS else result
 // Стало:
-if (result.isEmpty() && !json.contains('[')) DEFAULT_TICK_ACCENTS else result
+_tickAccents.value = parseTickAccents(
+    entity.accentsJson
+        ?: preferencesManager.getNameAccents(name)   // per-name legacy
+        ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)  // явный DEFAULT, не глобал
+)
 ```
 
-### Итог
-Нужны все четыре изменения. Отдельная структура + исправление parseTickAccents
-устраняют основные проблемы и покрывают оба сценария переключения.
+Аналогично в `if (toggles != null)` else-ветки:
+```kotlin
+val accentsJson = preferencesManager.getNameAccents(name)
+    ?: toggles.tickAccentsJson
+    ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)  // было: preferencesManager.tickAccentsJson
+```
+
+### 3. `loadNameToggles` ELSE-ветка — обработка entity с null togglesJson
+Добавлена ветка `else` (когда `toggles == null`), которая раньше была NO-OP:
+```kotlin
+} else {
+    // Entity из saveSession: togglesJson=null, нет legacy префов.
+    val nameAccentsJson = preferencesManager.getNameAccents(name)
+    _tickAccents.value = if (nameAccentsJson != null) {
+        parseTickAccents(nameAccentsJson)
+    } else {
+        DEFAULT_TICK_ACCENTS
+    }
+    // Сохраняем в DB, чтобы следующий load пошёл по быстрому IF-пути.
+    val togglesJson = serializeCurrentToggles()
+    val accentsJson = serializeTickAccents(_tickAccents.value)
+    val dbEntity = entity ?: SessionNameEntity(name = name)
+    if (entity != null) {
+        sessionNameDao.update(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+    } else {
+        sessionNameDao.insert(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+    }
+}
+```
+
+---
+
+## Оставшиеся известные ограничения
+
+### Проблема 1: ручной ввод имени не загружает акценты с сохранением предыдущего
+`loadNameToggles` вызывается из `updateCurrentName` только при точном совпадении
+с известным именем, но `saveCurrentNameToggles` для предыдущего имени НЕ
+вызывается. Если пользователь изменил акценты, не переключив имя явно через
+`selectNameFromHistory`, изменения могут не сохраниться для предыдущего имени.
+
+**Сценарий:**
+1. Имя «Бег», акценты A1. Пользователь меняет акценты, не нажимает «Сохранить».
+2. Вручную стирает поле и набирает «Велик» → `loadNameToggles("Велик")` — без
+   сохранения A1 для «Бег».
+3. A1 сбрасывается. (Но в DB «Бег» хранит старый вариант A1 от предыдущего
+   явного сохранения, так что деградация минимальна.)
+
+### Проблема 2: первое переключение на имя без сохранённых акцентов показывает DEFAULT
+После исправления 3 это стало предсказуемым поведением: имя без сохранённых
+акцентов показывает DEFAULT и сохраняет их в DB. При последующих переключениях
+пользователь видит то, что задал явно.
