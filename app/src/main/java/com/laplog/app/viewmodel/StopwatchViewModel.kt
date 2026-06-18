@@ -537,7 +537,13 @@ class StopwatchViewModel(
         val sessionName = _currentName.value.trim().takeIf { it.isNotBlank() }
         val nameId = sessionName?.let { name ->
             sessionNameDao.getByName(name)?.id
-                ?: sessionNameDao.insert(SessionNameEntity(name = name))
+                ?: sessionNameDao.insert(
+                    SessionNameEntity(
+                        name = name,
+                        togglesJson = serializeCurrentToggles(),
+                        accentsJson = serializeTickAccents(_tickAccents.value)
+                    )
+                )
         }
         val session = SessionEntity(
             startTime = sessionStartTime,
@@ -812,7 +818,9 @@ class StopwatchViewModel(
     }
 
     private fun seedActivityPresetsIfNeeded() {
-        if (preferencesManager.activityPresetsSeedDone) return
+        val v1Done = preferencesManager.activityPresetsSeedDone
+        val v2Done = preferencesManager.activityPresetsSeedV2Done
+        if (v1Done && v2Done) return
         val lang = preferencesManager.getCurrentLanguage()
         viewModelScope.launch {
             for (preset in ACTIVITY_PRESETS) {
@@ -821,17 +829,25 @@ class StopwatchViewModel(
                     "zh" -> preset.nameZh
                     else -> preset.nameEn
                 }
-                if (sessionNameDao.getByName(name) == null) {
-                    sessionNameDao.insert(
+                val existing = sessionNameDao.getByName(name)
+                when {
+                    existing == null -> sessionNameDao.insert(
                         SessionNameEntity(
                             name = name,
                             togglesJson = serializeCurrentToggles(),
                             accentsJson = serializeTickAccents(preset.accents)
                         )
                     )
+                    existing.accentsJson == null -> sessionNameDao.update(
+                        existing.copy(
+                            togglesJson = existing.togglesJson ?: serializeCurrentToggles(),
+                            accentsJson = serializeTickAccents(preset.accents)
+                        )
+                    )
                 }
             }
-            preferencesManager.activityPresetsSeedDone = true
+            if (!v1Done) preferencesManager.activityPresetsSeedDone = true
+            if (!v2Done) preferencesManager.activityPresetsSeedV2Done = true
         }
     }
 

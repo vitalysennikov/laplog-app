@@ -1,6 +1,8 @@
 # Анализ: сохранение набора акцентов при переключении имени
 
-> Обходное решение пока баг не исправлен: [task_activity_presets.md]
+> **Статус: в работе** — четвёртое исправление применено, ожидает проверки.
+>
+> Обходное решение: [task_activity_presets.md]
 
 ## Хронология попыток исправления
 
@@ -32,7 +34,7 @@ preferencesManager.tickAccentsJson = it   // ← перезаписывал гл
 
 ---
 
-### Текущая попытка (не зафиксирована) — третье исправление
+### Коммит `3eabe79` — третье исправление
 
 Найдены три корневые причины, по которым акценты сбрасывались к DEFAULT при
 переключении имени:
@@ -69,6 +71,63 @@ saveCurrentNameToggles()  // DB — OK, но SharedPreferences per-name — не
 Метод `preferencesManager.saveNameAccents(name, accentsJson)` (введённый ранее)
 не вызывался, поэтому `preferencesManager.getNameAccents(name)` в fallback-цепочке
 всегда возвращал null.
+
+---
+
+### Четвёртое исправление (текущее)
+
+Три предыдущих исправления не решили проблему, потому что оба источника null-entity
+не были устранены.
+
+#### Причина 4а: `saveSession` создаёт entity без togglesJson/accentsJson
+
+```kotlin
+// Было:
+sessionNameDao.insert(SessionNameEntity(name = name))  // togglesJson=null, accentsJson=null
+```
+
+Когда сессия сохраняется с новым именем, `saveSession` создаёт entity с
+`togglesJson=null, accentsJson=null`. При следующем `loadNameToggles` ELSE-ветка
+применяет DEFAULT и **записывает его в DB**. Отныне IF-ветка всегда читает DEFAULT.
+
+**Исправление:** `saveSession` теперь сохраняет текущие toggles и акценты:
+
+```kotlin
+sessionNameDao.insert(
+    SessionNameEntity(
+        name = name,
+        togglesJson = serializeCurrentToggles(),
+        accentsJson = serializeTickAccents(_tickAccents.value)
+    )
+)
+```
+
+#### Причина 4б: сид v1 пропускает существующие entity с null accentsJson
+
+```kotlin
+// Было в seedActivityPresetsIfNeeded:
+if (sessionNameDao.getByName(name) == null) {
+    sessionNameDao.insert(...)  // иначе — ничего
+}
+```
+
+Если пользователь ранее сохранял сессии с именем пресета («дыхание медведя» и т.п.),
+entity уже существует с `accentsJson=null`. Сид видит непустой результат и пропускает
+вставку. В итоге ELSE-ветка записывает DEFAULT вместо пресетных акцентов.
+
+**Исправление:** сид v2 обновляет существующие entity с `accentsJson=null`:
+
+```kotlin
+when {
+    existing == null -> sessionNameDao.insert(...)           // v1: вставить новую
+    existing.accentsJson == null -> sessionNameDao.update(   // v2: починить старую
+        existing.copy(accentsJson = serializeTickAccents(preset.accents))
+    )
+}
+```
+
+Новый флаг `activityPresetsSeedV2Done` гарантирует однократный запуск миграции.
+Пользовательские акценты (accentsJson != null) при этом не перезаписываются.
 
 ---
 
