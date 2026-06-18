@@ -13,6 +13,7 @@ import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.data.database.entity.SessionNameEntity
+import com.laplog.app.model.ACTIVITY_PRESETS
 import com.laplog.app.model.DEFAULT_TICK_ACCENTS
 import com.laplog.app.model.LapTime
 import com.laplog.app.model.NameToggles
@@ -107,6 +108,7 @@ class StopwatchViewModel(
 
     init {
         migrateNameSettingsFromPrefsIfNeeded()
+        seedActivityPresetsIfNeeded()
         restoreStopwatchState()
 
         val restoredName = _currentName.value.trim()
@@ -807,6 +809,30 @@ class StopwatchViewModel(
         _hideTimeWhileRunning.value = toggles.hideTimeWhileRunning; preferencesManager.hideTimeWhileRunning = toggles.hideTimeWhileRunning
         _showTimeAsSeconds.value = toggles.showTimeAsSeconds; preferencesManager.showTimeAsSeconds = toggles.showTimeAsSeconds
         _tickEnabled.value = toggles.tickEnabled; preferencesManager.tickEnabled = toggles.tickEnabled
+    }
+
+    private fun seedActivityPresetsIfNeeded() {
+        if (preferencesManager.activityPresetsSeedDone) return
+        val lang = preferencesManager.getCurrentLanguage()
+        viewModelScope.launch {
+            for (preset in ACTIVITY_PRESETS) {
+                val name = when (lang) {
+                    "ru" -> preset.nameRu
+                    "zh" -> preset.nameZh
+                    else -> preset.nameEn
+                }
+                if (sessionNameDao.getByName(name) == null) {
+                    sessionNameDao.insert(
+                        SessionNameEntity(
+                            name = name,
+                            togglesJson = serializeCurrentToggles(),
+                            accentsJson = serializeTickAccents(preset.accents)
+                        )
+                    )
+                }
+            }
+            preferencesManager.activityPresetsSeedDone = true
+        }
     }
 
     private fun migrateNameSettingsFromPrefsIfNeeded() {
