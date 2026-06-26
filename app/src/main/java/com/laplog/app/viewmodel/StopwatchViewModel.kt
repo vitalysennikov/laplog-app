@@ -107,23 +107,20 @@ class StopwatchViewModel(
     private var timerJob: Job? = null
 
     init {
-        migrateNameSettingsFromPrefsIfNeeded()
-        seedActivityPresetsIfNeeded()
         restoreStopwatchState()
-
         val restoredName = _currentName.value.trim()
-        if (restoredName.isNotBlank()) {
-            loadNameToggles(restoredName)
+        viewModelScope.launch {
+            try { migrateNameSettingsFromPrefsIfNeeded() } catch (e: Exception) { Log.e("StopwatchViewModel", "Migration failed", e) }
+            try { seedActivityPresetsIfNeeded() } catch (e: Exception) { Log.e("StopwatchViewModel", "Seed failed", e) }
+            try { if (restoredName.isNotBlank()) loadNameTogglesBody(restoredName) } catch (e: Exception) { Log.e("StopwatchViewModel", "Load toggles failed", e) }
         }
 
-        // Listen for commands from notification service
         viewModelScope.launch {
             StopwatchCommandManager.commands.collect { command ->
                 handleCommand(command)
             }
         }
 
-        // Keep StopwatchState.currentName in sync for notification display
         viewModelScope.launch {
             _currentName.collect { name ->
                 StopwatchState.setCurrentName(name)
@@ -690,55 +687,44 @@ class StopwatchViewModel(
     }
 
     private fun loadNameToggles(name: String) {
-        viewModelScope.launch {
-            val entity = sessionNameDao.getByName(name)
-            if (entity?.togglesJson != null) {
-                applyTogglesJson(entity.togglesJson)
-                _tickAccents.value = parseTickAccents(
-                    entity.accentsJson
-                        ?: preferencesManager.getNameAccents(name)
-                        ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)
-                )
+        viewModelScope.launch { loadNameTogglesBody(name) }
+    }
+
+    private suspend fun loadNameTogglesBody(name: String) {
+        val entity = sessionNameDao.getByName(name)
+        if (entity?.togglesJson != null) {
+            applyTogglesJson(entity.togglesJson)
+            _tickAccents.value = parseTickAccents(
+                entity.accentsJson
+                    ?: preferencesManager.getNameAccents(name)
+                    ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)
+            )
+        } else {
+            val toggles = preferencesManager.getNameToggles(name)
+            if (toggles != null) {
+                applyLegacyToggles(toggles)
+                val accentsJson = preferencesManager.getNameAccents(name)
+                    ?: toggles.tickAccentsJson
+                    ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)
+                _tickAccents.value = parseTickAccents(accentsJson)
+                upsertSessionName(name, entity, serializeCurrentToggles(), accentsJson)
             } else {
-                // Fall back to SharedPreferences for migration
-                val toggles = preferencesManager.getNameToggles(name)
-                if (toggles != null) {
-                    applyLegacyToggles(toggles)
-                    val accentsJson = preferencesManager.getNameAccents(name)
-                        ?: toggles.tickAccentsJson
-                        ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)
-                    _tickAccents.value = parseTickAccents(accentsJson)
-                    // Migrate to DB immediately
-                    val togglesJson = serializeCurrentToggles()
-                    val dbEntity = entity ?: SessionNameEntity(name = name)
-                    if (entity != null) {
-                        sessionNameDao.update(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
-                    } else {
-                        sessionNameDao.insert(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
-                    }
-                } else {
-                    // Entity exists (from saveSession) but no toggles found in legacy prefs.
-                    // Apply per-name accents if saved separately, otherwise DEFAULT.
-                    val nameAccentsJson = preferencesManager.getNameAccents(name)
-                    _tickAccents.value = if (nameAccentsJson != null) {
-                        parseTickAccents(nameAccentsJson)
-                    } else {
-                        DEFAULT_TICK_ACCENTS
-                    }
-                    // Persist current state to DB so future loads take the fast IF-path.
-                    val togglesJson = serializeCurrentToggles()
-                    val accentsJson = serializeTickAccents(_tickAccents.value)
-                    val dbEntity = entity ?: SessionNameEntity(name = name)
-                    if (entity != null) {
-                        sessionNameDao.update(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
-                    } else {
-                        sessionNameDao.insert(dbEntity.copy(togglesJson = togglesJson, accentsJson = accentsJson))
-                    }
-                }
+                val nameAccentsJson = preferencesManager.getNameAccents(name)
+                _tickAccents.value = nameAccentsJson?.let(::parseTickAccents) ?: DEFAULT_TICK_ACCENTS
+                // Не пишем DEFAULT как accentsJson — оставляем null, чтобы seed мог исправить
+                upsertSessionName(name, entity, serializeCurrentToggles(), nameAccentsJson)
             }
-            if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
-                updateServiceWakeLock()
-            }
+        }
+        if (StopwatchState.isRunning.value || StopwatchState.elapsedTime.value > 0) {
+            updateServiceWakeLock()
+        }
+    }
+
+    private suspend fun upsertSessionName(name: String, existing: SessionNameEntity?, togglesJson: String, accentsJson: String?) {
+        if (existing != null) {
+            sessionNameDao.update(existing.copy(togglesJson = togglesJson, accentsJson = accentsJson))
+        } else {
+            sessionNameDao.insert(SessionNameEntity(name = name, togglesJson = togglesJson, accentsJson = accentsJson))
         }
     }
 
@@ -748,12 +734,7 @@ class StopwatchViewModel(
         val togglesJson = serializeCurrentToggles()
         val accentsJson = serializeTickAccents(_tickAccents.value)
         viewModelScope.launch {
-            val existing = sessionNameDao.getByName(name)
-            if (existing != null) {
-                sessionNameDao.update(existing.copy(togglesJson = togglesJson, accentsJson = accentsJson))
-            } else {
-                sessionNameDao.insert(SessionNameEntity(name = name, togglesJson = togglesJson, accentsJson = accentsJson))
-            }
+            upsertSessionName(name, sessionNameDao.getByName(name), togglesJson, accentsJson)
         }
     }
 
@@ -817,66 +798,65 @@ class StopwatchViewModel(
         _tickEnabled.value = toggles.tickEnabled; preferencesManager.tickEnabled = toggles.tickEnabled
     }
 
-    private fun seedActivityPresetsIfNeeded() {
+    private suspend fun seedActivityPresetsIfNeeded() {
         val v1Done = preferencesManager.activityPresetsSeedDone
         val v2Done = preferencesManager.activityPresetsSeedV2Done
-        if (v1Done && v2Done) return
+        val v3Done = preferencesManager.activityPresetsSeedV3Done
+        if (v1Done && v2Done && v3Done) return
         val lang = preferencesManager.getCurrentLanguage()
-        viewModelScope.launch {
-            for (preset in ACTIVITY_PRESETS) {
-                val name = when (lang) {
-                    "ru" -> preset.nameRu
-                    "zh" -> preset.nameZh
-                    else -> preset.nameEn
-                }
-                val existing = sessionNameDao.getByName(name)
-                when {
-                    existing == null -> sessionNameDao.insert(
-                        SessionNameEntity(
-                            name = name,
-                            togglesJson = serializeCurrentToggles(),
-                            accentsJson = serializeTickAccents(preset.accents)
-                        )
-                    )
-                    existing.accentsJson == null -> sessionNameDao.update(
-                        existing.copy(
-                            togglesJson = existing.togglesJson ?: serializeCurrentToggles(),
-                            accentsJson = serializeTickAccents(preset.accents)
-                        )
-                    )
-                }
+        val defaultAccentsJson = serializeTickAccents(DEFAULT_TICK_ACCENTS)
+        val currentTogglesJson = serializeCurrentToggles()
+        for (preset in ACTIVITY_PRESETS) {
+            val name = when (lang) {
+                "ru" -> preset.nameRu
+                "zh" -> preset.nameZh
+                else -> preset.nameEn
             }
-            if (!v1Done) preferencesManager.activityPresetsSeedDone = true
-            if (!v2Done) preferencesManager.activityPresetsSeedV2Done = true
+            val presetAccentsJson = serializeTickAccents(preset.accents)
+            val existing = sessionNameDao.getByName(name)
+            when {
+                existing == null -> sessionNameDao.insert(
+                    SessionNameEntity(
+                        name = name,
+                        togglesJson = currentTogglesJson,
+                        accentsJson = presetAccentsJson
+                    )
+                )
+                existing.accentsJson == null -> sessionNameDao.update(
+                    existing.copy(
+                        togglesJson = existing.togglesJson ?: currentTogglesJson,
+                        accentsJson = presetAccentsJson
+                    )
+                )
+                // v3: исправляем entity с DEFAULT-акцентами, которые записал loadNameToggles до seed
+                !v3Done && existing.accentsJson == defaultAccentsJson && presetAccentsJson != defaultAccentsJson ->
+                    sessionNameDao.update(existing.copy(accentsJson = presetAccentsJson))
+            }
         }
+        if (!v1Done) preferencesManager.activityPresetsSeedDone = true
+        if (!v2Done) preferencesManager.activityPresetsSeedV2Done = true
+        if (!v3Done) preferencesManager.activityPresetsSeedV3Done = true
     }
 
-    private fun migrateNameSettingsFromPrefsIfNeeded() {
+    private suspend fun migrateNameSettingsFromPrefsIfNeeded() {
         if (preferencesManager.nameSettingsMigrated) return
-        viewModelScope.launch {
-            val allToggles = preferencesManager.getAllNameToggles()
-            val allAccents = preferencesManager.getAllNameAccents()
-            for ((name, toggles) in allToggles) {
-                val togglesJson = JSONObject().apply {
-                    put("showMilliseconds", toggles.showMilliseconds)
-                    put("screenOnMode", toggles.screenOnMode)
-                    put("lockOrientation", toggles.lockOrientation)
-                    put("invertLapColors", toggles.invertLapColors)
-                    put("dimBrightness", toggles.dimBrightness)
-                    put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
-                    put("showTimeAsSeconds", toggles.showTimeAsSeconds)
-                    put("tickEnabled", toggles.tickEnabled)
-                }.toString()
-                val accentsJson = allAccents[name] ?: toggles.tickAccentsJson
-                val existing = sessionNameDao.getByName(name)
-                if (existing != null) {
-                    sessionNameDao.update(existing.copy(togglesJson = togglesJson, accentsJson = accentsJson))
-                } else {
-                    sessionNameDao.insert(SessionNameEntity(name = name, togglesJson = togglesJson, accentsJson = accentsJson))
-                }
-            }
-            preferencesManager.nameSettingsMigrated = true
+        val allToggles = preferencesManager.getAllNameToggles()
+        val allAccents = preferencesManager.getAllNameAccents()
+        for ((name, toggles) in allToggles) {
+            val togglesJson = JSONObject().apply {
+                put("showMilliseconds", toggles.showMilliseconds)
+                put("screenOnMode", toggles.screenOnMode)
+                put("lockOrientation", toggles.lockOrientation)
+                put("invertLapColors", toggles.invertLapColors)
+                put("dimBrightness", toggles.dimBrightness)
+                put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
+                put("showTimeAsSeconds", toggles.showTimeAsSeconds)
+                put("tickEnabled", toggles.tickEnabled)
+            }.toString()
+            val accentsJson = allAccents[name] ?: toggles.tickAccentsJson
+            upsertSessionName(name, sessionNameDao.getByName(name), togglesJson, accentsJson)
         }
+        preferencesManager.nameSettingsMigrated = true
     }
 
     fun updateCurrentNotes(notes: String) {

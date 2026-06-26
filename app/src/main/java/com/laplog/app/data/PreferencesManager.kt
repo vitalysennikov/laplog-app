@@ -261,6 +261,10 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_ACTIVITY_PRESETS_SEED_V2_DONE, false)
         set(value) = prefs.edit().putBoolean(KEY_ACTIVITY_PRESETS_SEED_V2_DONE, value).apply()
 
+    var activityPresetsSeedV3Done: Boolean
+        get() = prefs.getBoolean(KEY_ACTIVITY_PRESETS_SEED_V3_DONE, false)
+        set(value) = prefs.edit().putBoolean(KEY_ACTIVITY_PRESETS_SEED_V3_DONE, value).apply()
+
     fun getAllNameAccents(): Map<String, String> {
         val allJson = prefs.getString(KEY_NAME_ACCENTS_JSON, null) ?: return emptyMap()
         return try {
@@ -342,6 +346,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_NAME_SETTINGS_MIGRATED = "name_settings_migrated_v1"
         private const val KEY_ACTIVITY_PRESETS_SEED_DONE = "activity_presets_seed_done_v1"
         private const val KEY_ACTIVITY_PRESETS_SEED_V2_DONE = "activity_presets_seed_done_v2"
+        private const val KEY_ACTIVITY_PRESETS_SEED_V3_DONE = "activity_presets_seed_done_v3"
         private const val DEFAULT_TICK_ACCENTS_JSON =
             "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7},{\"i\":8,\"s\":\"BELL\",\"o\":0},{\"i\":60,\"s\":\"CHIME\",\"o\":0},{\"i\":300,\"s\":\"GONG\",\"o\":0}]"
     }
