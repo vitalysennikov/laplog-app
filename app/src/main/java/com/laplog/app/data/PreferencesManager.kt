@@ -2,7 +2,14 @@ package com.laplog.app.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.laplog.app.data.database.AppDatabase
+import com.laplog.app.data.database.entity.AppSettingEntity
 import com.laplog.app.model.NameToggles
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.Locale
 
@@ -12,34 +19,98 @@ class PreferencesManager(context: Context) {
         Context.MODE_PRIVATE
     )
 
+    // Настройки из BACKUP_KEYS живут в Room (app_settings), а не в SharedPreferences —
+    // тогда бэкап REPLACE становится копией одного файла .db (см. task_sqlite_raw_backup.md).
+    // Публичный API (синхронные var с get()/set()) не меняется: разовое блокирующее
+    // чтение при создании (таблица крошечная, ~15 строк), дальше — синхронный кэш в
+    // памяти + асинхронная запись через settingsScope.
+    private val settingsDao = AppDatabase.getDatabase(context).appSettingsDao()
+    private val settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // ConcurrentHashMap не годится — некоторые значения (appLanguage) легитимно null,
+    // а ConcurrentHashMap не допускает null-значения.
+    private val settingsCache: MutableMap<String, String?> = java.util.Collections.synchronizedMap(
+        run {
+            val loaded = runBlocking { settingsDao.getAll() }.associate { it.key to it.value }
+            if (loaded.isEmpty()) {
+                // Таблица пуста: либо чистая установка (сеются дефолты — не страшно),
+                // либо первый запуск после обновления (сеются реальные старые значения).
+                val seeded = seedFromLegacyPrefs()
+                settingsScope.launch {
+                    seeded.forEach { (key, value) -> try { settingsDao.upsert(AppSettingEntity(key, value)) } catch (_: Exception) {} }
+                }
+                HashMap(seeded)
+            } else {
+                HashMap(loaded)
+            }
+        }
+    )
+
+    private fun legacyScreenOnMode(): ScreenOnMode {
+        val modeName = prefs.getString(KEY_SCREEN_ON_MODE, null)
+        return if (modeName != null) {
+            try { ScreenOnMode.valueOf(modeName) } catch (e: IllegalArgumentException) { ScreenOnMode.WHILE_RUNNING }
+        } else {
+            // Migration from old Boolean keepScreenOn
+            val oldValue = prefs.getBoolean(KEY_KEEP_SCREEN_ON, true)
+            if (oldValue) ScreenOnMode.WHILE_RUNNING else ScreenOnMode.OFF
+        }
+    }
+
+    /** Одноразовый перенос значений BACKUP_KEYS из старого SharedPreferences в кэш/Room. */
+    private fun seedFromLegacyPrefs(): Map<String, String?> = mapOf(
+        KEY_SHOW_MILLISECONDS to prefs.getBoolean(KEY_SHOW_MILLISECONDS, true).toString(),
+        KEY_SCREEN_ON_MODE to legacyScreenOnMode().name,
+        KEY_LOCK_ORIENTATION to prefs.getBoolean(KEY_LOCK_ORIENTATION, false).toString(),
+        KEY_SHOW_MILLISECONDS_IN_HISTORY to prefs.getBoolean(KEY_SHOW_MILLISECONDS_IN_HISTORY, true).toString(),
+        KEY_INVERT_LAP_COLORS to prefs.getBoolean(KEY_INVERT_LAP_COLORS, false).toString(),
+        KEY_APP_LANGUAGE to prefs.getString(KEY_APP_LANGUAGE, null),
+        KEY_AUTO_BACKUP_ENABLED to prefs.getBoolean(KEY_AUTO_BACKUP_ENABLED, false).toString(),
+        KEY_DIM_BRIGHTNESS to prefs.getBoolean(KEY_DIM_BRIGHTNESS, true).toString(),
+        KEY_HIDE_TIME_WHILE_RUNNING to prefs.getBoolean(KEY_HIDE_TIME_WHILE_RUNNING, false).toString(),
+        KEY_TICK_ENABLED to prefs.getBoolean(KEY_TICK_ENABLED, false).toString(),
+        KEY_TICK_ACCENTS_JSON to (prefs.getString(KEY_TICK_ACCENTS_JSON, DEFAULT_TICK_ACCENTS_JSON) ?: DEFAULT_TICK_ACCENTS_JSON),
+        KEY_SHOW_TIME_AS_SECONDS to prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS, false).toString(),
+        KEY_SHOW_TIME_AS_SECONDS_HISTORY to prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_HISTORY, false).toString(),
+        KEY_SHOW_TIME_AS_SECONDS_CHARTS to prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, false).toString(),
+        KEY_DIM_TIMEOUT_SECONDS to prefs.getInt(KEY_DIM_TIMEOUT_SECONDS, 30).toString()
+    )
+
+    private fun getBool(key: String, default: Boolean): Boolean =
+        settingsCache[key]?.toBooleanStrictOrNull() ?: default
+
+    private fun getInt(key: String, default: Int): Int =
+        settingsCache[key]?.toIntOrNull() ?: default
+
+    private fun writeSetting(key: String, value: String?) {
+        settingsCache[key] = value
+        settingsScope.launch {
+            try { settingsDao.upsert(AppSettingEntity(key, value)) } catch (_: Exception) {}
+        }
+    }
+
     var showMilliseconds: Boolean
-        get() = prefs.getBoolean(KEY_SHOW_MILLISECONDS, true)
-        set(value) = prefs.edit().putBoolean(KEY_SHOW_MILLISECONDS, value).apply()
+        get() = getBool(KEY_SHOW_MILLISECONDS, true)
+        set(value) = writeSetting(KEY_SHOW_MILLISECONDS, value.toString())
 
     var screenOnMode: ScreenOnMode
         get() {
-            val modeName = prefs.getString(KEY_SCREEN_ON_MODE, null)
+            val modeName = settingsCache[KEY_SCREEN_ON_MODE]
             return if (modeName != null) {
-                try {
-                    ScreenOnMode.valueOf(modeName)
-                } catch (e: IllegalArgumentException) {
-                    ScreenOnMode.WHILE_RUNNING
-                }
+                try { ScreenOnMode.valueOf(modeName) } catch (e: IllegalArgumentException) { ScreenOnMode.WHILE_RUNNING }
             } else {
-                // Migration from old Boolean keepScreenOn
-                val oldValue = prefs.getBoolean(KEY_KEEP_SCREEN_ON, true)
-                if (oldValue) ScreenOnMode.WHILE_RUNNING else ScreenOnMode.OFF
+                ScreenOnMode.WHILE_RUNNING
             }
         }
-        set(value) = prefs.edit().putString(KEY_SCREEN_ON_MODE, value.name).apply()
+        set(value) = writeSetting(KEY_SCREEN_ON_MODE, value.name)
 
     var usedNames: Set<String>
         get() = prefs.getStringSet(KEY_USED_NAMES, emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet(KEY_USED_NAMES, value).apply()
 
     var lockOrientation: Boolean
-        get() = prefs.getBoolean(KEY_LOCK_ORIENTATION, false)
-        set(value) = prefs.edit().putBoolean(KEY_LOCK_ORIENTATION, value).apply()
+        get() = getBool(KEY_LOCK_ORIENTATION, false)
+        set(value) = writeSetting(KEY_LOCK_ORIENTATION, value.toString())
 
     var currentName: String
         get() = prefs.getString(KEY_CURRENT_NAME, "") ?: ""
@@ -50,12 +121,12 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_CURRENT_NOTES, value).apply()
 
     var showMillisecondsInHistory: Boolean
-        get() = prefs.getBoolean(KEY_SHOW_MILLISECONDS_IN_HISTORY, true)
-        set(value) = prefs.edit().putBoolean(KEY_SHOW_MILLISECONDS_IN_HISTORY, value).apply()
+        get() = getBool(KEY_SHOW_MILLISECONDS_IN_HISTORY, true)
+        set(value) = writeSetting(KEY_SHOW_MILLISECONDS_IN_HISTORY, value.toString())
 
     var invertLapColors: Boolean
-        get() = prefs.getBoolean(KEY_INVERT_LAP_COLORS, false)
-        set(value) = prefs.edit().putBoolean(KEY_INVERT_LAP_COLORS, value).apply()
+        get() = getBool(KEY_INVERT_LAP_COLORS, false)
+        set(value) = writeSetting(KEY_INVERT_LAP_COLORS, value.toString())
 
     // Backup settings
     var backupFolderUri: String?
@@ -63,8 +134,8 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_BACKUP_FOLDER_URI, value).apply()
 
     var autoBackupEnabled: Boolean
-        get() = prefs.getBoolean(KEY_AUTO_BACKUP_ENABLED, false)
-        set(value) = prefs.edit().putBoolean(KEY_AUTO_BACKUP_ENABLED, value).apply()
+        get() = getBool(KEY_AUTO_BACKUP_ENABLED, false)
+        set(value) = writeSetting(KEY_AUTO_BACKUP_ENABLED, value.toString())
 
     var backupRetentionDays: Int
         get() = prefs.getInt(KEY_BACKUP_RETENTION_DAYS, 30)
@@ -75,8 +146,8 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putLong(KEY_LAST_BACKUP_TIME, value).apply()
 
     var appLanguage: String?
-        get() = prefs.getString(KEY_APP_LANGUAGE, null)
-        set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
+        get() = settingsCache[KEY_APP_LANGUAGE]
+        set(value) = writeSetting(KEY_APP_LANGUAGE, value)
 
     var permissionsRequested: Boolean
         get() = prefs.getBoolean(KEY_PERMISSIONS_REQUESTED, false)
@@ -87,40 +158,40 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_IS_FIRST_LAUNCH, value).apply()
 
     var dimBrightness: Boolean
-        get() = prefs.getBoolean(KEY_DIM_BRIGHTNESS, true)
-        set(value) = prefs.edit().putBoolean(KEY_DIM_BRIGHTNESS, value).apply()
+        get() = getBool(KEY_DIM_BRIGHTNESS, true)
+        set(value) = writeSetting(KEY_DIM_BRIGHTNESS, value.toString())
 
     var dimTimeoutSeconds: Int
-        get() = prefs.getInt(KEY_DIM_TIMEOUT_SECONDS, 30)
-        set(value) = prefs.edit().putInt(KEY_DIM_TIMEOUT_SECONDS, value).apply()
+        get() = getInt(KEY_DIM_TIMEOUT_SECONDS, 30)
+        set(value) = writeSetting(KEY_DIM_TIMEOUT_SECONDS, value.toString())
 
     var hideTimeWhileRunning: Boolean
-        get() = prefs.getBoolean(KEY_HIDE_TIME_WHILE_RUNNING, false)
-        set(value) = prefs.edit().putBoolean(KEY_HIDE_TIME_WHILE_RUNNING, value).apply()
+        get() = getBool(KEY_HIDE_TIME_WHILE_RUNNING, false)
+        set(value) = writeSetting(KEY_HIDE_TIME_WHILE_RUNNING, value.toString())
 
     var showTimeAsSeconds: Boolean
-        get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS, false)
-        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS, value).apply()
+        get() = getBool(KEY_SHOW_TIME_AS_SECONDS, false)
+        set(value) = writeSetting(KEY_SHOW_TIME_AS_SECONDS, value.toString())
 
     var showTimeAsSecondsHistory: Boolean
-        get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_HISTORY, false)
-        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS_HISTORY, value).apply()
+        get() = getBool(KEY_SHOW_TIME_AS_SECONDS_HISTORY, false)
+        set(value) = writeSetting(KEY_SHOW_TIME_AS_SECONDS_HISTORY, value.toString())
 
     var showTimeAsSecondsCharts: Boolean
-        get() = prefs.getBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, false)
-        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIME_AS_SECONDS_CHARTS, value).apply()
+        get() = getBool(KEY_SHOW_TIME_AS_SECONDS_CHARTS, false)
+        set(value) = writeSetting(KEY_SHOW_TIME_AS_SECONDS_CHARTS, value.toString())
 
     var loggingEnabled: Boolean
         get() = prefs.getBoolean(KEY_LOGGING_ENABLED, false)
         set(value) = prefs.edit().putBoolean(KEY_LOGGING_ENABLED, value).apply()
 
     var tickEnabled: Boolean
-        get() = prefs.getBoolean(KEY_TICK_ENABLED, false)
-        set(value) = prefs.edit().putBoolean(KEY_TICK_ENABLED, value).apply()
+        get() = getBool(KEY_TICK_ENABLED, false)
+        set(value) = writeSetting(KEY_TICK_ENABLED, value.toString())
 
     var tickAccentsJson: String
-        get() = prefs.getString(KEY_TICK_ACCENTS_JSON, DEFAULT_TICK_ACCENTS_JSON) ?: DEFAULT_TICK_ACCENTS_JSON
-        set(value) = prefs.edit().putString(KEY_TICK_ACCENTS_JSON, value).apply()
+        get() = settingsCache[KEY_TICK_ACCENTS_JSON] ?: DEFAULT_TICK_ACCENTS_JSON
+        set(value) = writeSetting(KEY_TICK_ACCENTS_JSON, value)
 
     // Stopwatch state persistence
     var stopwatchElapsedTime: Long
@@ -280,32 +351,18 @@ class PreferencesManager(context: Context) {
     }
 
     /**
-     * Generic export/import of user-facing settings for backup, keyed by the raw
-     * SharedPreferences key. Avoids hand-listing every field in BackupManager —
-     * adding a setting here only requires adding its key to BACKUP_KEYS.
-     * Deliberately excludes transient/internal keys (stopwatch runtime state,
-     * migration flags, per-name legacy maps — those live in session_names now).
+     * Generic export/import of user-facing settings for JSON backup (MERGE-режим,
+     * «Save Backup To...» и восстановление старых .json-бэкапов). Значения теперь
+     * живут в Room (settingsCache/app_settings) — этот снимок только для JSON-пути;
+     * REPLACE-восстановление копирует файл .db целиком и сюда не заходит.
      */
-    fun exportSettingsMap(): Map<String, Any?> {
-        val all = prefs.all
-        return BACKUP_KEYS.associateWith { all[it] }
-    }
+    fun exportSettingsMap(): Map<String, Any?> = settingsCache.toMap()
 
     fun importSettingsMap(map: Map<String, Any?>) {
-        val editor = prefs.edit()
         map.forEach { (key, value) ->
             if (key !in BACKUP_KEYS) return@forEach
-            when (value) {
-                is Boolean -> editor.putBoolean(key, value)
-                is Int -> editor.putInt(key, value)
-                is Long -> editor.putLong(key, value)
-                is Float -> editor.putFloat(key, value)
-                is String -> editor.putString(key, value)
-                is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(key, value as Set<String>)
-                else -> {}
-            }
+            writeSetting(key, value?.toString())
         }
-        editor.apply()
     }
 
     fun clearStopwatchState() {

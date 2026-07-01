@@ -6,20 +6,23 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.laplog.app.data.database.dao.AppSettingsDao
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.dao.SessionNameDao
+import com.laplog.app.data.database.entity.AppSettingEntity
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
 import com.laplog.app.data.database.entity.SessionNameEntity
 
 @Database(
-    entities = [SessionEntity::class, LapEntity::class, SessionNameEntity::class],
-    version = 4,
+    entities = [SessionEntity::class, LapEntity::class, SessionNameEntity::class, AppSettingEntity::class],
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
     abstract fun sessionNameDao(): SessionNameDao
+    abstract fun appSettingsDao(): AppSettingsDao
 
     companion object {
         @Volatile
@@ -70,17 +73,38 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS app_settings (
+                        `key` TEXT NOT NULL PRIMARY KEY,
+                        `value` TEXT
+                    )
+                """.trimIndent())
+            }
+        }
+
+        const val DB_NAME = "laplog_database"
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "laplog_database"
+                    DB_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        /** Закрывает текущее соединение перед подменой файла БД при raw-восстановлении. */
+        fun closeDatabase() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
             }
         }
     }

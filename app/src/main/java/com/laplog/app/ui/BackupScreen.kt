@@ -22,6 +22,7 @@ import com.laplog.app.R
 import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
+import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.model.BackupFileInfo
@@ -37,7 +38,8 @@ fun BackupScreen(
     sessionDao: SessionDao,
     sessionNameDao: SessionNameDao,
     onSelectFolder: () -> Unit,
-    onSaveBackupManually: (String, String) -> Unit
+    onSaveBackupManually: (String, String) -> Unit,
+    database: AppDatabase? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val translationManager = remember { TranslationManager(sessionDao) }
@@ -48,7 +50,8 @@ fun BackupScreen(
             preferencesManager = preferencesManager,
             sessionDao = sessionDao,
             translationManager = translationManager,
-            sessionNameDao = sessionNameDao
+            sessionNameDao = sessionNameDao,
+            database = database
         )
     )
 
@@ -683,18 +686,22 @@ fun BackupScreen(
             onDismissRequest = { viewModel.dismissRestoreSummary() },
             title = { Text(stringResource(R.string.restore_complete_title)) },
             text = {
-                Column {
-                    Text(stringResource(R.string.restore_summary_sessions, summary.sessions))
-                    Text(stringResource(R.string.restore_summary_laps, summary.laps))
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (summary.settingsRestored)
-                            stringResource(R.string.restore_summary_settings_yes)
-                        else
-                            stringResource(R.string.restore_summary_settings_no),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                if (summary.requiresRestart) {
+                    Text(stringResource(R.string.restore_requires_restart))
+                } else {
+                    Column {
+                        Text(stringResource(R.string.restore_summary_sessions, summary.sessions))
+                        Text(stringResource(R.string.restore_summary_laps, summary.laps))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (summary.settingsRestored)
+                                stringResource(R.string.restore_summary_settings_yes)
+                            else
+                                stringResource(R.string.restore_summary_settings_no),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             },
             confirmButton = {

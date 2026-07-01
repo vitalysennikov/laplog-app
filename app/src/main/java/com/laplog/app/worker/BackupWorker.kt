@@ -20,7 +20,7 @@ class BackupWorker(
         val preferencesManager = PreferencesManager(applicationContext)
         val database = AppDatabase.getDatabase(applicationContext)
         val translationManager = TranslationManager(database.sessionDao())
-        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao())
+        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao(), database)
 
         // Check if auto backup is enabled
         if (!preferencesManager.autoBackupEnabled) {

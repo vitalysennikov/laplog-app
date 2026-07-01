@@ -145,7 +145,7 @@ class MainActivity : ComponentActivity() {
         // Initialize BackupViewModel
         backupViewModel = ViewModelProvider(
             this,
-            BackupViewModelFactory(applicationContext, preferencesManager, database.sessionDao(), translationManager)
+            BackupViewModelFactory(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao(), database)
         )[BackupViewModel::class.java]
 
         setContent {
@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(backupViewModel.backupFolderUri.collectAsState().value) {
                     val folderUri = backupViewModel.backupFolderUri.value
                     if (preferencesManager.isFirstLaunch && folderUri != null && !showWelcomeDialog) {
-                        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao())
+                        val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao(), database)
                         val backups = backupManager.listBackups(android.net.Uri.parse(folderUri))
 
                         if (backups.isNotEmpty()) {
@@ -310,7 +310,8 @@ class MainActivity : ComponentActivity() {
                                 onSaveBackupManually = { fileName, jsonData ->
                                     pendingBackupData = jsonData
                                     createBackupDocumentLauncher.launch(fileName)
-                                }
+                                },
+                                database = database
                             )
                         }
                     }
@@ -381,7 +382,7 @@ class MainActivity : ComponentActivity() {
                         onConfirm = {
                             showRestoreBackupDialog = false
                             coroutineScope.launch {
-                                val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao())
+                                val backupManager = BackupManager(applicationContext, preferencesManager, database.sessionDao(), translationManager, database.sessionNameDao(), database)
                                 val result = backupManager.restoreBackup(latestBackup!!.uri, BackupManager.RestoreMode.REPLACE)
                                 if (result.isSuccess) {
                                     Toast.makeText(

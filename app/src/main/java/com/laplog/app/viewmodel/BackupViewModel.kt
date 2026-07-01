@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import com.laplog.app.data.BackupManager
 import com.laplog.app.data.PreferencesManager
 import com.laplog.app.data.TranslationManager
+import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.model.BackupFileInfo
@@ -29,10 +30,11 @@ class BackupViewModel(
     private val preferencesManager: PreferencesManager,
     sessionDao: SessionDao,
     translationManager: TranslationManager,
-    sessionNameDao: SessionNameDao? = null
+    sessionNameDao: SessionNameDao? = null,
+    database: AppDatabase? = null
 ) : ViewModel() {
 
-    private val backupManager = BackupManager(context, preferencesManager, sessionDao, translationManager, sessionNameDao)
+    private val backupManager = BackupManager(context, preferencesManager, sessionDao, translationManager, sessionNameDao, database)
 
     private val _backupFolderUri = MutableStateFlow(preferencesManager.backupFolderUri)
     val backupFolderUri: StateFlow<String?> = _backupFolderUri.asStateFlow()

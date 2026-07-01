@@ -196,5 +196,34 @@ To...» и restore старых `.json`-бэкапов) упрощаются: т
 
 ## Статус
 
-Не начато — план обновлён (единый файл `.db` вместо zip, настройки в Room).
-Ждёт команды на реализацию.
+**Реализовано**, ждёт сборки через GitHub Actions и проверки на устройстве
+(локальная сборка недоступна). Дополнительно по пути найдены и исправлены ещё
+два пробела с `sessionNameDao`:
+
+- `BackupViewModelFactory`/`BackupScreen` создавали свой собственный
+  `BackupViewModel`/`BackupManager` (независимо от `MainActivity.backupViewModel`)
+  и не передавали `sessionNameDao`/`database` — то есть кнопка «Создать бэкап
+  сейчас» на экране бэкапов тоже никогда не включала `session_names`.
+  Исправлено во всех местах создания (`MainActivity.kt`, `BackupScreen.kt`,
+  `BackupViewModelFactory.kt`, `BackupViewModel.kt`).
+
+Реализованные пункты:
+- [x] `AppSettingEntity`/`AppSettingsDao`, `MIGRATION_4_5`, `AppDatabase.DB_NAME`, `closeDatabase()`
+- [x] `PreferencesManager`: ~15 свойств из `BACKUP_KEYS` переведены на Room-кэш,
+      сид из старого SharedPreferences при пустой таблице
+- [x] `BackupManager.createBackup` — raw-копия `.db` (checkpoint + copy), JSON как fallback
+- [x] `BackupManager.restoreBackup` — определение формата по расширению,
+      `restoreRaw()` для `.laplogdb` (REPLACE only), явная ошибка на MERGE
+- [x] `listBackups`/`generateBackupFileName`/`extractTimestampFromFileName` — оба расширения
+- [x] `RestoreResult.requiresRestart` + диалог в `BackupScreen` с текстом
+      про ручной перезапуск (EN/RU/ZH)
+- [x] Все места создания `BackupManager`/`BackupViewModel` передают `database`
+
+Не проверено (нет локальной сборки):
+- [ ] Реальная сборка компилируется без ошибок
+- [ ] raw-бэкап создаётся и валиден (`sqlite3 ... ".tables"` показывает `app_settings`)
+- [ ] REPLACE-восстановление + ручной перезапуск возвращают верные данные
+- [ ] MERGE на `.laplogdb` даёт понятную ошибку, а не краш
+- [ ] Старые `.json`-бэкапы всё ещё восстанавливаются (REPLACE и MERGE)
+- [ ] Апгрейд с версии до этой задачи не роняет пользовательские настройки
+      (миграция `seedFromLegacyPrefs`)

@@ -174,6 +174,7 @@
     <string name="restore_summary_laps">Laps: %1$d</string>
     <string name="restore_summary_settings_yes">Settings: restored</string>
     <string name="restore_summary_settings_no">Settings: not found in backup</string>
+    <string name="restore_requires_restart">Restore complete. Please close and reopen the app manually for the changes to take effect.</string>
     <string name="delete_backup_title">Delete Backup</string>
     <string name="delete_backup">Delete backup</string>
     <string name="delete_backup_message">Delete this backup file?</string>

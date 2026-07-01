@@ -3,6 +3,7 @@ package com.laplog.app.data
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.laplog.app.data.database.AppDatabase
 import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.LapEntity
@@ -16,9 +17,12 @@ import com.laplog.app.model.BackupSession
 import com.laplog.app.model.BackupSessionName
 import com.laplog.app.model.NameToggles
 import com.laplog.app.util.AppLogger
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -27,11 +31,13 @@ class BackupManager(
     private val preferencesManager: PreferencesManager,
     private val sessionDao: SessionDao,
     private val translationManager: TranslationManager,
-    private val sessionNameDao: SessionNameDao? = null
+    private val sessionNameDao: SessionNameDao? = null,
+    private val database: AppDatabase? = null
 ) {
     companion object {
         private const val BACKUP_PREFIX = "laplog_backup_"
         private const val BACKUP_EXTENSION = ".json"
+        private const val RAW_BACKUP_EXTENSION = ".laplogdb"
     }
 
     /**
@@ -49,51 +55,72 @@ class BackupManager(
     }
 
     /**
-     * Export full database to JSON and save to selected folder
+     * Создать бэкап копированием файла .db (raw-формат, только REPLACE при
+     * восстановлении). Если database не передан (не должно случаться в
+     * актуальных местах создания BackupManager) — откатываемся на JSON,
+     * чтобы не сломать вызывающий код.
      */
     suspend fun createBackup(folderUri: Uri): Result<BackupFileInfo> {
         AppLogger.i("BackupManager", "Creating backup to folder: $folderUri")
+        val db = database ?: return createBackupJsonFallback(folderUri)
+        return withContext(Dispatchers.IO) {
+            try {
+                checkpointDatabase(db)
+                val dbFile = context.getDatabasePath(AppDatabase.DB_NAME)
+                val fileName = generateBackupFileName(RAW_BACKUP_EXTENSION)
+                val folder = DocumentFile.fromTreeUri(context, folderUri)
+                    ?: return@withContext Result.failure(Exception("Invalid folder URI"))
+                val file = folder.createFile("application/octet-stream", fileName)
+                    ?: return@withContext Result.failure(Exception("Failed to create backup file"))
+
+                val outputStream = context.contentResolver.openOutputStream(file.uri)
+                    ?: return@withContext Result.failure(Exception("Failed to write backup file"))
+                outputStream.use { out -> dbFile.inputStream().use { it.copyTo(out) } }
+
+                val fileInfo = BackupFileInfo(
+                    uri = file.uri,
+                    name = fileName,
+                    timestamp = System.currentTimeMillis(),
+                    size = dbFile.length()
+                )
+                AppLogger.i("BackupManager", "Raw backup created successfully: $fileName (${fileInfo.size} bytes)")
+                Result.success(fileInfo)
+            } catch (e: Exception) {
+                AppLogger.e("BackupManager", "Failed to create raw backup: ${e.message}", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    private suspend fun createBackupJsonFallback(folderUri: Uri): Result<BackupFileInfo> {
         return try {
             val backupData = createBackupData()
-            AppLogger.d("BackupManager", "Backup data created: ${backupData.sessions.size} sessions")
-
-            // Convert to JSON
             val json = backupDataToJson(backupData)
-
-            // Save to file
-            val fileName = generateBackupFileName()
+            val fileName = generateBackupFileName(BACKUP_EXTENSION)
             val folder = DocumentFile.fromTreeUri(context, folderUri)
-            if (folder == null) {
-                AppLogger.e("BackupManager", "Invalid folder URI")
-                return Result.failure(Exception("Invalid folder URI"))
-            }
-
+                ?: return Result.failure(Exception("Invalid folder URI"))
             val file = folder.createFile("application/json", fileName)
-            if (file == null) {
-                AppLogger.e("BackupManager", "Failed to create backup file")
-                return Result.failure(Exception("Failed to create backup file"))
-            }
-
+                ?: return Result.failure(Exception("Failed to create backup file"))
             val outputStream = context.contentResolver.openOutputStream(file.uri)
-            if (outputStream == null) {
-                AppLogger.e("BackupManager", "Failed to write backup file")
-                return Result.failure(Exception("Failed to write backup file"))
-            }
+                ?: return Result.failure(Exception("Failed to write backup file"))
             outputStream.use { it.write(json.toByteArray()) }
-
-            val fileInfo = BackupFileInfo(
-                uri = file.uri,
-                name = fileName,
-                timestamp = backupData.timestamp,
-                size = json.toByteArray().size.toLong()
+            Result.success(
+                BackupFileInfo(
+                    uri = file.uri,
+                    name = fileName,
+                    timestamp = backupData.timestamp,
+                    size = json.toByteArray().size.toLong()
+                )
             )
-
-            AppLogger.i("BackupManager", "Backup created successfully: $fileName (${fileInfo.size} bytes)")
-            Result.success(fileInfo)
         } catch (e: Exception) {
-            AppLogger.e("BackupManager", "Failed to create backup: ${e.message}", e)
+            AppLogger.e("BackupManager", "Failed to create JSON backup: ${e.message}", e)
             Result.failure(e)
         }
+    }
+
+    /** Переносит содержимое -wal в основной файл БД, чтобы копия была полной. */
+    private fun checkpointDatabase(db: AppDatabase) {
+        db.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)", null).close()
     }
 
     /**
@@ -104,17 +131,19 @@ class BackupManager(
         val backups = mutableListOf<BackupFileInfo>()
 
         folder.listFiles().forEach { file ->
-            if (file.name?.startsWith(BACKUP_PREFIX) == true &&
-                file.name?.endsWith(BACKUP_EXTENSION) == true) {
+            val name = file.name
+            if (name != null && name.startsWith(BACKUP_PREFIX) &&
+                (name.endsWith(BACKUP_EXTENSION) || name.endsWith(RAW_BACKUP_EXTENSION))
+            ) {
                 val timestamp = try {
-                    extractTimestampFromFileName(file.name!!)
+                    extractTimestampFromFileName(name)
                 } catch (_: Exception) {
                     file.lastModified().takeIf { it > 0 } ?: System.currentTimeMillis()
                 }
                 backups.add(
                     BackupFileInfo(
                         uri = file.uri,
-                        name = file.name!!,
+                        name = name,
                         timestamp = timestamp,
                         size = file.length()
                     )
@@ -128,7 +157,10 @@ class BackupManager(
     data class RestoreResult(
         val sessions: Int,
         val laps: Int,
-        val settingsRestored: Boolean
+        val settingsRestored: Boolean,
+        // true для raw-восстановления (.laplogdb) — приложение нужно перезапустить
+        // вручную, Room/SharedPreferences кэшируют состояние в памяти процесса.
+        val requiresRestart: Boolean = false
     )
 
     /**
@@ -140,6 +172,17 @@ class BackupManager(
         onProgress: suspend (current: Int, total: Int) -> Unit = { _, _ -> }
     ): Result<RestoreResult> {
         AppLogger.i("BackupManager", "Restoring backup from: $fileUri, mode: $mode")
+
+        val fileName = DocumentFile.fromSingleUri(context, fileUri)?.name
+        if (fileName?.endsWith(RAW_BACKUP_EXTENSION) == true) {
+            if (mode == RestoreMode.MERGE) {
+                return Result.failure(
+                    IllegalArgumentException("MERGE не поддерживается для этого формата бэкапа (.laplogdb) — используйте REPLACE")
+                )
+            }
+            return restoreRaw(fileUri)
+        }
+
         return try {
             // Read JSON from file
             val json = context.contentResolver.openInputStream(fileUri)?.use { inputStream ->
@@ -286,6 +329,36 @@ class BackupManager(
             sessionNames = backupSessionNames,
             settings = preferencesManager.exportSettingsMap()
         )
+    }
+
+    /**
+     * REPLACE-восстановление копированием файла .db целиком (без JSON).
+     * После успешного восстановления соединение Room закрыто и файл БД подменён —
+     * приложение необходимо перезапустить вручную (Room/SharedPreferences
+     * кэшируют состояние в памяти процесса и не увидят подмену файла на диске).
+     */
+    private suspend fun restoreRaw(fileUri: Uri): Result<RestoreResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val tempFile = File.createTempFile("laplog_restore_", ".db", context.cacheDir)
+                val input = context.contentResolver.openInputStream(fileUri)
+                    ?: return@withContext Result.failure(Exception("Failed to read backup file"))
+                input.use { inp -> tempFile.outputStream().use { out -> inp.copyTo(out) } }
+
+                AppDatabase.closeDatabase()
+                val dbFile = context.getDatabasePath(AppDatabase.DB_NAME)
+                File(dbFile.path + "-wal").delete()
+                File(dbFile.path + "-shm").delete()
+                tempFile.copyTo(dbFile, overwrite = true)
+                tempFile.delete()
+
+                AppLogger.i("BackupManager", "Raw backup restored — restart required")
+                Result.success(RestoreResult(sessions = -1, laps = -1, settingsRestored = true, requiresRestart = true))
+            } catch (e: Exception) {
+                AppLogger.e("BackupManager", "Failed to restore raw backup: ${e.message}", e)
+                Result.failure(e)
+            }
+        }
     }
 
     private suspend fun restoreReplace(
@@ -712,14 +785,17 @@ class BackupManager(
         return BackupData(version, timestamp, sessions, sessionNames, settings, legacyNameToggles)
     }
 
-    private fun generateBackupFileName(): String {
+    private fun generateBackupFileName(extension: String = BACKUP_EXTENSION): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.getDefault())
-        return "$BACKUP_PREFIX${dateFormat.format(Date())}$BACKUP_EXTENSION"
+        return "$BACKUP_PREFIX${dateFormat.format(Date())}$extension"
     }
 
     private fun extractTimestampFromFileName(fileName: String): Long {
         // Extract "2025-11-13_143022" from "laplog_backup_2025-11-13_143022.json"
-        val dateStr = fileName.removePrefix(BACKUP_PREFIX).removeSuffix(BACKUP_EXTENSION)
+        // (или из "...laplogdb" для raw-формата)
+        val dateStr = fileName.removePrefix(BACKUP_PREFIX)
+            .removeSuffix(BACKUP_EXTENSION)
+            .removeSuffix(RAW_BACKUP_EXTENSION)
         val dateFormat = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.getDefault())
         return dateFormat.parse(dateStr)?.time ?: 0L
     }
