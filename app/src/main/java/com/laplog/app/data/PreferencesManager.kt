@@ -279,6 +279,35 @@ class PreferencesManager(context: Context) {
         } catch (_: Exception) { emptyMap() }
     }
 
+    /**
+     * Generic export/import of user-facing settings for backup, keyed by the raw
+     * SharedPreferences key. Avoids hand-listing every field in BackupManager —
+     * adding a setting here only requires adding its key to BACKUP_KEYS.
+     * Deliberately excludes transient/internal keys (stopwatch runtime state,
+     * migration flags, per-name legacy maps — those live in session_names now).
+     */
+    fun exportSettingsMap(): Map<String, Any?> {
+        val all = prefs.all
+        return BACKUP_KEYS.associateWith { all[it] }
+    }
+
+    fun importSettingsMap(map: Map<String, Any?>) {
+        val editor = prefs.edit()
+        map.forEach { (key, value) ->
+            if (key !in BACKUP_KEYS) return@forEach
+            when (value) {
+                is Boolean -> editor.putBoolean(key, value)
+                is Int -> editor.putInt(key, value)
+                is Long -> editor.putLong(key, value)
+                is Float -> editor.putFloat(key, value)
+                is String -> editor.putString(key, value)
+                is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(key, value as Set<String>)
+                else -> {}
+            }
+        }
+        editor.apply()
+    }
+
     fun clearStopwatchState() {
         prefs.edit()
             .remove(KEY_STOPWATCH_ELAPSED_TIME)
@@ -349,5 +378,24 @@ class PreferencesManager(context: Context) {
         private const val KEY_ACTIVITY_PRESETS_SEED_V3_DONE = "activity_presets_seed_done_v3"
         private const val DEFAULT_TICK_ACCENTS_JSON =
             "[{\"i\":1,\"s\":\"TICK\",\"o\":0},{\"i\":8,\"s\":\"TOCK\",\"o\":7},{\"i\":8,\"s\":\"BELL\",\"o\":0},{\"i\":60,\"s\":\"CHIME\",\"o\":0},{\"i\":300,\"s\":\"GONG\",\"o\":0}]"
+
+        /** Ключи, которые попадают в бэкап через exportSettingsMap()/importSettingsMap(). */
+        private val BACKUP_KEYS = listOf(
+            KEY_SHOW_MILLISECONDS,
+            KEY_SCREEN_ON_MODE,
+            KEY_LOCK_ORIENTATION,
+            KEY_SHOW_MILLISECONDS_IN_HISTORY,
+            KEY_INVERT_LAP_COLORS,
+            KEY_APP_LANGUAGE,
+            KEY_AUTO_BACKUP_ENABLED,
+            KEY_DIM_BRIGHTNESS,
+            KEY_HIDE_TIME_WHILE_RUNNING,
+            KEY_TICK_ENABLED,
+            KEY_TICK_ACCENTS_JSON,
+            KEY_SHOW_TIME_AS_SECONDS,
+            KEY_SHOW_TIME_AS_SECONDS_HISTORY,
+            KEY_SHOW_TIME_AS_SECONDS_CHARTS,
+            KEY_DIM_TIMEOUT_SECONDS
+        )
     }
 }

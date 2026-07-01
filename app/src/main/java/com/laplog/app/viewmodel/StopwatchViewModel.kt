@@ -667,9 +667,15 @@ class StopwatchViewModel(
 
     fun updateCurrentName(name: String) {
         val prevTrimmed = _currentName.value.trim()
+        val trimmed = name.trim()
+        // Save toggles/accents for the name we're leaving, but only if it was a
+        // real known name — otherwise every keystroke while typing a new name
+        // would create garbage entities for partial input ("Б", "Бе", "Бег"...).
+        if (prevTrimmed.isNotBlank() && trimmed != prevTrimmed && usedNames.value.contains(prevTrimmed)) {
+            saveCurrentNameToggles()
+        }
         _currentName.value = name
         preferencesManager.currentName = name
-        val trimmed = name.trim()
         // Load toggles only when user finishes typing an exact known name
         if (trimmed.isNotBlank() && trimmed != prevTrimmed && usedNames.value.contains(trimmed)) {
             loadNameToggles(trimmed)
@@ -693,11 +699,11 @@ class StopwatchViewModel(
     private suspend fun loadNameTogglesBody(name: String) {
         val entity = sessionNameDao.getByName(name)
         if (entity?.togglesJson != null) {
+            // session_names — единственный источник правды для этого имени;
+            // legacy SharedPreferences-ключ здесь больше не читаем (см. task_accent_save_analysis.md).
             applyTogglesJson(entity.togglesJson)
             _tickAccents.value = parseTickAccents(
-                entity.accentsJson
-                    ?: preferencesManager.getNameAccents(name)
-                    ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)
+                entity.accentsJson ?: serializeTickAccents(DEFAULT_TICK_ACCENTS)
             )
         } else {
             val toggles = preferencesManager.getNameToggles(name)

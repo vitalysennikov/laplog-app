@@ -7,12 +7,13 @@ import com.laplog.app.data.database.dao.SessionDao
 import com.laplog.app.data.database.dao.SessionNameDao
 import com.laplog.app.data.database.entity.LapEntity
 import com.laplog.app.data.database.entity.SessionEntity
+import com.laplog.app.BuildConfig
 import com.laplog.app.data.database.entity.SessionNameEntity
 import com.laplog.app.model.BackupData
 import com.laplog.app.model.BackupFileInfo
 import com.laplog.app.model.BackupLap
 import com.laplog.app.model.BackupSession
-import com.laplog.app.model.BackupSettings
+import com.laplog.app.model.BackupSessionName
 import com.laplog.app.model.NameToggles
 import com.laplog.app.util.AppLogger
 import kotlinx.coroutines.flow.first
@@ -269,31 +270,21 @@ class BackupManager(
             )
         }
 
-        // Get current settings
-        val backupSettings = BackupSettings(
-            showMilliseconds = preferencesManager.showMilliseconds,
-            screenOnMode = preferencesManager.screenOnMode.name,
-            lockOrientation = preferencesManager.lockOrientation,
-            showMillisecondsInHistory = preferencesManager.showMillisecondsInHistory,
-            invertLapColors = preferencesManager.invertLapColors,
-            appLanguage = preferencesManager.appLanguage,
-            autoBackupEnabled = preferencesManager.autoBackupEnabled,
-            dimBrightness = preferencesManager.dimBrightness,
-            hideTimeWhileRunning = preferencesManager.hideTimeWhileRunning,
-            tickEnabled = preferencesManager.tickEnabled,
-            tickAccentsJson = preferencesManager.tickAccentsJson,
-            showTimeAsSeconds = preferencesManager.showTimeAsSeconds,
-            showTimeAsSecondsHistory = preferencesManager.showTimeAsSecondsHistory,
-            showTimeAsSecondsCharts = preferencesManager.showTimeAsSecondsCharts,
-            dimTimeoutSeconds = preferencesManager.dimTimeoutSeconds,
-            nameToggles = preferencesManager.getAllNameToggles().ifEmpty { null }
-        )
+        // Get current per-name toggles/accents (session_names — единственный источник правды)
+        val backupSessionNames = sessionNameDao?.getAll()?.map { entity ->
+            BackupSessionName(
+                name = entity.name,
+                togglesJson = entity.togglesJson,
+                accentsJson = entity.accentsJson
+            )
+        }
 
         return BackupData(
-            version = "0.12.2",
+            version = BuildConfig.VERSION_NAME,
             timestamp = System.currentTimeMillis(),
             sessions = backupSessions,
-            settings = backupSettings
+            sessionNames = backupSessionNames,
+            settings = preferencesManager.exportSettingsMap()
         )
     }
 
@@ -358,13 +349,14 @@ class BackupManager(
             onProgress(index + 1, total)
         }
 
-        // Restore session_names from unique session names
+        // Restore session_names (per-name toggles/accents) and legacy per-name prefs
         restoreSessionNames(backupData)
+        backupData.legacyNameToggles?.let { preferencesManager.setAllNameToggles(it) }
 
         // Restore settings if available
         val settingsRestored = backupData.settings != null
         backupData.settings?.let { settings ->
-            AppLogger.i("BackupManager", "Restoring settings: language=${settings.appLanguage}")
+            AppLogger.i("BackupManager", "Restoring settings: ${settings.size} keys")
             restoreSettings(settings)
         }
 
@@ -428,13 +420,14 @@ class BackupManager(
             onProgress(index + 1, total)
         }
 
-        // Restore session_names from unique session names
+        // Restore session_names (per-name toggles/accents) and legacy per-name prefs
         restoreSessionNames(backupData)
+        backupData.legacyNameToggles?.let { preferencesManager.setAllNameToggles(it) }
 
         // Restore settings if available
         val settingsRestored = backupData.settings != null
         backupData.settings?.let { settings ->
-            AppLogger.i("BackupManager", "Restoring settings: language=${settings.appLanguage}")
+            AppLogger.i("BackupManager", "Restoring settings: ${settings.size} keys")
             restoreSettings(settings)
         }
 
@@ -443,36 +436,33 @@ class BackupManager(
 
     private suspend fun restoreSessionNames(backupData: BackupData) {
         val dao = sessionNameDao ?: return
+        val backupNames = backupData.sessionNames
+        if (backupNames != null) {
+            AppLogger.i("BackupManager", "Restoring ${backupNames.size} session_names entries (with toggles/accents)")
+            for (bn in backupNames) {
+                val existing = dao.getByName(bn.name)
+                when {
+                    existing == null -> dao.insert(
+                        SessionNameEntity(name = bn.name, togglesJson = bn.togglesJson, accentsJson = bn.accentsJson)
+                    )
+                    existing.togglesJson == null && existing.accentsJson == null ->
+                        // Локально ещё нет своих настроек — подтягиваем из бэкапа
+                        dao.update(existing.copy(togglesJson = bn.togglesJson, accentsJson = bn.accentsJson))
+                    // иначе локальные toggles/accents уже заданы — не затираем их бэкапом
+                }
+            }
+        }
+        // Резервный путь для бэкапов старого формата без sessionNames — только имена без настроек
         val uniqueNames = backupData.sessions.mapNotNull { it.name ?: it.comment }
             .filter { it.isNotBlank() }
             .distinct()
-        AppLogger.i("BackupManager", "Restoring ${uniqueNames.size} session names")
         uniqueNames.forEach { name ->
-            dao.insert(SessionNameEntity(name = name))
+            if (dao.getByName(name) == null) dao.insert(SessionNameEntity(name = name))
         }
     }
 
-    private fun restoreSettings(settings: BackupSettings) {
-        preferencesManager.showMilliseconds = settings.showMilliseconds
-        preferencesManager.screenOnMode = try {
-            ScreenOnMode.valueOf(settings.screenOnMode)
-        } catch (e: IllegalArgumentException) {
-            ScreenOnMode.WHILE_RUNNING
-        }
-        preferencesManager.lockOrientation = settings.lockOrientation
-        preferencesManager.showMillisecondsInHistory = settings.showMillisecondsInHistory
-        preferencesManager.invertLapColors = settings.invertLapColors
-        settings.appLanguage?.let { preferencesManager.appLanguage = it }
-        preferencesManager.autoBackupEnabled = settings.autoBackupEnabled
-        preferencesManager.dimBrightness = settings.dimBrightness
-        preferencesManager.hideTimeWhileRunning = settings.hideTimeWhileRunning
-        preferencesManager.tickEnabled = settings.tickEnabled
-        settings.tickAccentsJson?.let { preferencesManager.tickAccentsJson = it }
-        preferencesManager.showTimeAsSeconds = settings.showTimeAsSeconds
-        preferencesManager.showTimeAsSecondsHistory = settings.showTimeAsSecondsHistory
-        preferencesManager.showTimeAsSecondsCharts = settings.showTimeAsSecondsCharts
-        preferencesManager.dimTimeoutSeconds = settings.dimTimeoutSeconds
-        settings.nameToggles?.let { preferencesManager.setAllNameToggles(it) }
+    private fun restoreSettings(settings: Map<String, Any?>) {
+        preferencesManager.importSettingsMap(settings)
     }
 
     /**
@@ -574,40 +564,24 @@ class BackupManager(
         json.put("version", data.version)
         json.put("timestamp", data.timestamp)
 
-        // Add settings if available
+        // Add settings if available (generic key -> value map, see PreferencesManager.exportSettingsMap)
         data.settings?.let { settings ->
             val settingsObj = JSONObject()
-            settingsObj.put("showMilliseconds", settings.showMilliseconds)
-            settingsObj.put("screenOnMode", settings.screenOnMode)
-            settingsObj.put("lockOrientation", settings.lockOrientation)
-            settingsObj.put("showMillisecondsInHistory", settings.showMillisecondsInHistory)
-            settingsObj.put("invertLapColors", settings.invertLapColors)
-            settingsObj.put("appLanguage", settings.appLanguage ?: JSONObject.NULL)
-            settingsObj.put("autoBackupEnabled", settings.autoBackupEnabled)
-            settingsObj.put("dimBrightness", settings.dimBrightness)
-            settingsObj.put("hideTimeWhileRunning", settings.hideTimeWhileRunning)
-            settingsObj.put("tickEnabled", settings.tickEnabled)
-            settingsObj.put("tickAccentsJson", settings.tickAccentsJson ?: JSONObject.NULL)
-            settingsObj.put("showTimeAsSeconds", settings.showTimeAsSeconds)
-            settingsObj.put("showTimeAsSecondsHistory", settings.showTimeAsSecondsHistory)
-            settingsObj.put("showTimeAsSecondsCharts", settings.showTimeAsSecondsCharts)
-            settingsObj.put("dimTimeoutSeconds", settings.dimTimeoutSeconds)
-            val nameTogglesObj = JSONObject()
-            settings.nameToggles?.forEach { (name, toggles) ->
-                val t = JSONObject()
-                t.put("showMilliseconds", toggles.showMilliseconds)
-                t.put("screenOnMode", toggles.screenOnMode)
-                t.put("lockOrientation", toggles.lockOrientation)
-                t.put("invertLapColors", toggles.invertLapColors)
-                t.put("dimBrightness", toggles.dimBrightness)
-                t.put("hideTimeWhileRunning", toggles.hideTimeWhileRunning)
-                t.put("showTimeAsSeconds", toggles.showTimeAsSeconds)
-                t.put("tickEnabled", toggles.tickEnabled)
-                if (toggles.tickAccentsJson != null) t.put("tickAccentsJson", toggles.tickAccentsJson) else t.put("tickAccentsJson", JSONObject.NULL)
-                nameTogglesObj.put(name, t)
-            }
-            settingsObj.put("nameToggles", nameTogglesObj)
+            settings.forEach { (key, value) -> settingsObj.put(key, value ?: JSONObject.NULL) }
             json.put("settings", settingsObj)
+        }
+
+        // Per-name toggles/accents — session_names is the single source of truth
+        data.sessionNames?.let { names ->
+            val arr = JSONArray()
+            names.forEach { bn ->
+                val obj = JSONObject()
+                obj.put("name", bn.name)
+                obj.put("togglesJson", bn.togglesJson ?: JSONObject.NULL)
+                obj.put("accentsJson", bn.accentsJson ?: JSONObject.NULL)
+                arr.put(obj)
+            }
+            json.put("sessionNames", arr)
         }
 
         val sessionsArray = JSONArray()
@@ -649,47 +623,52 @@ class BackupManager(
         val version = json.getString("version")
         val timestamp = json.getLong("timestamp")
 
-        // Parse settings if available
-        val settings = if (json.has("settings")) {
+        // Parse settings if available: generic map, plus legacy per-name "nameToggles"
+        // (only present in backups made by app versions before session_names became
+        // the single source of truth for per-name toggles/accents).
+        var legacyNameToggles: Map<String, NameToggles>? = null
+        val settings: Map<String, Any?>? = if (json.has("settings")) {
             val settingsObj = json.getJSONObject("settings")
-            BackupSettings(
-                showMilliseconds = settingsObj.getBoolean("showMilliseconds"),
-                screenOnMode = settingsObj.getString("screenOnMode"),
-                lockOrientation = settingsObj.getBoolean("lockOrientation"),
-                showMillisecondsInHistory = settingsObj.getBoolean("showMillisecondsInHistory"),
-                invertLapColors = settingsObj.getBoolean("invertLapColors"),
-                appLanguage = if (settingsObj.isNull("appLanguage")) null else settingsObj.getString("appLanguage"),
-                autoBackupEnabled = if (settingsObj.has("autoBackupEnabled")) settingsObj.getBoolean("autoBackupEnabled") else false,
-                dimBrightness = if (settingsObj.has("dimBrightness")) settingsObj.getBoolean("dimBrightness") else false,
-                hideTimeWhileRunning = if (settingsObj.has("hideTimeWhileRunning")) settingsObj.getBoolean("hideTimeWhileRunning") else false,
-                tickEnabled = if (settingsObj.has("tickEnabled")) settingsObj.getBoolean("tickEnabled") else false,
-                tickAccentsJson = if (settingsObj.has("tickAccentsJson") && !settingsObj.isNull("tickAccentsJson")) settingsObj.getString("tickAccentsJson") else null,
-                showTimeAsSeconds = if (settingsObj.has("showTimeAsSeconds")) settingsObj.getBoolean("showTimeAsSeconds") else false,
-                showTimeAsSecondsHistory = if (settingsObj.has("showTimeAsSecondsHistory")) settingsObj.getBoolean("showTimeAsSecondsHistory") else false,
-                showTimeAsSecondsCharts = if (settingsObj.has("showTimeAsSecondsCharts")) settingsObj.getBoolean("showTimeAsSecondsCharts") else false,
-                dimTimeoutSeconds = if (settingsObj.has("dimTimeoutSeconds")) settingsObj.getInt("dimTimeoutSeconds") else 30,
-                nameToggles = if (settingsObj.has("nameToggles")) {
-                    val ntObj = settingsObj.getJSONObject("nameToggles")
-                    val map = mutableMapOf<String, NameToggles>()
-                    ntObj.keys().forEach { key ->
-                        try {
-                            val t = ntObj.getJSONObject(key)
-                            map[key] = NameToggles(
-                                showMilliseconds = t.optBoolean("showMilliseconds", true),
-                                screenOnMode = t.optString("screenOnMode", "WHILE_RUNNING"),
-                                lockOrientation = t.optBoolean("lockOrientation", false),
-                                invertLapColors = t.optBoolean("invertLapColors", false),
-                                dimBrightness = t.optBoolean("dimBrightness", true),
-                                hideTimeWhileRunning = t.optBoolean("hideTimeWhileRunning", false),
-                                showTimeAsSeconds = t.optBoolean("showTimeAsSeconds", false),
-                                tickEnabled = t.optBoolean("tickEnabled", false),
-                                tickAccentsJson = if (t.has("tickAccentsJson") && !t.isNull("tickAccentsJson")) t.getString("tickAccentsJson") else null
-                            )
-                        } catch (_: Exception) {}
-                    }
-                    map.ifEmpty { null }
-                } else null
-            )
+            if (settingsObj.has("nameToggles") && !settingsObj.isNull("nameToggles")) {
+                val ntObj = settingsObj.getJSONObject("nameToggles")
+                val map = mutableMapOf<String, NameToggles>()
+                ntObj.keys().forEach { key ->
+                    try {
+                        val t = ntObj.getJSONObject(key)
+                        map[key] = NameToggles(
+                            showMilliseconds = t.optBoolean("showMilliseconds", true),
+                            screenOnMode = t.optString("screenOnMode", "WHILE_RUNNING"),
+                            lockOrientation = t.optBoolean("lockOrientation", false),
+                            invertLapColors = t.optBoolean("invertLapColors", false),
+                            dimBrightness = t.optBoolean("dimBrightness", true),
+                            hideTimeWhileRunning = t.optBoolean("hideTimeWhileRunning", false),
+                            showTimeAsSeconds = t.optBoolean("showTimeAsSeconds", false),
+                            tickEnabled = t.optBoolean("tickEnabled", false),
+                            tickAccentsJson = if (t.has("tickAccentsJson") && !t.isNull("tickAccentsJson")) t.getString("tickAccentsJson") else null
+                        )
+                    } catch (_: Exception) {}
+                }
+                legacyNameToggles = map.ifEmpty { null }
+            }
+            val map = mutableMapOf<String, Any?>()
+            settingsObj.keys().forEach { key ->
+                if (key != "nameToggles") map[key] = if (settingsObj.isNull(key)) null else settingsObj.get(key)
+            }
+            map
+        } else {
+            null
+        }
+
+        val sessionNames: List<BackupSessionName>? = if (json.has("sessionNames")) {
+            val arr = json.getJSONArray("sessionNames")
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                BackupSessionName(
+                    name = o.getString("name"),
+                    togglesJson = if (o.has("togglesJson") && !o.isNull("togglesJson")) o.getString("togglesJson") else null,
+                    accentsJson = if (o.has("accentsJson") && !o.isNull("accentsJson")) o.getString("accentsJson") else null
+                )
+            }
         } else {
             null
         }
@@ -730,7 +709,7 @@ class BackupManager(
             )
         }
 
-        return BackupData(version, timestamp, sessions, settings)
+        return BackupData(version, timestamp, sessions, sessionNames, settings, legacyNameToggles)
     }
 
     private fun generateBackupFileName(): String {

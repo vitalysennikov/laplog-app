@@ -1,12 +1,20 @@
 package com.laplog.app.model
 
-import com.laplog.app.data.ScreenOnMode
-
 data class BackupData(
     val version: String,
     val timestamp: Long,
     val sessions: List<BackupSession>,
-    val settings: BackupSettings? = null
+    val sessionNames: List<BackupSessionName>? = null,
+    val settings: Map<String, Any?>? = null,
+    // Только для чтения бэкапов старого формата (до перехода session_names на
+    // единственный источник правды) — не пишется в новые бэкапы.
+    val legacyNameToggles: Map<String, NameToggles>? = null
+)
+
+data class BackupSessionName(
+    val name: String,
+    val togglesJson: String? = null,
+    val accentsJson: String? = null
 )
 
 data class NameToggles(
@@ -19,25 +27,6 @@ data class NameToggles(
     val showTimeAsSeconds: Boolean = false,
     val tickEnabled: Boolean = false,
     val tickAccentsJson: String? = null
-)
-
-data class BackupSettings(
-    val showMilliseconds: Boolean,
-    val screenOnMode: String,
-    val lockOrientation: Boolean,
-    val showMillisecondsInHistory: Boolean,
-    val invertLapColors: Boolean,
-    val appLanguage: String?,
-    val autoBackupEnabled: Boolean = false,
-    val dimBrightness: Boolean = false,
-    val hideTimeWhileRunning: Boolean = false,
-    val tickEnabled: Boolean = false,
-    val tickAccentsJson: String? = null,
-    val showTimeAsSeconds: Boolean = false,
-    val showTimeAsSecondsHistory: Boolean = false,
-    val showTimeAsSecondsCharts: Boolean = false,
-    val dimTimeoutSeconds: Int = 30,
-    val nameToggles: Map<String, NameToggles>? = null
 )
 
 data class BackupSession(
