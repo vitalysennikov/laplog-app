@@ -120,7 +120,7 @@ class BackupManager(
 
     /** Переносит содержимое -wal в основной файл БД, чтобы копия была полной. */
     private fun checkpointDatabase(db: AppDatabase) {
-        db.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)", null).close()
+        db.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)", emptyArray()).close()
     }
 
     /**
